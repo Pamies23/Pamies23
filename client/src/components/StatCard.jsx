@@ -1,58 +1,58 @@
 import React, { useState } from 'react';
 
-export default function StatCard({ icon, label, value, sub, color = '#8b5e1a', bg }) {
+export default function StatCard({ icon, label, value, sub, color = '#9a7040' }) {
   const [hovered, setHovered] = useState(false);
   return (
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: '#fffbf0',
+        background: '#ffffff',
         borderRadius: 8,
         padding: '20px 24px',
         boxShadow: hovered
-          ? '0 4px 16px rgba(139,94,26,0.25)'
-          : '0 2px 8px rgba(139,94,26,0.12)',
+          ? '0 4px 14px rgba(30,24,18,0.12)'
+          : '0 1px 3px rgba(30,24,18,0.07), 0 4px 12px rgba(30,24,18,0.04)',
         display: 'flex',
         alignItems: 'center',
         gap: 16,
         minWidth: 0,
-        border: '1px solid #c9a055',
+        border: '1px solid #e5e0d6',
         borderTop: `3px solid ${color}`,
         transition: 'box-shadow 0.2s ease',
       }}
     >
       <div style={{
-        width: 48,
-        height: 48,
+        width: 46,
+        height: 46,
         borderRadius: 8,
-        background: bg || `${color}22`,
+        background: '#f5f0e8',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         fontSize: 22,
         flexShrink: 0,
-        border: `1px solid ${color}44`,
+        border: '1px solid #e5e0d6',
       }}>
         {icon}
       </div>
       <div style={{ minWidth: 0 }}>
         <div style={{
-          fontSize: 12,
-          color: '#7a6040',
-          marginBottom: 2,
-          fontWeight: 500,
+          fontSize: 10,
+          color: '#a0907a',
+          marginBottom: 4,
+          fontWeight: 700,
           textTransform: 'uppercase',
-          letterSpacing: '0.04em',
+          letterSpacing: '0.09em',
         }}>{label}</div>
         <div style={{
-          fontSize: 24,
-          fontWeight: 700,
-          color: '#7a4e0d',
+          fontSize: 22,
+          fontWeight: 800,
+          color,
           lineHeight: 1,
-          fontFamily: "Georgia, 'Times New Roman', serif",
+          fontVariantNumeric: 'tabular-nums',
         }}>{value}</div>
-        {sub && <div style={{ fontSize: 12, color: '#7a6040', marginTop: 3, opacity: 0.8 }}>{sub}</div>}
+        {sub && <div style={{ fontSize: 11, color: '#a0907a', marginTop: 4 }}>{sub}</div>}
       </div>
     </div>
   );
