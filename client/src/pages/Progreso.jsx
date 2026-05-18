@@ -1,55 +1,56 @@
 import React from 'react';
 import { useApi } from '../hooks/useApi.js';
 import {
-  LineChart, Line, BarChart, Bar, AreaChart, Area,
+  BarChart, Bar, AreaChart, Area,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
 
-// Alexander (2004) palette — cool marble, Macedonian purple, stone
+// Alexander palette v2
+// Background: warm dirty white. Sidebar/structural: sandy bronze.
+// Charts/accents: vivid Mediterranean — sea blue + vegetation green.
 const C = {
-  pageBg:       '#ededea',       // cool limestone floor
-  marble:       '#f8f7f5',       // white marble
-  marbleDeep:   '#eeede9',       // veined marble
-  border:       '#cbc8c0',       // stone grout
-  borderAccent: '#9188a0',       // muted purple-stone
-  purple:       '#4a3060',       // Macedonian royal purple
-  purpleLight:  '#6b5280',       // lighter purple
-  purpleFaint:  'rgba(74,48,96,0.08)',
-  slate:        '#3a3848',       // dark stone/slate
-  stoneGray:    '#7a7870',       // weathered stone
-  stoneLight:   '#a09890',       // pale stone
-  textPrimary:  '#1c1c24',       // dark ink on marble
-  textSecondary:'#6b6860',       // faded inscription
-  olive:        '#4a6040',       // macedonian olive
-  sienna:       '#8a5038',       // terracotta
-  blue:         '#2e5070',       // aegean sea
-  gridLine:     'rgba(74,48,96,0.07)',
+  pageBg:      '#f8f5ee',   // dirty white, warm parchment
+  cardBg:      '#fefcf6',   // ivory white
+  cardBgAlt:   '#f5f1e8',   // slightly deeper off-white
+  border:      '#e0d8c8',   // warm stone border
+  sandy:       '#b8956a',   // the screenshot color — sandy bronze leather
+  sandyDark:   '#8a6a3a',   // deeper sandy bronze
+  sandyLight:  '#d4b896',   // lighter sand
+  sandyFaint:  'rgba(184,149,106,0.12)',
+  seaBlue:     '#1a72a0',   // vivid Aegean sea
+  seaBlueFaint:'rgba(26,114,160,0.12)',
+  vegGreen:    '#3a7020',   // vivid Mediterranean vegetation
+  vegGreenFaint:'rgba(58,112,32,0.10)',
+  terracotta:  '#b84a28',   // sun-baked terracotta
+  textPrimary: '#1e1812',   // dark warm ink
+  textSecondary:'#6b5a40',  // aged sepia
+  textMuted:   '#a0907a',   // stone dust
+  gridLine:    'rgba(184,149,106,0.12)',
 };
 
 const card = {
-  background: C.marble,
-  borderRadius: 6,
+  background: C.cardBg,
+  borderRadius: 8,
   padding: 24,
-  boxShadow: '0 1px 4px rgba(28,28,36,0.08), 0 4px 16px rgba(28,28,36,0.04)',
+  boxShadow: '0 1px 3px rgba(30,24,18,0.07), 0 4px 12px rgba(30,24,18,0.04)',
   border: `1px solid ${C.border}`,
 };
 
 const tooltipStyle = {
-  background: C.marble,
-  border: `1px solid ${C.borderAccent}`,
+  background: C.cardBg,
+  border: `1px solid ${C.sandyLight}`,
   borderRadius: 4,
   fontSize: 12,
   color: C.textPrimary,
-  boxShadow: '0 2px 8px rgba(28,28,36,0.12)',
+  boxShadow: '0 2px 8px rgba(30,24,18,0.1)',
 };
 
-const cardTitle = {
+const sectionTitle = {
   fontWeight: 700,
-  fontSize: 15,
+  fontSize: 11,
   marginBottom: 20,
-  color: C.purple,
-  fontFamily: "Georgia, 'Times New Roman', serif",
-  letterSpacing: '0.04em',
+  color: C.sandyDark,
+  letterSpacing: '0.12em',
   textTransform: 'uppercase',
   borderBottom: `1px solid ${C.border}`,
   paddingBottom: 10,
@@ -61,36 +62,28 @@ function formatDate(dateStr) {
   return `${d.getDate()}/${d.getMonth() + 1}`;
 }
 
-function StatBox({ label, value, unit, sub, color = C.purple, accentColor }) {
-  const accent = accentColor || color;
+function StatBox({ label, value, unit, sub, accent = C.sandy }) {
   return (
     <div style={{
-      background: C.marble,
-      borderRadius: 6,
-      padding: '20px 24px',
-      boxShadow: '0 1px 4px rgba(28,28,36,0.08)',
+      background: C.cardBg,
+      borderRadius: 8,
+      padding: '18px 20px',
+      boxShadow: '0 1px 3px rgba(30,24,18,0.06)',
       border: `1px solid ${C.border}`,
-      borderLeft: `3px solid ${accent}`,
-      textAlign: 'center',
-      position: 'relative',
-      overflow: 'hidden',
+      borderTop: `3px solid ${accent}`,
     }}>
-      <div style={{
-        position: 'absolute', top: 0, right: 0, width: 60, height: 60,
-        background: `radial-gradient(circle at top right, ${accent}18, transparent 70%)`,
-      }} />
       <div style={{
         fontSize: 10,
         fontWeight: 700,
-        color: C.stoneGray,
+        color: C.textMuted,
         letterSpacing: '0.1em',
-        marginBottom: 10,
         textTransform: 'uppercase',
+        marginBottom: 8,
       }}>
         {label}
       </div>
       <div style={{
-        fontSize: 34,
+        fontSize: 32,
         fontWeight: 800,
         color: accent,
         lineHeight: 1,
@@ -98,27 +91,27 @@ function StatBox({ label, value, unit, sub, color = C.purple, accentColor }) {
       }}>
         {value}
         {unit && (
-          <span style={{ fontSize: 14, fontWeight: 500, color: C.stoneGray, marginLeft: 4 }}>{unit}</span>
+          <span style={{ fontSize: 13, fontWeight: 500, color: C.textMuted, marginLeft: 4 }}>{unit}</span>
         )}
       </div>
-      {sub && <div style={{ fontSize: 11, color: C.stoneLight, marginTop: 6 }}>{sub}</div>}
+      {sub && <div style={{ fontSize: 11, color: C.textMuted, marginTop: 5 }}>{sub}</div>}
     </div>
   );
 }
 
-const streakAccents = {
-  entrenamiento: { color: C.purple,  label: '⚔️ Entrenamiento' },
-  dieta:         { color: C.olive,   label: '🌿 Dieta' },
-  agua:          { color: C.blue,    label: '🌊 Hidratación' },
+const streakMeta = {
+  entrenamiento: { color: C.sandy,    label: '⚔️ Entrenamiento' },
+  dieta:         { color: C.vegGreen, label: '🌿 Dieta' },
+  agua:          { color: C.seaBlue,  label: '🌊 Hidratación' },
 };
 
 export default function Progreso() {
-  const { data: metrics,  loading: metricsLoading }  = useApi('/api/body-metrics');
-  const { data: dietLogs, loading: dietLoading }      = useApi('/api/diet-logs');
-  const { data: workouts, loading: workoutsLoading }  = useApi('/api/workouts');
-  const { data: streaks,  loading: streaksLoading }   = useApi('/api/streaks');
+  const { data: metrics,  loading: l1 } = useApi('/api/body-metrics');
+  const { data: dietLogs, loading: l2 } = useApi('/api/diet-logs');
+  const { data: workouts, loading: l3 } = useApi('/api/workouts');
+  const { data: streaks,  loading: l4 } = useApi('/api/streaks');
 
-  const loading = metricsLoading || dietLoading || workoutsLoading || streaksLoading;
+  const loading = l1 || l2 || l3 || l4;
 
   const ninetyDaysAgo = new Date();
   ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
@@ -139,14 +132,9 @@ export default function Progreso() {
   const workoutsPerWeek = [];
   if (workouts) {
     for (let w = 7; w >= 0; w--) {
-      const weekStart = new Date();
-      weekStart.setDate(weekStart.getDate() - (w + 1) * 7);
-      const weekEnd = new Date();
-      weekEnd.setDate(weekEnd.getDate() - w * 7);
-      const count = workouts.filter(wo => {
-        const d = new Date(wo.date);
-        return d >= weekStart && d < weekEnd;
-      }).length;
+      const s = new Date(); s.setDate(s.getDate() - (w + 1) * 7);
+      const e = new Date(); e.setDate(e.getDate() - w * 7);
+      const count = workouts.filter(wo => { const d = new Date(wo.date); return d >= s && d < e; }).length;
       workoutsPerWeek.push({ week: `Sem ${8 - w}`, count });
     }
   }
@@ -156,12 +144,7 @@ export default function Progreso() {
     : 0;
 
   const totalWorkoutsMonth = workouts
-    ? workouts.filter(w => {
-        const d = new Date(w.date);
-        const monthAgo = new Date();
-        monthAgo.setDate(monthAgo.getDate() - 30);
-        return d >= monthAgo;
-      }).length
+    ? workouts.filter(w => { const d = new Date(w.date); const ago = new Date(); ago.setDate(ago.getDate() - 30); return d >= ago; }).length
     : 0;
 
   const avgWorkoutsPerWeek = totalWorkoutsMonth > 0 ? (totalWorkoutsMonth / 4).toFixed(1) : '0';
@@ -175,97 +158,75 @@ export default function Progreso() {
 
       {/* Header */}
       <div style={{ marginBottom: 32 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 4 }}>
-          <h1 style={{
-            fontSize: 26,
-            fontWeight: 800,
-            color: C.slate,
-            fontFamily: "Georgia, 'Times New Roman', serif",
-            letterSpacing: '0.06em',
-            margin: 0,
-            textTransform: 'uppercase',
-          }}>
-            Progreso
-          </h1>
-          <div style={{ height: 1, flex: 1, background: `linear-gradient(to right, ${C.purple}, transparent)` }} />
+        <h1 style={{
+          fontSize: 22,
+          fontWeight: 800,
+          color: C.textPrimary,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          margin: 0,
+          marginBottom: 4,
+        }}>
+          Progreso
+        </h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ height: 2, width: 32, background: C.sandy, borderRadius: 2 }} />
+          <p style={{ color: C.textMuted, fontSize: 13, margin: 0, letterSpacing: '0.03em' }}>
+            Evolución y estadísticas a largo plazo
+          </p>
         </div>
-        <p style={{ color: C.stoneGray, fontSize: 13, margin: 0, letterSpacing: '0.02em' }}>
-          Evolución y estadísticas a largo plazo
-        </p>
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', color: C.stoneGray, padding: 80 }}>
-          <div style={{ fontSize: 28, marginBottom: 12, color: C.purple }}>◈</div>
-          <div style={{ fontFamily: "Georgia, serif", fontSize: 14, letterSpacing: '0.06em' }}>
-            CARGANDO...
-          </div>
+        <div style={{ textAlign: 'center', color: C.textMuted, padding: 80 }}>
+          <div style={{ fontSize: 24, marginBottom: 12 }}>—</div>
+          <div style={{ fontSize: 13, letterSpacing: '0.06em' }}>Cargando...</div>
         </div>
       ) : (
         <>
-          {/* Stats grid */}
+          {/* Stat cards */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-            gap: 16,
+            gap: 14,
             marginBottom: 28,
           }}>
-            <StatBox
-              label="Promedio calorías"
-              value={avgCalories}
-              unit="kcal"
-              sub="Últimas 4 semanas"
-              accentColor={C.sienna}
-            />
-            <StatBox
-              label="Entrenos / semana"
-              value={avgWorkoutsPerWeek}
-              sub="Media último mes"
-              accentColor={C.purple}
-            />
-            <StatBox
-              label="Entrenos este mes"
-              value={totalWorkoutsMonth}
-              sub="Últimos 30 días"
-              accentColor={C.purpleLight}
-            />
+            <StatBox label="Promedio calorías" value={avgCalories} unit="kcal" sub="Últimas 4 semanas" accent={C.terracotta} />
+            <StatBox label="Entrenos / semana"  value={avgWorkoutsPerWeek} sub="Media último mes"   accent={C.sandy} />
+            <StatBox label="Entrenos este mes"  value={totalWorkoutsMonth} sub="Últimos 30 días"    accent={C.vegGreen} />
             {weightChange !== null && (
               <StatBox
                 label="Cambio de peso"
                 value={`${weightChange > 0 ? '+' : ''}${weightChange}`}
                 unit="kg"
                 sub="Últimos 90 días"
-                accentColor={parseFloat(weightChange) <= 0 ? C.olive : C.sienna}
+                accent={parseFloat(weightChange) <= 0 ? C.vegGreen : C.terracotta}
               />
             )}
           </div>
 
-          {/* Weight chart */}
+          {/* Weight — area chart, sea blue line */}
           <div style={{ ...card, marginBottom: 20 }}>
-            <div style={cardTitle}>⚖ Peso corporal — 90 días</div>
+            <div style={sectionTitle}>Peso corporal — últimos 90 días</div>
             {weightData.length > 1 ? (
-              <ResponsiveContainer width="100%" height={280}>
+              <ResponsiveContainer width="100%" height={270}>
                 <AreaChart data={weightData} margin={{ top: 8, right: 16, left: -10, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="weightGradAlex" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor={C.purple} stopOpacity={0.18} />
-                      <stop offset="95%" stopColor={C.purple} stopOpacity={0.01} />
+                    <linearGradient id="weightGradAlex2" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%"  stopColor={C.seaBlue} stopOpacity={0.20} />
+                      <stop offset="95%" stopColor={C.seaBlue} stopOpacity={0.01} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke={C.gridLine} />
                   <XAxis
-                    dataKey="date"
-                    tickFormatter={formatDate}
-                    tick={{ fontSize: 11, fill: C.stoneGray }}
-                    axisLine={{ stroke: C.border }}
-                    tickLine={false}
+                    dataKey="date" tickFormatter={formatDate}
+                    tick={{ fontSize: 11, fill: C.textMuted }}
+                    axisLine={{ stroke: C.border }} tickLine={false}
                     interval="preserveStartEnd"
                   />
                   <YAxis
-                    tick={{ fontSize: 11, fill: C.stoneGray }}
-                    axisLine={false}
-                    tickLine={false}
-                    domain={['auto', 'auto']}
+                    tick={{ fontSize: 11, fill: C.textMuted }}
+                    axisLine={false} tickLine={false} domain={['auto', 'auto']}
                   />
                   <Tooltip
                     formatter={(v) => [`${v} kg`, 'Peso']}
@@ -273,18 +234,16 @@ export default function Progreso() {
                     contentStyle={tooltipStyle}
                   />
                   <Area
-                    type="monotone"
-                    dataKey="weight_kg"
-                    stroke={C.purple}
-                    strokeWidth={2}
-                    fill="url(#weightGradAlex)"
-                    dot={{ r: 2.5, fill: C.purple, strokeWidth: 0 }}
-                    activeDot={{ r: 5, fill: C.purple, stroke: C.marble, strokeWidth: 2 }}
+                    type="monotone" dataKey="weight_kg"
+                    stroke={C.seaBlue} strokeWidth={2.5}
+                    fill="url(#weightGradAlex2)"
+                    dot={{ r: 2.5, fill: C.seaBlue, strokeWidth: 0 }}
+                    activeDot={{ r: 5, fill: C.seaBlue, stroke: C.cardBg, strokeWidth: 2 }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.stoneGray }}>
+              <div style={{ height: 270, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.textMuted }}>
                 Necesitas al menos 2 registros de peso para ver la gráfica
               </div>
             )}
@@ -292,53 +251,42 @@ export default function Progreso() {
 
           {/* Calories + Workouts side by side */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
+
+            {/* Calories — terracotta bars */}
             <div style={card}>
-              <div style={cardTitle}>🍽 Calorías — 4 semanas</div>
+              <div style={sectionTitle}>Calorías — últimas 4 semanas</div>
               {caloriesData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={caloriesData} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={C.gridLine} />
-                    <XAxis
-                      dataKey="date"
-                      tickFormatter={formatDate}
-                      tick={{ fontSize: 10, fill: C.stoneGray }}
-                      axisLine={{ stroke: C.border }}
-                      tickLine={false}
-                      interval={3}
-                    />
-                    <YAxis tick={{ fontSize: 10, fill: C.stoneGray }} axisLine={false} tickLine={false} />
-                    <Tooltip
-                      formatter={(v) => [`${v} kcal`, 'Calorías']}
-                      labelFormatter={l => `Fecha: ${l}`}
-                      contentStyle={tooltipStyle}
-                    />
-                    <Bar dataKey="calories" fill={C.sienna} radius={[3, 3, 0, 0]} opacity={0.85} />
+                    <XAxis dataKey="date" tickFormatter={formatDate} tick={{ fontSize: 10, fill: C.textMuted }} axisLine={{ stroke: C.border }} tickLine={false} interval={3} />
+                    <YAxis tick={{ fontSize: 10, fill: C.textMuted }} axisLine={false} tickLine={false} />
+                    <Tooltip formatter={(v) => [`${v} kcal`, 'Calorías']} labelFormatter={l => `Fecha: ${l}`} contentStyle={tooltipStyle} />
+                    <Bar dataKey="calories" fill={C.terracotta} radius={[3, 3, 0, 0]} opacity={0.82} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.stoneGray, fontSize: 13 }}>
+                <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.textMuted, fontSize: 13 }}>
                   Sin datos en las últimas 4 semanas
                 </div>
               )}
             </div>
 
+            {/* Workouts — vegetation green bars */}
             <div style={card}>
-              <div style={cardTitle}>⚔ Entrenamientos / semana</div>
+              <div style={sectionTitle}>Entrenamientos por semana</div>
               {workoutsPerWeek.some(w => w.count > 0) ? (
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={workoutsPerWeek} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={C.gridLine} />
-                    <XAxis dataKey="week" tick={{ fontSize: 10, fill: C.stoneGray }} axisLine={{ stroke: C.border }} tickLine={false} />
-                    <YAxis tick={{ fontSize: 10, fill: C.stoneGray }} axisLine={false} tickLine={false} allowDecimals={false} />
-                    <Tooltip
-                      formatter={(v) => [v, 'Entrenamientos']}
-                      contentStyle={tooltipStyle}
-                    />
-                    <Bar dataKey="count" fill={C.purple} radius={[3, 3, 0, 0]} opacity={0.85} />
+                    <XAxis dataKey="week" tick={{ fontSize: 10, fill: C.textMuted }} axisLine={{ stroke: C.border }} tickLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: C.textMuted }} axisLine={false} tickLine={false} allowDecimals={false} />
+                    <Tooltip formatter={(v) => [v, 'Entrenamientos']} contentStyle={tooltipStyle} />
+                    <Bar dataKey="count" fill={C.vegGreen} radius={[3, 3, 0, 0]} opacity={0.85} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.stoneGray, fontSize: 13 }}>
+                <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.textMuted, fontSize: 13 }}>
                   Sin entrenamientos registrados
                 </div>
               )}
@@ -347,52 +295,54 @@ export default function Progreso() {
 
           {/* Streaks */}
           <div style={card}>
-            <div style={cardTitle}>◈ Rachas</div>
+            <div style={sectionTitle}>Rachas</div>
             {streaks && streaks.length > 0 ? (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 16 }}>
                 {streaks.map(s => {
-                  const meta = streakAccents[s.habit_type] || { color: C.purple, label: s.habit_type };
+                  const meta = streakMeta[s.habit_type] || { color: C.sandy, label: s.habit_type };
                   return (
                     <div key={s.id} style={{
-                      padding: '20px 24px',
-                      background: C.marbleDeep,
+                      padding: '20px 22px',
+                      background: C.pageBg,
                       borderRadius: 6,
                       border: `1px solid ${C.border}`,
-                      borderTop: `2px solid ${meta.color}`,
+                      borderLeft: `3px solid ${meta.color}`,
                     }}>
                       <div style={{
                         fontWeight: 700,
-                        fontSize: 13,
+                        fontSize: 12,
                         color: meta.color,
-                        letterSpacing: '0.06em',
+                        letterSpacing: '0.08em',
                         textTransform: 'uppercase',
-                        marginBottom: 16,
-                        fontFamily: "Georgia, serif",
+                        marginBottom: 14,
                       }}>
                         {meta.label}
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                         <div>
-                          <div style={{ fontSize: 10, color: C.stoneGray, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
+                          <div style={{ fontSize: 10, color: C.textMuted, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
                             Racha actual
                           </div>
-                          <div style={{ fontSize: 36, fontWeight: 800, color: meta.color, lineHeight: 1 }}>
+                          <div style={{ fontSize: 38, fontWeight: 800, color: meta.color, lineHeight: 1 }}>
                             {s.current_streak}
                           </div>
-                          <div style={{ fontSize: 11, color: C.stoneLight, marginTop: 2 }}>días</div>
+                          <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>días</div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: 10, color: C.stoneGray, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
+                          <div style={{ fontSize: 10, color: C.textMuted, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
                             Récord
                           </div>
-                          <div style={{ fontSize: 28, fontWeight: 700, color: C.slate, lineHeight: 1 }}>
+                          <div style={{ fontSize: 28, fontWeight: 700, color: C.textSecondary, lineHeight: 1 }}>
                             {s.longest_streak}
                           </div>
-                          <div style={{ fontSize: 11, color: C.stoneLight, marginTop: 2 }}>días</div>
+                          <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>días</div>
                         </div>
                       </div>
                       {s.last_recorded_date && (
-                        <div style={{ fontSize: 11, color: C.stoneLight, marginTop: 12, borderTop: `1px solid ${C.border}`, paddingTop: 10 }}>
+                        <div style={{
+                          fontSize: 11, color: C.textMuted, marginTop: 14,
+                          borderTop: `1px solid ${C.border}`, paddingTop: 10,
+                        }}>
                           Último registro: {new Date(s.last_recorded_date).toLocaleDateString('es-ES')}
                         </div>
                       )}
@@ -401,7 +351,7 @@ export default function Progreso() {
                 })}
               </div>
             ) : (
-              <div style={{ textAlign: 'center', color: C.stoneGray, padding: 24 }}>Sin datos de rachas</div>
+              <div style={{ textAlign: 'center', color: C.textMuted, padding: 24 }}>Sin datos de rachas</div>
             )}
           </div>
         </>
