@@ -356,6 +356,17 @@ app.get('/api/dashboard', (req, res) => {
   });
 });
 
+// Serve built React app
+const path = require('path');
+const fs = require('fs');
+const distPath = path.join(__dirname, '../client/dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
+
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
