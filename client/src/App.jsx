@@ -11,7 +11,7 @@ const styles = {
   app: {
     display: 'flex',
     minHeight: '100vh',
-    background: '#ffffff',
+    background: '#eddfc8',
   },
   main: {
     flex: 1,

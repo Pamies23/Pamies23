@@ -35,7 +35,7 @@ html, body {
 }
 
 body {
-  background-color: #ffffff;
+  background-color: #eddfc8;
   color: var(--troy-text-primary);
   font-family: system-ui, -apple-system, sans-serif;
   min-height: 100vh;
