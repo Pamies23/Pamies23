@@ -89,7 +89,7 @@ db.exec(`
   );
 `);
 
-// Seed data if tables are empty
+// eslint-disable-next-line no-unused-vars
 function seedData() {
   const goalsCount = db.prepare('SELECT COUNT(*) as count FROM goals').get();
   if (goalsCount.count > 0) return;
@@ -196,7 +196,5 @@ function seedData() {
 
   console.log('Sample data seeded successfully!');
 }
-
-seedData();
 
 module.exports = db;
