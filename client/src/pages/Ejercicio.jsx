@@ -4,44 +4,57 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
 
-const pageStyle = { padding: '28px 32px', maxWidth: 1100 };
+const C = {
+  pageBg:     '#eddfc8',
+  cardBg:     '#ffffff',
+  border:     '#e5e0d6',
+  bronze:     '#c4a882',
+  bronzeDark: '#9a7040',
+  marble:     '#e5e0d6',
+  text:       '#1e1812',
+  textMuted:  '#a0907a',
+  textSub:    '#6b5a40',
+  gridLine:   '#e5e0d6',
+};
+
+const pageStyle = { padding: '28px 32px', maxWidth: 1100, background: C.pageBg, minHeight: '100vh' };
 
 const card = {
-  background: '#fffbf0',
+  background: C.cardBg,
   borderRadius: 8,
   padding: 20,
-  boxShadow: '0 2px 8px rgba(139,94,26,0.15)',
-  border: '1px solid #c9a055',
+  boxShadow: '0 1px 3px rgba(30,24,18,0.07), 0 4px 12px rgba(30,24,18,0.04)',
+  border: `1px solid ${C.border}`,
 };
 
 const inputStyle = {
   width: '100%',
-  padding: '9px 12px',
-  border: '1px solid #c9a055',
-  borderRadius: 8,
+  padding: '8px 12px',
+  border: `1px solid ${C.border}`,
+  borderRadius: 6,
   fontSize: 14,
   fontFamily: 'inherit',
   outline: 'none',
-  background: '#fdf6e3',
-  color: '#2a1a08',
+  background: '#ffffff',
+  color: C.text,
   boxSizing: 'border-box',
 };
 
 const labelStyle = {
   fontSize: 12,
   fontWeight: 600,
-  color: '#7a4e0d',
+  color: C.bronzeDark,
   marginBottom: 4,
   display: 'block',
   letterSpacing: '0.03em',
 };
 
 const btnPrimary = {
-  background: '#8b5e1a',
-  color: '#fdf6e3',
-  border: '1px solid #7a4e0d',
-  borderRadius: 8,
-  padding: '9px 18px',
+  background: C.bronzeDark,
+  color: '#ffffff',
+  border: 'none',
+  borderRadius: 6,
+  padding: '8px 16px',
   fontSize: 14,
   fontWeight: 600,
   cursor: 'pointer',
@@ -50,17 +63,29 @@ const btnPrimary = {
 
 const btnDanger = {
   background: 'none',
-  color: '#b86b1a',
+  color: C.textMuted,
   border: 'none',
   cursor: 'pointer',
   fontSize: 18,
   padding: '4px',
 };
 
+const badge = {
+  background: '#f5f0e8',
+  color: C.bronzeDark,
+  border: `1px solid ${C.border}`,
+  fontSize: 10,
+  fontWeight: 700,
+  padding: '2px 8px',
+  borderRadius: 99,
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+};
+
 const today = new Date().toISOString().split('T')[0];
 
-// Troy-themed intensity colors
-const intensityColors = ['', '#5a7a3a', '#8b5e1a', '#c9a055', '#b86b1a', '#7a4e0d'];
+// Intensity badge colors using bronze tones
+const intensityBronze = ['', '#c4a882', '#b09060', '#9a7040', '#7a5830', '#5c3e20'];
 const intensityLabels = ['', 'Muy baja', 'Baja', 'Media', 'Alta', 'Máxima'];
 
 function formatDate(dateStr) {
@@ -70,21 +95,22 @@ function formatDate(dateStr) {
 }
 
 const tooltipStyle = {
-  background: '#fffbf0',
-  border: '1px solid #c9a055',
-  borderRadius: 6,
+  background: '#ffffff',
+  border: `1px solid ${C.bronze}`,
+  borderRadius: 4,
   fontSize: 12,
-  color: '#2a1a08',
-  boxShadow: '0 2px 8px rgba(139,94,26,0.2)',
+  color: C.text,
 };
 
 const cardTitle = {
+  fontSize: 11,
   fontWeight: 700,
-  fontSize: 15,
   marginBottom: 16,
-  color: '#7a4e0d',
-  fontFamily: "Georgia, 'Times New Roman', serif",
-  letterSpacing: '0.02em',
+  color: C.bronzeDark,
+  letterSpacing: '0.12em',
+  textTransform: 'uppercase',
+  borderBottom: `1px solid ${C.border}`,
+  paddingBottom: 10,
 };
 
 // ============ ENTRENAMIENTOS TAB ============
@@ -173,16 +199,17 @@ function WorkoutsTab() {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
               <thead>
-                <tr style={{ background: '#f0e0b0' }}>
+                <tr style={{ background: '#f5f0e8' }}>
                   {['Fecha', 'Tipo', 'Duración', 'Intensidad', 'Notas', ''].map(h => (
                     <th key={h} style={{
                       padding: '10px 12px',
                       textAlign: 'left',
-                      color: '#7a4e0d',
+                      color: C.bronzeDark,
                       fontWeight: 700,
-                      fontSize: 12,
-                      letterSpacing: '0.04em',
-                      borderBottom: '2px solid #c9a055',
+                      fontSize: 10,
+                      letterSpacing: '0.05em',
+                      textTransform: 'uppercase',
+                      borderBottom: `1px solid ${C.border}`,
                     }}>{h}</th>
                   ))}
                 </tr>
@@ -190,28 +217,25 @@ function WorkoutsTab() {
               <tbody>
                 {workouts.map((w, i) => (
                   <tr key={w.id} style={{
-                    background: i % 2 === 0 ? '#fffbf0' : '#fdf6e3',
-                    borderBottom: '1px solid rgba(201,160,85,0.2)',
+                    background: i % 2 === 0 ? '#ffffff' : '#faf6f0',
+                    borderBottom: `1px solid ${C.border}`,
                   }}>
-                    <td style={{ padding: '10px 12px', color: '#7a6040' }}>
+                    <td style={{ padding: '10px 12px', color: C.textMuted }}>
                       {new Date(w.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' })}
                     </td>
-                    <td style={{ padding: '10px 12px', fontWeight: 600, color: '#2a1a08' }}>{w.type}</td>
-                    <td style={{ padding: '10px 12px', color: '#2a1a08' }}>{w.duration_min} min</td>
+                    <td style={{ padding: '10px 12px', fontWeight: 600, color: C.text }}>{w.type}</td>
+                    <td style={{ padding: '10px 12px', color: C.text }}>{w.duration_min} min</td>
                     <td style={{ padding: '10px 12px' }}>
                       <span style={{
-                        background: `${intensityColors[w.intensity]}22`,
-                        color: intensityColors[w.intensity],
-                        border: `1px solid ${intensityColors[w.intensity]}55`,
-                        fontWeight: 600,
-                        fontSize: 12,
-                        padding: '2px 8px',
-                        borderRadius: 99,
+                        ...badge,
+                        background: `${intensityBronze[w.intensity]}22`,
+                        color: intensityBronze[w.intensity],
+                        border: `1px solid ${intensityBronze[w.intensity]}55`,
                       }}>
                         {w.intensity}/5 {intensityLabels[w.intensity]}
                       </span>
                     </td>
-                    <td style={{ padding: '10px 12px', color: '#7a6040', fontSize: 13 }}>{w.notes || '—'}</td>
+                    <td style={{ padding: '10px 12px', color: C.textSub, fontSize: 13 }}>{w.notes || '—'}</td>
                     <td style={{ padding: '10px 12px' }}>
                       <button style={btnDanger} onClick={() => handleDelete(w.id)}>🗑️</button>
                     </td>
@@ -514,41 +538,41 @@ export default function Ejercicio() {
         <h1 style={{
           fontSize: 28,
           fontWeight: 800,
-          color: '#7a4e0d',
+          color: C.text,
           fontFamily: "Georgia, 'Times New Roman', serif",
           letterSpacing: '0.04em',
           margin: 0,
           paddingBottom: 8,
-          borderBottom: '2px solid rgba(201,160,85,0.5)',
+          borderBottom: `3px solid ${C.bronze}`,
           display: 'inline-block',
+          textTransform: 'uppercase',
         }}>Ejercicio</h1>
-        <p style={{ color: '#7a6040', fontSize: 14, marginTop: 6 }}>Registra tus entrenamientos y progreso físico</p>
+        <p style={{ color: C.textSub, fontSize: 14, marginTop: 6 }}>Registra tus entrenamientos y progreso físico</p>
       </div>
 
       {/* Tabs */}
       <div style={{
         display: 'flex',
         gap: 4,
-        background: 'rgba(201,160,85,0.12)',
+        background: '#f5f0e8',
         padding: 4,
-        borderRadius: 10,
+        borderRadius: 8,
         marginBottom: 24,
         width: 'fit-content',
-        border: '1px solid rgba(201,160,85,0.3)',
+        border: `1px solid ${C.border}`,
       }}>
         {tabs.map(t => (
           <button
             key={t.key}
             style={{
               padding: '8px 18px',
-              borderRadius: 8,
+              borderRadius: 6,
               fontSize: 13,
               fontWeight: 600,
-              border: tab === t.key ? '1px solid #7a4e0d' : '1px solid transparent',
+              border: 'none',
               cursor: 'pointer',
-              background: tab === t.key ? '#8b5e1a' : 'transparent',
-              color: tab === t.key ? '#fdf6e3' : '#7a6040',
-              boxShadow: tab === t.key ? '0 2px 6px rgba(139,94,26,0.3)' : 'none',
+              background: tab === t.key ? C.bronzeDark : 'transparent',
+              color: tab === t.key ? '#ffffff' : C.bronzeDark,
               transition: 'all 0.15s',
               fontFamily: 'inherit',
             }}

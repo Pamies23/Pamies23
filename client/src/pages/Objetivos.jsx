@@ -2,44 +2,57 @@ import React, { useState } from 'react';
 import { useApi, apiPost, apiPut, apiDelete } from '../hooks/useApi.js';
 import ProgressBar from '../components/ProgressBar.jsx';
 
-const pageStyle = { padding: '28px 32px', maxWidth: 1100 };
+const C = {
+  pageBg:     '#eddfc8',
+  cardBg:     '#ffffff',
+  border:     '#e5e0d6',
+  bronze:     '#c4a882',
+  bronzeDark: '#9a7040',
+  marble:     '#e5e0d6',
+  text:       '#1e1812',
+  textMuted:  '#a0907a',
+  textSub:    '#6b5a40',
+  gridLine:   '#e5e0d6',
+};
+
+const pageStyle = { padding: '28px 32px', maxWidth: 1100, background: C.pageBg, minHeight: '100vh' };
 
 const card = {
-  background: '#fffbf0',
+  background: C.cardBg,
   borderRadius: 8,
   padding: 20,
-  boxShadow: '0 2px 8px rgba(139,94,26,0.15)',
-  border: '1px solid #c9a055',
+  boxShadow: '0 1px 3px rgba(30,24,18,0.07), 0 4px 12px rgba(30,24,18,0.04)',
+  border: `1px solid ${C.border}`,
 };
 
 const inputStyle = {
   width: '100%',
-  padding: '9px 12px',
-  border: '1px solid #c9a055',
-  borderRadius: 8,
+  padding: '8px 12px',
+  border: `1px solid ${C.border}`,
+  borderRadius: 6,
   fontSize: 14,
   fontFamily: 'inherit',
   outline: 'none',
-  background: '#fdf6e3',
-  color: '#2a1a08',
+  background: '#ffffff',
+  color: C.text,
   boxSizing: 'border-box',
 };
 
 const labelStyle = {
   fontSize: 12,
   fontWeight: 600,
-  color: '#7a4e0d',
+  color: C.bronzeDark,
   marginBottom: 4,
   display: 'block',
   letterSpacing: '0.03em',
 };
 
 const btnPrimary = {
-  background: '#8b5e1a',
-  color: '#fdf6e3',
-  border: '1px solid #7a4e0d',
-  borderRadius: 8,
-  padding: '9px 18px',
+  background: C.bronzeDark,
+  color: '#ffffff',
+  border: 'none',
+  borderRadius: 6,
+  padding: '8px 16px',
   fontSize: 14,
   fontWeight: 600,
   cursor: 'pointer',
@@ -47,11 +60,11 @@ const btnPrimary = {
 };
 
 const btnSecondary = {
-  background: '#fdf6e3',
-  color: '#7a4e0d',
-  border: '1px solid #c9a055',
-  borderRadius: 8,
-  padding: '9px 18px',
+  background: '#f5f0e8',
+  color: C.bronzeDark,
+  border: `1px solid ${C.border}`,
+  borderRadius: 6,
+  padding: '8px 16px',
   fontSize: 14,
   fontWeight: 600,
   cursor: 'pointer',
@@ -60,7 +73,7 @@ const btnSecondary = {
 
 const btnDanger = {
   background: 'none',
-  color: '#b86b1a',
+  color: C.textMuted,
   border: 'none',
   cursor: 'pointer',
   fontSize: 18,
@@ -69,44 +82,39 @@ const btnDanger = {
 
 const btnGhost = {
   background: 'none',
-  color: '#7a6040',
+  color: C.textSub,
   border: 'none',
   cursor: 'pointer',
   fontSize: 13,
   padding: '4px 8px',
 };
 
+const badge = {
+  background: '#f5f0e8',
+  color: C.bronzeDark,
+  border: `1px solid ${C.border}`,
+  fontSize: 10,
+  fontWeight: 700,
+  padding: '2px 8px',
+  borderRadius: 99,
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+};
+
 const EMPTY_GOAL = { name: '', description: '', category: 'ejercicio', target_value: '', current_value: '', unit: '', deadline: '', status: 'activo' };
 const EMPTY_MILESTONE = { name: '', target_value: '' };
 
 function categoryBadge(cat) {
-  const map = {
-    ejercicio: { bg: 'rgba(139,94,26,0.15)', color: '#7a4e0d', label: 'Ejercicio' },
-    dieta: { bg: 'rgba(90,122,58,0.15)', color: '#3d5a28', label: 'Dieta' },
-    general: { bg: 'rgba(184,107,26,0.15)', color: '#8a4e10', label: 'General' },
-  };
-  const s = map[cat] || map.general;
+  const labels = { ejercicio: 'Ejercicio', dieta: 'Dieta', general: 'General' };
   return (
-    <span style={{
-      background: s.bg, color: s.color, fontSize: 11, fontWeight: 600,
-      padding: '2px 8px', borderRadius: 99, border: `1px solid ${s.color}44`,
-      letterSpacing: '0.03em',
-    }}>{s.label}</span>
+    <span style={badge}>{labels[cat] || cat}</span>
   );
 }
 
 function statusBadge(status) {
-  const map = {
-    activo: { bg: 'rgba(90,122,58,0.15)', color: '#3d5a28', label: 'Activo' },
-    completado: { bg: 'rgba(46,107,138,0.15)', color: '#1a4e6b', label: 'Completado' },
-    pausado: { bg: 'rgba(184,107,26,0.15)', color: '#8a4e10', label: 'Pausado' },
-  };
-  const s = map[status] || map.activo;
+  const labels = { activo: 'Activo', completado: 'Completado', pausado: 'Pausado' };
   return (
-    <span style={{
-      background: s.bg, color: s.color, fontSize: 11, fontWeight: 600,
-      padding: '2px 8px', borderRadius: 99, border: `1px solid ${s.color}44`,
-    }}>{s.label}</span>
+    <span style={badge}>{labels[status] || status}</span>
   );
 }
 
@@ -218,21 +226,21 @@ function MilestoneList({ goalId, onClose }) {
     <div style={{
       marginTop: 16,
       padding: 16,
-      background: '#fdf6e3',
+      background: '#faf6f0',
       borderRadius: 8,
-      border: '1px solid rgba(201,160,85,0.4)',
+      border: `1px solid ${C.border}`,
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <span style={{
           fontWeight: 700,
           fontSize: 14,
-          color: '#7a4e0d',
+          color: C.bronzeDark,
           fontFamily: "Georgia, 'Times New Roman', serif",
         }}>🏁 Hitos del objetivo</span>
-        <button style={{ ...btnGhost, color: '#7a6040' }} onClick={onClose}>✕ Cerrar</button>
+        <button style={{ ...btnGhost, color: C.textSub }} onClick={onClose}>✕ Cerrar</button>
       </div>
       {loading ? (
-        <div style={{ color: '#7a6040', fontSize: 13 }}>Cargando...</div>
+        <div style={{ color: C.textSub, fontSize: 13 }}>Cargando...</div>
       ) : (
         <>
           {milestones && milestones.length > 0 ? (
@@ -240,24 +248,25 @@ function MilestoneList({ goalId, onClose }) {
               {milestones.map(m => (
                 <div key={m.id} style={{
                   display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px',
-                  background: '#fffbf0', borderRadius: 8, border: '1px solid rgba(201,160,85,0.3)',
+                  background: '#faf6f0', borderRadius: 6, borderLeft: `3px solid ${C.bronze}`,
+                  border: `1px solid ${C.border}`, borderLeft: `3px solid ${C.bronze}`,
                 }}>
                   <input
                     type="checkbox"
                     checked={!!m.completed_at}
                     onChange={() => toggleMilestone(m.id)}
-                    style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#c9a055' }}
+                    style={{ width: 16, height: 16, cursor: 'pointer', accentColor: C.bronze }}
                   />
                   <span style={{
                     flex: 1, fontSize: 13,
-                    color: m.completed_at ? '#7a6040' : '#2a1a08',
+                    color: m.completed_at ? C.textMuted : C.text,
                     textDecoration: m.completed_at ? 'line-through' : 'none',
                   }}>{m.name}</span>
                   {m.target_value && (
-                    <span style={{ fontSize: 12, color: '#7a6040', marginRight: 8 }}>Meta: {m.target_value}</span>
+                    <span style={{ fontSize: 12, color: C.textSub, marginRight: 8 }}>Meta: {m.target_value}</span>
                   )}
                   {m.completed_at && (
-                    <span style={{ fontSize: 11, color: '#5a7a3a', marginRight: 4 }}>
+                    <span style={{ fontSize: 11, color: C.bronzeDark, marginRight: 4 }}>
                       ✓ {new Date(m.completed_at).toLocaleDateString('es-ES')}
                     </span>
                   )}
@@ -266,7 +275,7 @@ function MilestoneList({ goalId, onClose }) {
               ))}
             </div>
           ) : (
-            <div style={{ fontSize: 13, color: '#7a6040', marginBottom: 12 }}>Sin hitos aún. ¡Añade uno!</div>
+            <div style={{ fontSize: 13, color: C.textSub, marginBottom: 12 }}>Sin hitos aún. ¡Añade uno!</div>
           )}
           <form onSubmit={handleAdd} style={{ display: 'flex', gap: 8 }}>
             <input
@@ -334,15 +343,16 @@ export default function Objetivos() {
           <h1 style={{
             fontSize: 28,
             fontWeight: 800,
-            color: '#7a4e0d',
+            color: C.text,
             fontFamily: "Georgia, 'Times New Roman', serif",
             letterSpacing: '0.04em',
             margin: 0,
             paddingBottom: 8,
-            borderBottom: '2px solid rgba(201,160,85,0.5)',
+            borderBottom: `3px solid ${C.bronze}`,
             display: 'inline-block',
+            textTransform: 'uppercase',
           }}>Objetivos</h1>
-          <p style={{ color: '#7a6040', fontSize: 14, marginTop: 6 }}>Gestiona tus metas de fitness</p>
+          <p style={{ color: C.textSub, fontSize: 14, marginTop: 6 }}>Gestiona tus metas de fitness</p>
         </div>
         <button
           style={btnPrimary}
@@ -357,13 +367,13 @@ export default function Objetivos() {
         <div style={{
           ...card,
           marginBottom: 24,
-          borderTop: '3px solid #c9a055',
+          borderTop: `3px solid ${C.bronze}`,
         }}>
           <div style={{
             fontWeight: 700,
             fontSize: 16,
             marginBottom: 16,
-            color: '#7a4e0d',
+            color: C.bronzeDark,
             fontFamily: "Georgia, 'Times New Roman', serif",
           }}>
             {editGoal ? '✏️ Editar objetivo' : '🎯 Nuevo objetivo'}
@@ -388,13 +398,13 @@ export default function Objetivos() {
             key={f.key}
             style={{
               padding: '7px 16px',
-              borderRadius: 99,
+              borderRadius: 6,
               fontSize: 13,
               fontWeight: 600,
-              border: filter === f.key ? '1px solid #7a4e0d' : '1px solid #c9a055',
+              border: 'none',
               cursor: 'pointer',
-              background: filter === f.key ? '#8b5e1a' : '#fdf6e3',
-              color: filter === f.key ? '#fdf6e3' : '#7a4e0d',
+              background: filter === f.key ? C.bronzeDark : '#f5f0e8',
+              color: filter === f.key ? '#ffffff' : C.bronzeDark,
               transition: 'all 0.15s',
             }}
             onClick={() => setFilter(f.key)}
@@ -405,11 +415,11 @@ export default function Objetivos() {
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', color: '#7a6040', padding: 40, fontFamily: "Georgia, 'Times New Roman', serif" }}>
+        <div style={{ textAlign: 'center', color: C.textSub, padding: 40, fontFamily: "Georgia, 'Times New Roman', serif" }}>
           Cargando objetivos...
         </div>
       ) : filtered.length === 0 ? (
-        <div style={{ ...card, textAlign: 'center', color: '#7a6040', padding: 40 }}>
+        <div style={{ ...card, textAlign: 'center', color: C.textSub, padding: 40 }}>
           {filter === 'todos' ? 'No hay objetivos aún. ¡Crea uno!' : `No hay objetivos ${filter}s.`}
         </div>
       ) : (
@@ -418,16 +428,10 @@ export default function Objetivos() {
             const pct = goal.target_value > 0
               ? Math.min(100, Math.round((goal.current_value / goal.target_value) * 100))
               : 0;
-            const catBorderColors = {
-              ejercicio: '#8b5e1a',
-              dieta: '#5a7a3a',
-              general: '#b86b1a',
-            };
-            const borderColor = catBorderColors[goal.category] || '#c9a055';
             return (
               <div key={goal.id} style={{
                 ...card,
-                borderLeft: `4px solid ${borderColor}`,
+                borderLeft: `4px solid ${C.bronze}`,
               }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -435,19 +439,19 @@ export default function Objetivos() {
                       <span style={{
                         fontWeight: 700,
                         fontSize: 16,
-                        color: '#2a1a08',
+                        color: C.text,
                         fontFamily: "Georgia, 'Times New Roman', serif",
                       }}>{goal.name}</span>
                       {categoryBadge(goal.category)}
                       {statusBadge(goal.status)}
                     </div>
                     {goal.description && (
-                      <div style={{ fontSize: 13, color: '#7a6040', marginBottom: 10 }}>{goal.description}</div>
+                      <div style={{ fontSize: 13, color: C.textSub, marginBottom: 10 }}>{goal.description}</div>
                     )}
                     {goal.target_value && (
                       <div style={{ marginBottom: 10 }}>
                         <ProgressBar value={goal.current_value || 0} max={goal.target_value} showLabel />
-                        <div style={{ display: 'flex', gap: 16, marginTop: 6, fontSize: 12, color: '#7a6040' }}>
+                        <div style={{ display: 'flex', gap: 16, marginTop: 6, fontSize: 12, color: C.textSub }}>
                           <span>📊 {goal.current_value} / {goal.target_value} {goal.unit}</span>
                           {goal.deadline && (
                             <span>⏰ Límite: {new Date(goal.deadline).toLocaleDateString('es-ES')}</span>
