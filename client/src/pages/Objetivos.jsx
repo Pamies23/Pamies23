@@ -2,27 +2,58 @@ import React, { useState } from 'react';
 import { useApi, apiPost, apiPut, apiDelete } from '../hooks/useApi.js';
 import ProgressBar from '../components/ProgressBar.jsx';
 
-const pageStyle = { padding: '28px 32px', maxWidth: 1100 };
-const card = { background: '#ffffff', borderRadius: 12, padding: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' };
+const pageStyle = { padding: '28px 32px', maxWidth: 1100, background: '#0f0f1a', minHeight: '100vh' };
+
+const card = {
+  background: '#1a1a2e',
+  borderRadius: 14,
+  padding: 20,
+  border: '1px solid rgba(255,255,255,0.06)',
+  boxShadow: '0 0 20px rgba(124, 58, 237, 0.1), 0 4px 16px rgba(0,0,0,0.3)',
+};
 
 const inputStyle = {
-  width: '100%', padding: '9px 12px', border: '1px solid #e5e7eb', borderRadius: 8,
-  fontSize: 14, fontFamily: 'inherit', outline: 'none', background: '#fff', boxSizing: 'border-box',
+  width: '100%', padding: '10px 14px',
+  border: '1px solid rgba(124,58,237,0.25)',
+  borderRadius: 8,
+  fontSize: 14, fontFamily: 'inherit', outline: 'none',
+  background: '#12122a',
+  color: '#f1f5f9',
+  boxSizing: 'border-box',
+  transition: 'border-color 0.15s, box-shadow 0.15s',
 };
-const labelStyle = { fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4, display: 'block' };
+
+const labelStyle = {
+  fontSize: 12, fontWeight: 700, color: '#94a3b8', marginBottom: 6,
+  display: 'block', textTransform: 'uppercase', letterSpacing: '0.06em',
+};
+
 const btnPrimary = {
-  background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8,
-  padding: '9px 18px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+  background: 'linear-gradient(135deg, #7c3aed, #2563eb)',
+  color: '#fff', border: 'none', borderRadius: 8,
+  padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+  boxShadow: '0 0 16px rgba(124,58,237,0.35)',
+  transition: 'box-shadow 0.2s ease, transform 0.15s ease',
 };
+
 const btnSecondary = {
-  background: '#f3f4f6', color: '#374151', border: '1px solid #e5e7eb', borderRadius: 8,
-  padding: '9px 18px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+  background: 'rgba(255,255,255,0.05)',
+  color: '#94a3b8',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: 8,
+  padding: '10px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
 };
+
 const btnDanger = {
-  background: 'none', color: '#ef4444', border: 'none', cursor: 'pointer', fontSize: 13, padding: '4px 8px',
+  background: 'none', color: '#f87171', border: 'none', cursor: 'pointer',
+  fontSize: 13, padding: '4px 8px', borderRadius: 6,
+  transition: 'background 0.15s',
 };
+
 const btnGhost = {
-  background: 'none', color: '#6b7280', border: 'none', cursor: 'pointer', fontSize: 13, padding: '4px 8px',
+  background: 'none', color: '#64748b', border: 'none', cursor: 'pointer',
+  fontSize: 13, padding: '4px 8px', borderRadius: 6,
+  transition: 'color 0.15s',
 };
 
 const EMPTY_GOAL = { name: '', description: '', category: 'ejercicio', target_value: '', current_value: '', unit: '', deadline: '', status: 'activo' };
@@ -30,13 +61,17 @@ const EMPTY_MILESTONE = { name: '', target_value: '' };
 
 function categoryBadge(cat) {
   const map = {
-    ejercicio: { bg: '#dbeafe', color: '#1d4ed8', label: 'Ejercicio' },
-    dieta: { bg: '#d1fae5', color: '#065f46', label: 'Dieta' },
-    general: { bg: '#fef3c7', color: '#92400e', label: 'General' },
+    ejercicio: { bg: 'rgba(124,58,237,0.18)', color: '#a78bfa', border: 'rgba(124,58,237,0.35)', label: 'Ejercicio' },
+    dieta: { bg: 'rgba(16,185,129,0.15)', color: '#34d399', border: 'rgba(16,185,129,0.3)', label: 'Dieta' },
+    general: { bg: 'rgba(37,99,235,0.15)', color: '#60a5fa', border: 'rgba(37,99,235,0.3)', label: 'General' },
   };
   const s = map[cat] || map.general;
   return (
-    <span style={{ background: s.bg, color: s.color, fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 99 }}>
+    <span style={{
+      background: s.bg, color: s.color, fontSize: 11, fontWeight: 700,
+      padding: '3px 10px', borderRadius: 99, border: `1px solid ${s.border}`,
+      letterSpacing: '0.04em',
+    }}>
       {s.label}
     </span>
   );
@@ -44,17 +79,27 @@ function categoryBadge(cat) {
 
 function statusBadge(status) {
   const map = {
-    activo: { bg: '#d1fae5', color: '#065f46', label: 'Activo' },
-    completado: { bg: '#dbeafe', color: '#1d4ed8', label: 'Completado' },
-    pausado: { bg: '#fef3c7', color: '#92400e', label: 'Pausado' },
+    activo: { bg: 'rgba(16,185,129,0.15)', color: '#34d399', border: 'rgba(16,185,129,0.3)', label: 'Activo' },
+    completado: { bg: 'rgba(37,99,235,0.15)', color: '#60a5fa', border: 'rgba(37,99,235,0.3)', label: 'Completado' },
+    pausado: { bg: 'rgba(245,158,11,0.15)', color: '#fbbf24', border: 'rgba(245,158,11,0.3)', label: 'Pausado' },
   };
   const s = map[status] || map.activo;
   return (
-    <span style={{ background: s.bg, color: s.color, fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 99 }}>
+    <span style={{
+      background: s.bg, color: s.color, fontSize: 11, fontWeight: 700,
+      padding: '3px 10px', borderRadius: 99, border: `1px solid ${s.border}`,
+      letterSpacing: '0.04em',
+    }}>
       {s.label}
     </span>
   );
 }
+
+const categoryBorderColors = {
+  ejercicio: '#7c3aed',
+  dieta: '#10b981',
+  general: '#2563eb',
+};
 
 function GoalForm({ initial, onSave, onCancel }) {
   const [form, setForm] = useState(initial || EMPTY_GOAL);
@@ -76,7 +121,7 @@ function GoalForm({ initial, onSave, onCancel }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         <div style={{ gridColumn: '1 / -1' }}>
           <label style={labelStyle}>Nombre del objetivo *</label>
@@ -84,7 +129,7 @@ function GoalForm({ initial, onSave, onCancel }) {
         </div>
         <div style={{ gridColumn: '1 / -1' }}>
           <label style={labelStyle}>Descripción</label>
-          <textarea style={{ ...inputStyle, resize: 'vertical', minHeight: 60 }} value={form.description} onChange={e => set('description', e.target.value)} placeholder="Descripción opcional..." />
+          <textarea style={{ ...inputStyle, resize: 'vertical', minHeight: 64 }} value={form.description} onChange={e => set('description', e.target.value)} placeholder="Descripción opcional..." />
         </div>
         <div>
           <label style={labelStyle}>Categoría *</label>
@@ -161,32 +206,39 @@ function MilestoneList({ goalId, onClose }) {
   };
 
   return (
-    <div style={{ marginTop: 16, padding: 16, background: '#f8f9fa', borderRadius: 10, border: '1px solid #e5e7eb' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <span style={{ fontWeight: 700, fontSize: 14 }}>🏁 Hitos del objetivo</span>
-        <button style={btnGhost} onClick={onClose}>✕ Cerrar</button>
+    <div style={{
+      marginTop: 16, padding: 16,
+      background: 'rgba(124,58,237,0.06)',
+      borderRadius: 12,
+      border: '1px solid rgba(124,58,237,0.2)',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <span style={{ fontWeight: 700, fontSize: 14, color: '#f1f5f9' }}>🏁 Hitos del objetivo</span>
+        <button style={{ ...btnGhost, color: '#94a3b8', fontSize: 12 }} onClick={onClose}>✕ Cerrar</button>
       </div>
-      {loading ? <div style={{ color: '#9ca3af', fontSize: 13 }}>Cargando...</div> : (
+      {loading ? <div style={{ color: '#64748b', fontSize: 13 }}>Cargando...</div> : (
         <>
           {milestones && milestones.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
               {milestones.map(m => (
                 <div key={m.id} style={{
-                  display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px',
-                  background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb',
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+                  background: '#12122a', borderRadius: 8,
+                  border: m.completed_at ? '1px solid rgba(124,58,237,0.3)' : '1px solid rgba(255,255,255,0.06)',
                 }}>
                   <input
                     type="checkbox"
                     checked={!!m.completed_at}
                     onChange={() => toggleMilestone(m.id)}
-                    style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#2563eb' }}
+                    style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#7c3aed' }}
                   />
                   <span style={{
-                    flex: 1, fontSize: 13, color: m.completed_at ? '#9ca3af' : '#1a202c',
+                    flex: 1, fontSize: 13,
+                    color: m.completed_at ? '#64748b' : '#f1f5f9',
                     textDecoration: m.completed_at ? 'line-through' : 'none',
                   }}>{m.name}</span>
                   {m.target_value && (
-                    <span style={{ fontSize: 12, color: '#6b7280', marginRight: 8 }}>Meta: {m.target_value}</span>
+                    <span style={{ fontSize: 12, color: '#64748b', marginRight: 8 }}>Meta: {m.target_value}</span>
                   )}
                   {m.completed_at && (
                     <span style={{ fontSize: 11, color: '#10b981', marginRight: 4 }}>
@@ -198,7 +250,7 @@ function MilestoneList({ goalId, onClose }) {
               ))}
             </div>
           ) : (
-            <div style={{ fontSize: 13, color: '#9ca3af', marginBottom: 12 }}>Sin hitos aún. ¡Añade uno!</div>
+            <div style={{ fontSize: 13, color: '#64748b', marginBottom: 12 }}>Sin hitos aún. ¡Añade uno!</div>
           )}
           <form onSubmit={handleAdd} style={{ display: 'flex', gap: 8 }}>
             <input
@@ -216,7 +268,7 @@ function MilestoneList({ goalId, onClose }) {
               onChange={e => setForm(f => ({ ...f, target_value: e.target.value }))}
               placeholder="Valor"
             />
-            <button type="submit" style={{ ...btnPrimary, padding: '9px 14px' }} disabled={adding}>
+            <button type="submit" style={{ ...btnPrimary, padding: '10px 14px' }} disabled={adding}>
               {adding ? '...' : '+ Añadir'}
             </button>
           </form>
@@ -261,20 +313,32 @@ export default function Objetivos() {
 
   return (
     <div style={pageStyle}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: '#1a202c' }}>Objetivos</h1>
-          <p style={{ color: '#6b7280', fontSize: 14, marginTop: 4 }}>Gestiona tus metas de fitness</p>
+          <h1 style={{
+            fontSize: 28, fontWeight: 800,
+            background: 'linear-gradient(135deg, #7c3aed, #2563eb)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            letterSpacing: '-0.02em',
+          }}>Objetivos</h1>
+          <p style={{ color: '#64748b', fontSize: 14, marginTop: 6 }}>Gestiona tus metas de fitness</p>
         </div>
-        <button style={btnPrimary} onClick={() => { setShowForm(true); setEditGoal(null); }}>
+        <button
+          style={btnPrimary}
+          onClick={() => { setShowForm(true); setEditGoal(null); }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 0 24px rgba(124,58,237,0.5)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 0 16px rgba(124,58,237,0.35)'; }}
+        >
           + Nuevo objetivo
         </button>
       </div>
 
       {/* Modal form */}
       {(showForm || editGoal) && (
-        <div style={{ ...card, marginBottom: 24, border: '2px solid #dbeafe' }}>
-          <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 16, color: '#1a202c' }}>
+        <div style={{ ...card, marginBottom: 24, border: '1px solid rgba(124,58,237,0.35)' }}>
+          <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 18, color: '#f1f5f9' }}>
             {editGoal ? '✏️ Editar objetivo' : '🎯 Nuevo objetivo'}
           </div>
           <GoalForm
@@ -286,20 +350,24 @@ export default function Objetivos() {
       )}
 
       {/* Filter tabs */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
         {[
           { key: 'todos', label: 'Todos' },
-          { key: 'activo', label: 'Activos' },
-          { key: 'completado', label: 'Completados' },
-          { key: 'pausado', label: 'Pausados' },
+          { key: 'activo', label: '✅ Activos' },
+          { key: 'completado', label: '🏆 Completados' },
+          { key: 'pausado', label: '⏸ Pausados' },
         ].map(f => (
           <button
             key={f.key}
             style={{
-              padding: '7px 16px', borderRadius: 99, fontSize: 13, fontWeight: 600,
+              padding: '8px 18px', borderRadius: 99, fontSize: 13, fontWeight: 700,
               border: 'none', cursor: 'pointer',
-              background: filter === f.key ? '#2563eb' : '#f3f4f6',
-              color: filter === f.key ? '#fff' : '#374151',
+              transition: 'all 0.15s',
+              background: filter === f.key
+                ? 'linear-gradient(135deg, #7c3aed, #2563eb)'
+                : 'rgba(255,255,255,0.05)',
+              color: filter === f.key ? '#fff' : '#94a3b8',
+              boxShadow: filter === f.key ? '0 0 12px rgba(124,58,237,0.35)' : 'none',
             }}
             onClick={() => setFilter(f.key)}
           >
@@ -309,36 +377,41 @@ export default function Objetivos() {
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', color: '#9ca3af', padding: 40 }}>Cargando objetivos...</div>
+        <div style={{ textAlign: 'center', color: '#64748b', padding: 48, fontSize: 15 }}>Cargando objetivos...</div>
       ) : filtered.length === 0 ? (
-        <div style={{ ...card, textAlign: 'center', color: '#9ca3af', padding: 40 }}>
+        <div style={{ ...card, textAlign: 'center', color: '#475569', padding: 48, fontSize: 14 }}>
           {filter === 'todos' ? 'No hay objetivos aún. ¡Crea uno!' : `No hay objetivos ${filter}s.`}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {filtered.map(goal => {
-            const pct = goal.target_value > 0
-              ? Math.min(100, Math.round((goal.current_value / goal.target_value) * 100))
-              : 0;
+            const borderColor = categoryBorderColors[goal.category] || '#7c3aed';
             return (
-              <div key={goal.id} style={card}>
+              <div key={goal.id} style={{
+                ...card,
+                borderLeft: `4px solid ${borderColor}`,
+                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+              }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateX(2px)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateX(0)'; }}
+              >
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
-                      <span style={{ fontWeight: 700, fontSize: 16, color: '#1a202c' }}>{goal.name}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 8 }}>
+                      <span style={{ fontWeight: 800, fontSize: 16, color: '#f1f5f9' }}>{goal.name}</span>
                       {categoryBadge(goal.category)}
                       {statusBadge(goal.status)}
                     </div>
                     {goal.description && (
-                      <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 10 }}>{goal.description}</div>
+                      <div style={{ fontSize: 13, color: '#64748b', marginBottom: 12 }}>{goal.description}</div>
                     )}
                     {goal.target_value && (
-                      <div style={{ marginBottom: 10 }}>
+                      <div style={{ marginBottom: 8 }}>
                         <ProgressBar value={goal.current_value || 0} max={goal.target_value} showLabel />
-                        <div style={{ display: 'flex', gap: 16, marginTop: 6, fontSize: 12, color: '#6b7280' }}>
-                          <span>📊 {goal.current_value} / {goal.target_value} {goal.unit}</span>
+                        <div style={{ display: 'flex', gap: 16, marginTop: 8, fontSize: 12, color: '#64748b' }}>
+                          <span>📊 <span style={{ color: '#94a3b8' }}>{goal.current_value} / {goal.target_value} {goal.unit}</span></span>
                           {goal.deadline && (
-                            <span>⏰ Límite: {new Date(goal.deadline).toLocaleDateString('es-ES')}</span>
+                            <span>⏰ <span style={{ color: '#7c3aed' }}>Límite: {new Date(goal.deadline).toLocaleDateString('es-ES')}</span></span>
                           )}
                         </div>
                       </div>
@@ -356,7 +429,7 @@ export default function Objetivos() {
                       title="Editar"
                     >✏️</button>
                     <button
-                      style={{ ...btnGhost, fontSize: 14 }}
+                      style={{ ...btnGhost, fontSize: 16 }}
                       onClick={() => toggleStatus(goal)}
                       title={goal.status === 'activo' ? 'Pausar' : 'Activar'}
                     >{goal.status === 'activo' ? '⏸️' : '▶️'}</button>

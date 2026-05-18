@@ -1,0 +1,66 @@
+/* ===== FITTRACKER — "Colorido y Motivador" Global Theme ===== */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-base: #0f0f1a;
+  --bg-card: #1a1a2e;
+  --bg-card-hover: #1e1e35;
+  --bg-sidebar: #0d0d1f;
+  --bg-input: #12122a;
+  --bg-row-alt: #151525;
+
+  --accent-purple: #7c3aed;
+  --accent-purple-light: #9f67ff;
+  --accent-blue: #2563eb;
+  --accent-green: #10b981;
+  --accent-orange: #f59e0b;
+  --accent-pink: #ec4899;
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  --border-subtle: rgba(124, 58, 237, 0.2);
+  --border-card: rgba(255, 255, 255, 0.06);
+
+  --glow-purple: 0 0 20px rgba(124, 58, 237, 0.2);
+  --glow-purple-hover: 0 0 30px rgba(124, 58, 237, 0.35);
+  --glow-green: 0 0 16px rgba(16, 185, 129, 0.2);
+  --glow-pink: 0 0 16px rgba(236, 72, 153, 0.2);
+
+  --gradient-primary: linear-gradient(135deg, #7c3aed, #2563eb);
+  --gradient-header: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%);
+  --gradient-green: linear-gradient(90deg, #10b981, #059669);
+  --gradient-orange: linear-gradient(90deg, #f59e0b, #d97706);
+  --gradient-pink: linear-gradient(90deg, #ec4899, #be185d);
+  --gradient-bar: linear-gradient(90deg, #7c3aed, #2563eb);
+}
+
+html, body, #root {
+  height: 100%;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: rgba(124, 58, 237, 0.4); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(124, 58, 237, 0.65); }
+
+/* Input autofill override for dark theme */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #12122a inset !important;
+  -webkit-text-fill-color: #f1f5f9 !important;
+}

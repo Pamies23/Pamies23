@@ -12,14 +12,12 @@ const navItems = [
 export default function Sidebar({ open, onToggle }) {
   return (
     <>
-      {/* Mobile overlay */}
       {open && (
         <div
           onClick={onToggle}
           style={{
             display: 'none',
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 99,
-            '@media (max-width: 768px)': { display: 'block' },
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 99,
           }}
         />
       )}
@@ -27,8 +25,8 @@ export default function Sidebar({ open, onToggle }) {
         style={{
           width: open ? 240 : 64,
           minHeight: '100vh',
-          background: '#f8f9fa',
-          borderRight: '1px solid #e5e7eb',
+          background: '#0d0d1f',
+          borderRight: '1px solid rgba(124, 58, 237, 0.2)',
           display: 'flex',
           flexDirection: 'column',
           transition: 'width 0.2s ease',
@@ -39,12 +37,13 @@ export default function Sidebar({ open, onToggle }) {
           overflowY: 'auto',
           overflowX: 'hidden',
           zIndex: 100,
+          boxShadow: '4px 0 24px rgba(0, 0, 0, 0.4)',
         }}
       >
         {/* Header */}
         <div style={{
           padding: '16px 12px',
-          borderBottom: '1px solid #e5e7eb',
+          borderBottom: '1px solid rgba(124, 58, 237, 0.2)',
           display: 'flex',
           alignItems: 'center',
           gap: 12,
@@ -53,22 +52,34 @@ export default function Sidebar({ open, onToggle }) {
           <span style={{ fontSize: 24, flexShrink: 0 }}>🏋️</span>
           {open && (
             <div>
-              <div style={{ fontWeight: 700, fontSize: 15, color: '#1a202c' }}>FitTracker</div>
-              <div style={{ fontSize: 11, color: '#6b7280' }}>Tu progreso personal</div>
+              <div style={{
+                fontWeight: 800,
+                fontSize: 16,
+                background: 'linear-gradient(135deg, #7c3aed, #2563eb)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                letterSpacing: '-0.02em',
+              }}>
+                💪 FitTracker
+              </div>
+              <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>Tu progreso personal</div>
             </div>
           )}
           <button
             onClick={onToggle}
             style={{
               marginLeft: 'auto',
-              background: 'none',
-              border: 'none',
+              background: 'rgba(124, 58, 237, 0.12)',
+              border: '1px solid rgba(124, 58, 237, 0.25)',
               cursor: 'pointer',
-              fontSize: 16,
-              color: '#6b7280',
-              padding: '4px',
-              borderRadius: 4,
+              fontSize: 13,
+              color: '#9f67ff',
+              padding: '5px 7px',
+              borderRadius: 6,
               flexShrink: 0,
+              lineHeight: 1,
+              transition: 'background 0.15s',
             }}
             title={open ? 'Cerrar menú' : 'Abrir menú'}
           >
@@ -87,17 +98,21 @@ export default function Sidebar({ open, onToggle }) {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 12,
-                padding: '10px 12px',
-                borderRadius: 8,
+                padding: '11px 12px',
+                borderRadius: 10,
                 textDecoration: 'none',
-                color: isActive ? '#2563eb' : '#374151',
-                background: isActive ? '#dbeafe' : 'transparent',
-                fontWeight: isActive ? 600 : 400,
+                color: isActive ? '#f1f5f9' : '#94a3b8',
+                background: isActive
+                  ? 'linear-gradient(135deg, rgba(124,58,237,0.35), rgba(37,99,235,0.25))'
+                  : 'transparent',
+                fontWeight: isActive ? 700 : 400,
                 fontSize: 14,
-                marginBottom: 2,
-                transition: 'background 0.15s',
+                marginBottom: 4,
+                transition: 'all 0.15s',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
+                borderLeft: isActive ? '3px solid #7c3aed' : '3px solid transparent',
+                boxShadow: isActive ? '0 0 12px rgba(124,58,237,0.2)' : 'none',
               })}
             >
               <span style={{ fontSize: 18, flexShrink: 0 }}>{item.icon}</span>
@@ -108,8 +123,11 @@ export default function Sidebar({ open, onToggle }) {
 
         {/* Footer */}
         {open && (
-          <div style={{ padding: '12px 16px', borderTop: '1px solid #e5e7eb' }}>
-            <div style={{ fontSize: 11, color: '#9ca3af' }}>
+          <div style={{
+            padding: '12px 16px',
+            borderTop: '1px solid rgba(124, 58, 237, 0.15)',
+          }}>
+            <div style={{ fontSize: 11, color: '#475569' }}>
               © 2025 FitTracker
             </div>
           </div>

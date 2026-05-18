@@ -11,12 +11,13 @@ const styles = {
   app: {
     display: 'flex',
     minHeight: '100vh',
-    background: '#f0f4f8',
+    background: '#0f0f1a',
   },
   main: {
     flex: 1,
     overflow: 'auto',
     minWidth: 0,
+    background: '#0f0f1a',
   },
 };
 
