@@ -1,10 +1,11 @@
 import React from 'react';
 
-export default function ProgressBar({ value, max, color = '#c9a055', height = 8, showLabel = false }) {
+// Track = marble stone (#e5e0d6), fill = sandy bronze (#c4a882 → #9a7040)
+export default function ProgressBar({ value, max, height = 8, showLabel = false }) {
   const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
-  const fillGradient = pct >= 100
-    ? 'linear-gradient(90deg, #5a7a3a, #3d5a28)'
-    : `linear-gradient(90deg, #c9a055, #8b5e1a)`;
+  const fill = pct >= 100
+    ? 'linear-gradient(90deg, #a07848, #7a5830)'
+    : 'linear-gradient(90deg, #c4a882, #9a7040)';
 
   return (
     <div>
@@ -13,7 +14,7 @@ export default function ProgressBar({ value, max, color = '#c9a055', height = 8,
           display: 'flex',
           justifyContent: 'space-between',
           fontSize: 12,
-          color: '#7a4e0d',
+          color: '#5a4020',
           marginBottom: 4,
           fontWeight: 500,
         }}>
@@ -24,17 +25,16 @@ export default function ProgressBar({ value, max, color = '#c9a055', height = 8,
       <div style={{
         width: '100%',
         height,
-        background: '#e8d5a3',
+        background: '#e5e0d6',
         borderRadius: height,
         overflow: 'hidden',
-        border: '1px solid rgba(201,160,85,0.3)',
       }}>
         <div style={{
           width: `${pct}%`,
           height: '100%',
-          background: fillGradient,
+          background: fill,
           borderRadius: height,
-          transition: 'width 0.3s ease',
+          transition: 'width 0.4s ease',
         }} />
       </div>
     </div>

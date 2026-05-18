@@ -17,16 +17,16 @@ const C = {
   sandyDark:   '#8a6a3a',
   sandyLight:  '#d4b896',
   sandyFaint:  'rgba(184,149,106,0.12)',
-  blue1:       '#0077e6',   // vivid electric blue
-  blue2:       '#00aaff',   // bright sky blue
-  green1:      '#00b84a',   // vivid grass green
-  green2:      '#22dd77',   // bright lime green
-  teal:        '#00c4aa',   // Mediterranean teal
-  terracotta:  '#e05520',   // bright terracotta
+  bronze:      '#c4a882',   // sandy bronze — sidebar tone
+  bronzeDark:  '#9a7040',   // deeper bronze
+  bronzeDeep:  '#7a5830',   // dark bronze
+  marble:      '#e5e0d6',   // cool marble stone (empty/track)
+  marbleLight: '#f0ece6',   // lightest marble
+  terracotta:  '#c47850',   // muted warm terracotta
   textPrimary: '#1e1812',
   textSecondary:'#6b5a40',
   textMuted:   '#a0907a',
-  gridLine:    'rgba(0,0,0,0.05)',
+  gridLine:    '#e5e0d6',
 };
 
 const card = {
@@ -101,9 +101,9 @@ function StatBox({ label, value, unit, sub, accent = C.sandy }) {
 }
 
 const streakMeta = {
-  entrenamiento: { color: C.blue1,  label: '⚔️ Entrenamiento' },
-  dieta:         { color: C.green1, label: '🌿 Dieta' },
-  agua:          { color: C.teal,   label: '🌊 Hidratación' },
+  entrenamiento: { color: C.bronzeDark, label: '⚔️ Entrenamiento' },
+  dieta:         { color: C.bronze,     label: '🌿 Dieta' },
+  agua:          { color: C.terracotta, label: '🌊 Hidratación' },
 };
 
 export default function Progreso() {
@@ -193,15 +193,15 @@ export default function Progreso() {
             marginBottom: 28,
           }}>
             <StatBox label="Promedio calorías" value={avgCalories} unit="kcal" sub="Últimas 4 semanas" accent={C.terracotta} />
-            <StatBox label="Entrenos / semana"  value={avgWorkoutsPerWeek} sub="Media último mes"   accent={C.blue1} />
-            <StatBox label="Entrenos este mes"  value={totalWorkoutsMonth} sub="Últimos 30 días"    accent={C.green1} />
+            <StatBox label="Entrenos / semana"  value={avgWorkoutsPerWeek} sub="Media último mes"   accent={C.bronze} />
+            <StatBox label="Entrenos este mes"  value={totalWorkoutsMonth} sub="Últimos 30 días"    accent={C.bronzeDark} />
             {weightChange !== null && (
               <StatBox
                 label="Cambio de peso"
                 value={`${weightChange > 0 ? '+' : ''}${weightChange}`}
                 unit="kg"
                 sub="Últimos 90 días"
-                accent={parseFloat(weightChange) <= 0 ? C.green1 : C.terracotta}
+                accent={parseFloat(weightChange) <= 0 ? C.bronzeDark : C.terracotta}
               />
             )}
           </div>
@@ -214,8 +214,8 @@ export default function Progreso() {
                 <AreaChart data={weightData} margin={{ top: 8, right: 16, left: -10, bottom: 0 }}>
                   <defs>
                     <linearGradient id="weightGradAlex2" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor={C.blue1} stopOpacity={0.25} />
-                      <stop offset="95%" stopColor={C.blue1} stopOpacity={0.02} />
+                      <stop offset="5%"  stopColor={C.bronze} stopOpacity={0.40} />
+                      <stop offset="95%" stopColor={C.marble} stopOpacity={0.10} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke={C.gridLine} />
@@ -236,10 +236,10 @@ export default function Progreso() {
                   />
                   <Area
                     type="monotone" dataKey="weight_kg"
-                    stroke={C.blue1} strokeWidth={2.5}
+                    stroke={C.bronzeDark} strokeWidth={2.5}
                     fill="url(#weightGradAlex2)"
-                    dot={{ r: 2.5, fill: C.blue1, strokeWidth: 0 }}
-                    activeDot={{ r: 5, fill: C.blue1, stroke: C.cardBg, strokeWidth: 2 }}
+                    dot={{ r: 2.5, fill: C.bronzeDark, strokeWidth: 0 }}
+                    activeDot={{ r: 5, fill: C.bronze, stroke: C.cardBg, strokeWidth: 2 }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -263,7 +263,7 @@ export default function Progreso() {
                     <XAxis dataKey="date" tickFormatter={formatDate} tick={{ fontSize: 10, fill: C.textMuted }} axisLine={{ stroke: C.border }} tickLine={false} interval={3} />
                     <YAxis tick={{ fontSize: 10, fill: C.textMuted }} axisLine={false} tickLine={false} />
                     <Tooltip formatter={(v) => [`${v} kcal`, 'Calorías']} labelFormatter={l => `Fecha: ${l}`} contentStyle={tooltipStyle} />
-                    <Bar dataKey="calories" fill={C.terracotta} radius={[3, 3, 0, 0]} />
+                    <Bar dataKey="calories" fill={C.bronze} radius={[3, 3, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -283,7 +283,7 @@ export default function Progreso() {
                     <XAxis dataKey="week" tick={{ fontSize: 10, fill: C.textMuted }} axisLine={{ stroke: C.border }} tickLine={false} />
                     <YAxis tick={{ fontSize: 10, fill: C.textMuted }} axisLine={false} tickLine={false} allowDecimals={false} />
                     <Tooltip formatter={(v) => [v, 'Entrenamientos']} contentStyle={tooltipStyle} />
-                    <Bar dataKey="count" fill={C.green1} radius={[3, 3, 0, 0]} />
+                    <Bar dataKey="count" fill={C.bronzeDark} radius={[3, 3, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
