@@ -1,11 +1,10 @@
-const Database = require('better-sqlite3');
+const { DatabaseSync } = require('node:sqlite');
 const path = require('path');
 
-const db = new Database(path.join(__dirname, 'fitness.db'));
+const db = new DatabaseSync(path.join(__dirname, 'fitness.db'));
 
-// Enable WAL mode for better performance
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+db.exec('PRAGMA journal_mode = WAL');
+db.exec('PRAGMA foreign_keys = ON');
 
 // Create tables
 db.exec(`
@@ -97,7 +96,6 @@ function seedData() {
 
   console.log('Seeding sample data...');
 
-  // Goals
   const insertGoal = db.prepare(`
     INSERT INTO goals (name, description, category, target_value, current_value, unit, deadline, status)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -106,9 +104,8 @@ function seedData() {
   const goal2 = insertGoal.run('Perder 5kg', 'Reducir peso corporal de forma saludable', 'dieta', 5, 2.5, 'kg', '2025-07-31', 'activo');
   const goal3 = insertGoal.run('Beber 2L de agua al día', 'Mantener hidratación diaria adecuada', 'dieta', 2000, 1800, 'ml', null, 'activo');
   const goal4 = insertGoal.run('Press banca 80kg', 'Aumentar fuerza en press de banca', 'ejercicio', 80, 65, 'kg', '2025-08-31', 'activo');
-  const goal5 = insertGoal.run('Meditar 30 días seguidos', 'Establecer hábito de meditación diaria', 'general', 30, 30, 'días', '2025-04-30', 'completado');
+  insertGoal.run('Meditar 30 días seguidos', 'Establecer hábito de meditación diaria', 'general', 30, 30, 'días', '2025-04-30', 'completado');
 
-  // Milestones
   const insertMilestone = db.prepare(`
     INSERT INTO milestones (goal_id, name, target_value, completed_at)
     VALUES (?, ?, ?, ?)
@@ -121,7 +118,6 @@ function seedData() {
   insertMilestone.run(goal2.lastInsertRowid, 'Perder 2.5kg', 2.5, '2025-04-01T10:00:00');
   insertMilestone.run(goal2.lastInsertRowid, 'Perder 5kg', 5, null);
 
-  // Workouts - last 30 days
   const insertWorkout = db.prepare(`
     INSERT INTO workouts (date, type, duration_min, intensity, notes)
     VALUES (?, ?, ?, ?, ?)
@@ -140,7 +136,6 @@ function seedData() {
     insertWorkout.run(dateStr, type, duration, intensity, notes);
   }
 
-  // Body metrics - last 60 days
   const insertMetrics = db.prepare(`
     INSERT INTO body_metrics (date, weight_kg, waist_cm, hip_cm, chest_cm, notes)
     VALUES (?, ?, ?, ?, ?, ?)
@@ -154,7 +149,6 @@ function seedData() {
     insertMetrics.run(dateStr, parseFloat(weight.toFixed(1)), 86 - i * 0.05, 98.0, 95.0, null);
   }
 
-  // Personal records
   const insertPR = db.prepare(`
     INSERT INTO personal_records (exercise_name, value, unit, date, notes)
     VALUES (?, ?, ?, ?, ?)
@@ -165,7 +159,6 @@ function seedData() {
   insertPR.run('Carrera 5km', 28, 'min', '2025-03-25', 'Pista municipal');
   insertPR.run('Dominadas', 12, 'repeticiones', '2025-04-18', 'Sin ayuda');
 
-  // Diet logs - last 14 days
   const insertDietLog = db.prepare(`
     INSERT INTO diet_logs (date, calories, water_ml, notes)
     VALUES (?, ?, ?, ?)
@@ -192,7 +185,6 @@ function seedData() {
     }
   }
 
-  // Streaks
   const insertStreak = db.prepare(`
     INSERT INTO streaks (habit_type, current_streak, longest_streak, last_recorded_date)
     VALUES (?, ?, ?, ?)
