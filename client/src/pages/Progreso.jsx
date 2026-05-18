@@ -283,7 +283,7 @@ export default function Progreso() {
                     <XAxis dataKey="week" tick={{ fontSize: 10, fill: C.textMuted }} axisLine={{ stroke: C.border }} tickLine={false} />
                     <YAxis tick={{ fontSize: 10, fill: C.textMuted }} axisLine={false} tickLine={false} allowDecimals={false} />
                     <Tooltip formatter={(v) => [v, 'Entrenamientos']} contentStyle={tooltipStyle} />
-                    <Bar dataKey="count" fill={C.bronzeDark} radius={[3, 3, 0, 0]} />
+                    <Bar dataKey="count" fill={C.bronze} radius={[3, 3, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (

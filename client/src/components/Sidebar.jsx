@@ -27,8 +27,8 @@ export default function Sidebar({ open, onToggle }) {
         style={{
           width: open ? 240 : 64,
           minHeight: '100vh',
-          background: '#c4a882',
-          borderRight: '1px solid #b09060',
+          background: '#ffffff',
+          borderRight: '1px solid #e5e0d6',
           display: 'flex',
           flexDirection: 'column',
           transition: 'width 0.2s ease',
@@ -39,7 +39,7 @@ export default function Sidebar({ open, onToggle }) {
           overflowY: 'auto',
           overflowX: 'hidden',
           zIndex: 100,
-          boxShadow: '2px 0 8px rgba(120,80,30,0.15)',
+          boxShadow: '2px 0 8px rgba(120,80,30,0.08)',
         }}
       >
         {/* Header */}
@@ -58,11 +58,11 @@ export default function Sidebar({ open, onToggle }) {
               <div style={{
                 fontWeight: 700,
                 fontSize: 16,
-                color: '#3d2a0e',
+                color: '#5a4020',
                 fontFamily: "Georgia, 'Times New Roman', serif",
                 letterSpacing: '0.04em',
               }}>FitTracker</div>
-              <div style={{ fontSize: 11, color: 'rgba(80,50,10,0.55)', letterSpacing: '0.06em' }}>Tu progreso personal</div>
+              <div style={{ fontSize: 11, color: 'rgba(90,64,32,0.5)', letterSpacing: '0.06em' }}>Tu progreso personal</div>
             </div>
           )}
           <button
@@ -73,7 +73,7 @@ export default function Sidebar({ open, onToggle }) {
               border: 'none',
               cursor: 'pointer',
               fontSize: 14,
-              color: '#5a3e1e',
+              color: '#9a7848',
               padding: '4px',
               borderRadius: 4,
               flexShrink: 0,
@@ -99,15 +99,15 @@ export default function Sidebar({ open, onToggle }) {
                 padding: '10px 12px',
                 borderRadius: 6,
                 textDecoration: 'none',
-                color: isActive ? '#3d2a0e' : '#5a3e1e',
-                background: isActive ? 'rgba(80,50,10,0.15)' : 'transparent',
+                color: isActive ? '#5a4020' : '#9a7848',
+                background: isActive ? '#eddfc8' : 'transparent',
                 fontWeight: isActive ? 600 : 400,
                 fontSize: 14,
                 marginBottom: 2,
                 transition: 'all 0.15s',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
-                borderLeft: isActive ? '3px solid #3d2a0e' : '3px solid transparent',
+                borderLeft: isActive ? '3px solid #5a4020' : '3px solid transparent',
                 paddingLeft: isActive ? '9px' : '12px',
               })}
             >
@@ -121,7 +121,7 @@ export default function Sidebar({ open, onToggle }) {
         {open && (
           <div style={{
             padding: '12px 16px',
-            borderTop: '1px solid rgba(80,50,10,0.2)',
+            borderTop: '1px solid rgba(180,140,90,0.25)',
             background: 'rgba(0,0,0,0.15)',
           }}>
             <div style={{ fontSize: 11, color: 'rgba(80,50,10,0.4)', letterSpacing: '0.05em' }}>
