@@ -9,9 +9,9 @@ import {
 // Background: warm dirty white. Sidebar/structural: sandy bronze.
 // Charts/accents: vivid Mediterranean — sea blue + vegetation green.
 const C = {
-  pageBg:      '#f8f5ee',   // dirty white, warm parchment
-  cardBg:      '#fefcf6',   // ivory white
-  cardBgAlt:   '#f5f1e8',   // slightly deeper off-white
+  pageBg:      '#ffffff',
+  cardBg:      '#ffffff',
+  cardBgAlt:   '#f9f9f7',
   border:      '#e0d8c8',   // warm stone border
   sandy:       '#b8956a',   // the screenshot color — sandy bronze leather
   sandyDark:   '#8a6a3a',   // deeper sandy bronze
@@ -154,7 +154,7 @@ export default function Progreso() {
     : null;
 
   return (
-    <div style={{ padding: '28px 32px', maxWidth: 1200, background: C.pageBg, minHeight: '100vh' }}>
+    <div style={{ padding: '28px 32px', maxWidth: 1200 }}>
 
       {/* Header */}
       <div style={{ marginBottom: 32 }}>
