@@ -2,35 +2,57 @@ import React from 'react';
 import { useApi } from '../hooks/useApi.js';
 import {
   LineChart, Line, BarChart, Bar, AreaChart, Area,
-  XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
+  XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
 
-const pageStyle = { padding: '28px 32px', maxWidth: 1200 };
+// Alexander (2004) palette — cool marble, Macedonian purple, stone
+const C = {
+  pageBg:       '#ededea',       // cool limestone floor
+  marble:       '#f8f7f5',       // white marble
+  marbleDeep:   '#eeede9',       // veined marble
+  border:       '#cbc8c0',       // stone grout
+  borderAccent: '#9188a0',       // muted purple-stone
+  purple:       '#4a3060',       // Macedonian royal purple
+  purpleLight:  '#6b5280',       // lighter purple
+  purpleFaint:  'rgba(74,48,96,0.08)',
+  slate:        '#3a3848',       // dark stone/slate
+  stoneGray:    '#7a7870',       // weathered stone
+  stoneLight:   '#a09890',       // pale stone
+  textPrimary:  '#1c1c24',       // dark ink on marble
+  textSecondary:'#6b6860',       // faded inscription
+  olive:        '#4a6040',       // macedonian olive
+  sienna:       '#8a5038',       // terracotta
+  blue:         '#2e5070',       // aegean sea
+  gridLine:     'rgba(74,48,96,0.07)',
+};
 
 const card = {
-  background: '#fffbf0',
-  borderRadius: 8,
+  background: C.marble,
+  borderRadius: 6,
   padding: 24,
-  boxShadow: '0 2px 8px rgba(139,94,26,0.15)',
-  border: '1px solid #c9a055',
+  boxShadow: '0 1px 4px rgba(28,28,36,0.08), 0 4px 16px rgba(28,28,36,0.04)',
+  border: `1px solid ${C.border}`,
 };
 
 const tooltipStyle = {
-  background: '#fffbf0',
-  border: '1px solid #c9a055',
-  borderRadius: 6,
+  background: C.marble,
+  border: `1px solid ${C.borderAccent}`,
+  borderRadius: 4,
   fontSize: 12,
-  color: '#2a1a08',
-  boxShadow: '0 2px 8px rgba(139,94,26,0.2)',
+  color: C.textPrimary,
+  boxShadow: '0 2px 8px rgba(28,28,36,0.12)',
 };
 
 const cardTitle = {
   fontWeight: 700,
-  fontSize: 16,
+  fontSize: 15,
   marginBottom: 20,
-  color: '#7a4e0d',
+  color: C.purple,
   fontFamily: "Georgia, 'Times New Roman', serif",
-  letterSpacing: '0.03em',
+  letterSpacing: '0.04em',
+  textTransform: 'uppercase',
+  borderBottom: `1px solid ${C.border}`,
+  paddingBottom: 10,
 };
 
 function formatDate(dateStr) {
@@ -39,52 +61,65 @@ function formatDate(dateStr) {
   return `${d.getDate()}/${d.getMonth() + 1}`;
 }
 
-function StatBox({ label, value, unit, sub, color = '#8b5e1a', accentColor }) {
+function StatBox({ label, value, unit, sub, color = C.purple, accentColor }) {
+  const accent = accentColor || color;
   return (
     <div style={{
-      background: '#fffbf0',
-      borderRadius: 8,
+      background: C.marble,
+      borderRadius: 6,
       padding: '20px 24px',
-      boxShadow: '0 2px 8px rgba(139,94,26,0.12)',
-      border: '1px solid #c9a055',
-      borderTop: `3px solid ${accentColor || color}`,
+      boxShadow: '0 1px 4px rgba(28,28,36,0.08)',
+      border: `1px solid ${C.border}`,
+      borderLeft: `3px solid ${accent}`,
       textAlign: 'center',
+      position: 'relative',
+      overflow: 'hidden',
     }}>
       <div style={{
-        fontSize: 11,
+        position: 'absolute', top: 0, right: 0, width: 60, height: 60,
+        background: `radial-gradient(circle at top right, ${accent}18, transparent 70%)`,
+      }} />
+      <div style={{
+        fontSize: 10,
         fontWeight: 700,
-        color: '#7a6040',
-        letterSpacing: '0.08em',
-        marginBottom: 8,
+        color: C.stoneGray,
+        letterSpacing: '0.1em',
+        marginBottom: 10,
         textTransform: 'uppercase',
       }}>
         {label}
       </div>
       <div style={{
-        fontSize: 32,
+        fontSize: 34,
         fontWeight: 800,
-        color,
-        fontFamily: "Georgia, 'Times New Roman', serif",
+        color: accent,
+        lineHeight: 1,
+        fontVariantNumeric: 'tabular-nums',
       }}>
         {value}
         {unit && (
-          <span style={{ fontSize: 16, fontWeight: 500, color: '#7a6040', marginLeft: 4 }}>{unit}</span>
+          <span style={{ fontSize: 14, fontWeight: 500, color: C.stoneGray, marginLeft: 4 }}>{unit}</span>
         )}
       </div>
-      {sub && <div style={{ fontSize: 12, color: '#7a6040', marginTop: 4 }}>{sub}</div>}
+      {sub && <div style={{ fontSize: 11, color: C.stoneLight, marginTop: 6 }}>{sub}</div>}
     </div>
   );
 }
 
+const streakAccents = {
+  entrenamiento: { color: C.purple,  label: '⚔️ Entrenamiento' },
+  dieta:         { color: C.olive,   label: '🌿 Dieta' },
+  agua:          { color: C.blue,    label: '🌊 Hidratación' },
+};
+
 export default function Progreso() {
-  const { data: metrics, loading: metricsLoading } = useApi('/api/body-metrics');
-  const { data: dietLogs, loading: dietLoading } = useApi('/api/diet-logs');
-  const { data: workouts, loading: workoutsLoading } = useApi('/api/workouts');
-  const { data: streaks, loading: streaksLoading } = useApi('/api/streaks');
+  const { data: metrics,  loading: metricsLoading }  = useApi('/api/body-metrics');
+  const { data: dietLogs, loading: dietLoading }      = useApi('/api/diet-logs');
+  const { data: workouts, loading: workoutsLoading }  = useApi('/api/workouts');
+  const { data: streaks,  loading: streaksLoading }   = useApi('/api/streaks');
 
   const loading = metricsLoading || dietLoading || workoutsLoading || streaksLoading;
 
-  // Weight last 90 days
   const ninetyDaysAgo = new Date();
   ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
   const weightData = metrics
@@ -93,7 +128,6 @@ export default function Progreso() {
         .sort((a, b) => a.date.localeCompare(b.date))
     : [];
 
-  // Calories last 28 days (4 weeks)
   const twentyEightDaysAgo = new Date();
   twentyEightDaysAgo.setDate(twentyEightDaysAgo.getDate() - 28);
   const caloriesData = dietLogs
@@ -102,7 +136,6 @@ export default function Progreso() {
         .sort((a, b) => a.date.localeCompare(b.date))
     : [];
 
-  // Workouts per week (last 8 weeks)
   const workoutsPerWeek = [];
   if (workouts) {
     for (let w = 7; w >= 0; w--) {
@@ -114,14 +147,12 @@ export default function Progreso() {
         const d = new Date(wo.date);
         return d >= weekStart && d < weekEnd;
       }).length;
-      const label = `Sem ${8 - w}`;
-      workoutsPerWeek.push({ week: label, count });
+      workoutsPerWeek.push({ week: `Sem ${8 - w}`, count });
     }
   }
 
-  // Stats
   const avgCalories = caloriesData.length > 0
-    ? Math.round(caloriesData.reduce((sum, d) => sum + (d.calories || 0), 0) / caloriesData.length)
+    ? Math.round(caloriesData.reduce((s, d) => s + (d.calories || 0), 0) / caloriesData.length)
     : 0;
 
   const totalWorkoutsMonth = workouts
@@ -139,57 +170,64 @@ export default function Progreso() {
     ? (weightData[weightData.length - 1].weight_kg - weightData[0].weight_kg).toFixed(1)
     : null;
 
-  const streakLabels = { entrenamiento: '💪 Entrenamiento', dieta: '🥗 Dieta', agua: '💧 Hidratación' };
-
   return (
-    <div style={pageStyle}>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{
-          fontSize: 28,
-          fontWeight: 800,
-          color: '#7a4e0d',
-          fontFamily: "Georgia, 'Times New Roman', serif",
-          letterSpacing: '0.04em',
-          margin: 0,
-          paddingBottom: 8,
-          borderBottom: '2px solid rgba(201,160,85,0.5)',
-          display: 'inline-block',
-        }}>Progreso</h1>
-        <p style={{ color: '#7a6040', fontSize: 14, marginTop: 6 }}>Analiza tu evolución a largo plazo</p>
+    <div style={{ padding: '28px 32px', maxWidth: 1200, background: C.pageBg, minHeight: '100vh' }}>
+
+      {/* Header */}
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 4 }}>
+          <h1 style={{
+            fontSize: 26,
+            fontWeight: 800,
+            color: C.slate,
+            fontFamily: "Georgia, 'Times New Roman', serif",
+            letterSpacing: '0.06em',
+            margin: 0,
+            textTransform: 'uppercase',
+          }}>
+            Progreso
+          </h1>
+          <div style={{ height: 1, flex: 1, background: `linear-gradient(to right, ${C.purple}, transparent)` }} />
+        </div>
+        <p style={{ color: C.stoneGray, fontSize: 13, margin: 0, letterSpacing: '0.02em' }}>
+          Evolución y estadísticas a largo plazo
+        </p>
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', color: '#7a6040', padding: 60 }}>
-          <div style={{ fontSize: 32, marginBottom: 8 }}>⏳</div>
-          <div style={{ fontFamily: "Georgia, 'Times New Roman', serif", color: '#8b5e1a' }}>
-            Cargando estadísticas...
+        <div style={{ textAlign: 'center', color: C.stoneGray, padding: 80 }}>
+          <div style={{ fontSize: 28, marginBottom: 12, color: C.purple }}>◈</div>
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 14, letterSpacing: '0.06em' }}>
+            CARGANDO...
           </div>
         </div>
       ) : (
         <>
-          {/* Summary stats */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 32 }}>
+          {/* Stats grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+            gap: 16,
+            marginBottom: 28,
+          }}>
             <StatBox
               label="Promedio calorías"
               value={avgCalories}
               unit="kcal"
               sub="Últimas 4 semanas"
-              color="#b86b1a"
-              accentColor="#b86b1a"
+              accentColor={C.sienna}
             />
             <StatBox
               label="Entrenos / semana"
               value={avgWorkoutsPerWeek}
               sub="Media último mes"
-              color="#8b5e1a"
-              accentColor="#8b5e1a"
+              accentColor={C.purple}
             />
             <StatBox
-              label="Total entrenos (mes)"
+              label="Entrenos este mes"
               value={totalWorkoutsMonth}
               sub="Últimos 30 días"
-              color="#c9a055"
-              accentColor="#c9a055"
+              accentColor={C.purpleLight}
             />
             {weightChange !== null && (
               <StatBox
@@ -197,32 +235,38 @@ export default function Progreso() {
                 value={`${weightChange > 0 ? '+' : ''}${weightChange}`}
                 unit="kg"
                 sub="Últimos 90 días"
-                color={parseFloat(weightChange) <= 0 ? '#5a7a3a' : '#b86b1a'}
-                accentColor={parseFloat(weightChange) <= 0 ? '#5a7a3a' : '#b86b1a'}
+                accentColor={parseFloat(weightChange) <= 0 ? C.olive : C.sienna}
               />
             )}
           </div>
 
-          {/* Weight chart - 90 days */}
-          <div style={{ ...card, marginBottom: 24 }}>
-            <div style={cardTitle}>⚖️ Evolución del peso — últimos 90 días</div>
+          {/* Weight chart */}
+          <div style={{ ...card, marginBottom: 20 }}>
+            <div style={cardTitle}>⚖ Peso corporal — 90 días</div>
             {weightData.length > 1 ? (
               <ResponsiveContainer width="100%" height={280}>
                 <AreaChart data={weightData} margin={{ top: 8, right: 16, left: -10, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="weightGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#c9a055" stopOpacity={0.25} />
-                      <stop offset="95%" stopColor="#c9a055" stopOpacity={0.02} />
+                    <linearGradient id="weightGradAlex" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%"  stopColor={C.purple} stopOpacity={0.18} />
+                      <stop offset="95%" stopColor={C.purple} stopOpacity={0.01} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(139,94,26,0.1)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={C.gridLine} />
                   <XAxis
                     dataKey="date"
                     tickFormatter={formatDate}
-                    tick={{ fontSize: 11, fill: '#7a6040' }}
+                    tick={{ fontSize: 11, fill: C.stoneGray }}
+                    axisLine={{ stroke: C.border }}
+                    tickLine={false}
                     interval="preserveStartEnd"
                   />
-                  <YAxis tick={{ fontSize: 11, fill: '#7a6040' }} domain={['auto', 'auto']} />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: C.stoneGray }}
+                    axisLine={false}
+                    tickLine={false}
+                    domain={['auto', 'auto']}
+                  />
                   <Tooltip
                     formatter={(v) => [`${v} kg`, 'Peso']}
                     labelFormatter={l => `Fecha: ${l}`}
@@ -231,142 +275,133 @@ export default function Progreso() {
                   <Area
                     type="monotone"
                     dataKey="weight_kg"
-                    stroke="#c9a055"
-                    strokeWidth={2.5}
-                    fill="url(#weightGrad)"
-                    dot={{ r: 3, fill: '#c9a055', strokeWidth: 0 }}
+                    stroke={C.purple}
+                    strokeWidth={2}
+                    fill="url(#weightGradAlex)"
+                    dot={{ r: 2.5, fill: C.purple, strokeWidth: 0 }}
+                    activeDot={{ r: 5, fill: C.purple, stroke: C.marble, strokeWidth: 2 }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7a6040' }}>
+              <div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.stoneGray }}>
                 Necesitas al menos 2 registros de peso para ver la gráfica
               </div>
             )}
           </div>
 
-          {/* Calories chart - 28 days */}
-          <div style={{ ...card, marginBottom: 24 }}>
-            <div style={cardTitle}>🍽️ Calorías — últimas 4 semanas</div>
-            {caloriesData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={caloriesData} margin={{ top: 8, right: 16, left: -10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(139,94,26,0.1)" />
-                  <XAxis
-                    dataKey="date"
-                    tickFormatter={formatDate}
-                    tick={{ fontSize: 11, fill: '#7a6040' }}
-                    interval={2}
-                  />
-                  <YAxis tick={{ fontSize: 11, fill: '#7a6040' }} />
-                  <Tooltip
-                    formatter={(v) => [`${v} kcal`, 'Calorías']}
-                    labelFormatter={l => `Fecha: ${l}`}
-                    contentStyle={tooltipStyle}
-                  />
-                  <Bar dataKey="calories" fill="#b86b1a" radius={[3, 3, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div style={{ height: 260, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7a6040' }}>
-                Sin datos de calorías en las últimas 4 semanas
-              </div>
-            )}
-          </div>
+          {/* Calories + Workouts side by side */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
+            <div style={card}>
+              <div style={cardTitle}>🍽 Calorías — 4 semanas</div>
+              {caloriesData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={caloriesData} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={C.gridLine} />
+                    <XAxis
+                      dataKey="date"
+                      tickFormatter={formatDate}
+                      tick={{ fontSize: 10, fill: C.stoneGray }}
+                      axisLine={{ stroke: C.border }}
+                      tickLine={false}
+                      interval={3}
+                    />
+                    <YAxis tick={{ fontSize: 10, fill: C.stoneGray }} axisLine={false} tickLine={false} />
+                    <Tooltip
+                      formatter={(v) => [`${v} kcal`, 'Calorías']}
+                      labelFormatter={l => `Fecha: ${l}`}
+                      contentStyle={tooltipStyle}
+                    />
+                    <Bar dataKey="calories" fill={C.sienna} radius={[3, 3, 0, 0]} opacity={0.85} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.stoneGray, fontSize: 13 }}>
+                  Sin datos en las últimas 4 semanas
+                </div>
+              )}
+            </div>
 
-          {/* Workouts per week */}
-          <div style={{ ...card, marginBottom: 24 }}>
-            <div style={cardTitle}>💪 Entrenamientos por semana — últimas 8 semanas</div>
-            {workoutsPerWeek.some(w => w.count > 0) ? (
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={workoutsPerWeek} margin={{ top: 8, right: 16, left: -10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(139,94,26,0.1)" />
-                  <XAxis dataKey="week" tick={{ fontSize: 11, fill: '#7a6040' }} />
-                  <YAxis tick={{ fontSize: 11, fill: '#7a6040' }} allowDecimals={false} />
-                  <Tooltip
-                    formatter={(v) => [v, 'Entrenamientos']}
-                    contentStyle={tooltipStyle}
-                  />
-                  <Bar dataKey="count" fill="#8b5e1a" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7a6040' }}>
-                Sin entrenamientos registrados en las últimas 8 semanas
-              </div>
-            )}
+            <div style={card}>
+              <div style={cardTitle}>⚔ Entrenamientos / semana</div>
+              {workoutsPerWeek.some(w => w.count > 0) ? (
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={workoutsPerWeek} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={C.gridLine} />
+                    <XAxis dataKey="week" tick={{ fontSize: 10, fill: C.stoneGray }} axisLine={{ stroke: C.border }} tickLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: C.stoneGray }} axisLine={false} tickLine={false} allowDecimals={false} />
+                    <Tooltip
+                      formatter={(v) => [v, 'Entrenamientos']}
+                      contentStyle={tooltipStyle}
+                    />
+                    <Bar dataKey="count" fill={C.purple} radius={[3, 3, 0, 0]} opacity={0.85} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.stoneGray, fontSize: 13 }}>
+                  Sin entrenamientos registrados
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Streaks */}
           <div style={card}>
-            <div style={cardTitle}>🔥 Resumen de rachas</div>
+            <div style={cardTitle}>◈ Rachas</div>
             {streaks && streaks.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-                {streaks.map(s => (
-                  <div key={s.id} style={{
-                    padding: 20,
-                    background: '#fdf6e3',
-                    borderRadius: 8,
-                    border: '1px solid rgba(201,160,85,0.3)',
-                    borderTop: '3px solid #c9a055',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 12,
-                  }}>
-                    <div style={{
-                      fontWeight: 700,
-                      fontSize: 15,
-                      color: '#7a4e0d',
-                      fontFamily: "Georgia, 'Times New Roman', serif",
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 16 }}>
+                {streaks.map(s => {
+                  const meta = streakAccents[s.habit_type] || { color: C.purple, label: s.habit_type };
+                  return (
+                    <div key={s.id} style={{
+                      padding: '20px 24px',
+                      background: C.marbleDeep,
+                      borderRadius: 6,
+                      border: `1px solid ${C.border}`,
+                      borderTop: `2px solid ${meta.color}`,
                     }}>
-                      {streakLabels[s.habit_type] || s.habit_type}
+                      <div style={{
+                        fontWeight: 700,
+                        fontSize: 13,
+                        color: meta.color,
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
+                        marginBottom: 16,
+                        fontFamily: "Georgia, serif",
+                      }}>
+                        {meta.label}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                        <div>
+                          <div style={{ fontSize: 10, color: C.stoneGray, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
+                            Racha actual
+                          </div>
+                          <div style={{ fontSize: 36, fontWeight: 800, color: meta.color, lineHeight: 1 }}>
+                            {s.current_streak}
+                          </div>
+                          <div style={{ fontSize: 11, color: C.stoneLight, marginTop: 2 }}>días</div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: 10, color: C.stoneGray, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
+                            Récord
+                          </div>
+                          <div style={{ fontSize: 28, fontWeight: 700, color: C.slate, lineHeight: 1 }}>
+                            {s.longest_streak}
+                          </div>
+                          <div style={{ fontSize: 11, color: C.stoneLight, marginTop: 2 }}>días</div>
+                        </div>
+                      </div>
+                      {s.last_recorded_date && (
+                        <div style={{ fontSize: 11, color: C.stoneLight, marginTop: 12, borderTop: `1px solid ${C.border}`, paddingTop: 10 }}>
+                          Último registro: {new Date(s.last_recorded_date).toLocaleDateString('es-ES')}
+                        </div>
+                      )}
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <div>
-                        <div style={{
-                          fontSize: 11,
-                          color: '#7a6040',
-                          fontWeight: 700,
-                          marginBottom: 2,
-                          letterSpacing: '0.06em',
-                          textTransform: 'uppercase',
-                        }}>Racha actual</div>
-                        <div style={{
-                          fontSize: 30,
-                          fontWeight: 800,
-                          color: '#c9a055',
-                          fontFamily: "Georgia, 'Times New Roman', serif",
-                        }}>{s.current_streak}</div>
-                        <div style={{ fontSize: 12, color: '#7a6040' }}>días</div>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{
-                          fontSize: 11,
-                          color: '#7a6040',
-                          fontWeight: 700,
-                          marginBottom: 2,
-                          letterSpacing: '0.06em',
-                          textTransform: 'uppercase',
-                        }}>Récord</div>
-                        <div style={{
-                          fontSize: 30,
-                          fontWeight: 800,
-                          color: '#8b5e1a',
-                          fontFamily: "Georgia, 'Times New Roman', serif",
-                        }}>{s.longest_streak}</div>
-                        <div style={{ fontSize: 12, color: '#7a6040' }}>días</div>
-                      </div>
-                    </div>
-                    {s.last_recorded_date && (
-                      <div style={{ fontSize: 12, color: '#7a6040', opacity: 0.8 }}>
-                        Último registro: {new Date(s.last_recorded_date).toLocaleDateString('es-ES')}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
-              <div style={{ textAlign: 'center', color: '#7a6040', padding: 20 }}>Sin datos de rachas</div>
+              <div style={{ textAlign: 'center', color: C.stoneGray, padding: 24 }}>Sin datos de rachas</div>
             )}
           </div>
         </>
