@@ -3,76 +3,22 @@ import { useApi, apiPost, apiDelete } from '../hooks/useApi.js';
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
-
-const C = {
-  pageBg:     '#eddfc8',
-  cardBg:     '#ffffff',
-  border:     '#e5e0d6',
-  bronze:     '#c4a882',
-  bronzeDark: '#9a7040',
-  marble:     '#e5e0d6',
-  text:       '#1e1812',
-  textMuted:  '#a0907a',
-  textSub:    '#6b5a40',
-  gridLine:   '#e5e0d6',
-};
+import { C, card, inputStyle, labelStyle, btnPrimary, tooltipStyle } from '../theme.js';
 
 const pageStyle = { padding: '28px 32px', maxWidth: 1100, background: C.pageBg, minHeight: '100vh' };
-
-const card = {
-  background: C.cardBg,
-  borderRadius: 8,
-  padding: 20,
-  boxShadow: '0 1px 3px rgba(30,24,18,0.07), 0 4px 12px rgba(30,24,18,0.04)',
-  border: `1px solid ${C.border}`,
-};
-
-const inputStyle = {
-  width: '100%',
-  padding: '8px 12px',
-  border: `1px solid ${C.border}`,
-  borderRadius: 6,
-  fontSize: 14,
-  fontFamily: 'inherit',
-  outline: 'none',
-  background: '#ffffff',
-  color: C.text,
-  boxSizing: 'border-box',
-};
-
-const labelStyle = {
-  fontSize: 12,
-  fontWeight: 600,
-  color: C.bronzeDark,
-  marginBottom: 4,
-  display: 'block',
-  letterSpacing: '0.03em',
-};
-
-const btnPrimary = {
-  background: C.bronzeDark,
-  color: '#ffffff',
-  border: 'none',
-  borderRadius: 6,
-  padding: '8px 16px',
-  fontSize: 14,
-  fontWeight: 600,
-  cursor: 'pointer',
-  fontFamily: 'inherit',
-};
 
 const btnDanger = {
   background: 'none',
   color: C.textMuted,
   border: 'none',
   cursor: 'pointer',
-  fontSize: 18,
+  fontSize: 16,
   padding: '4px',
 };
 
-const badge = {
-  background: '#f5f0e8',
-  color: C.bronzeDark,
+const badge = (color = C.bronzeDark) => ({
+  background: C.marbleLight,
+  color,
   border: `1px solid ${C.border}`,
   fontSize: 10,
   fontWeight: 700,
@@ -80,11 +26,11 @@ const badge = {
   borderRadius: 99,
   textTransform: 'uppercase',
   letterSpacing: '0.05em',
-};
+});
 
 const today = new Date().toISOString().split('T')[0];
 
-// Intensity badge colors using bronze tones
+// Intensity: graduated from sandy bronze to deep bronze
 const intensityBronze = ['', '#c4a882', '#b09060', '#9a7040', '#7a5830', '#5c3e20'];
 const intensityLabels = ['', 'Muy baja', 'Baja', 'Media', 'Alta', 'Máxima'];
 
@@ -93,14 +39,6 @@ function formatDate(dateStr) {
   const d = new Date(dateStr);
   return `${d.getDate()}/${d.getMonth() + 1}`;
 }
-
-const tooltipStyle = {
-  background: '#ffffff',
-  border: `1px solid ${C.bronze}`,
-  borderRadius: 4,
-  fontSize: 12,
-  color: C.text,
-};
 
 const cardTitle = {
   fontSize: 11,
@@ -192,9 +130,9 @@ function WorkoutsTab() {
       <div style={card}>
         <div style={cardTitle}>📋 Historial de entrenamientos</div>
         {loading ? (
-          <div style={{ color: '#7a6040', textAlign: 'center', padding: 20 }}>Cargando...</div>
+          <div style={{ color: '#a0907a', textAlign: 'center', padding: 20 }}>Cargando...</div>
         ) : !workouts || workouts.length === 0 ? (
-          <div style={{ color: '#7a6040', textAlign: 'center', padding: 20 }}>Sin entrenamientos registrados</div>
+          <div style={{ color: '#a0907a', textAlign: 'center', padding: 20 }}>Sin entrenamientos registrados</div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
@@ -227,9 +165,8 @@ function WorkoutsTab() {
                     <td style={{ padding: '10px 12px', color: C.text }}>{w.duration_min} min</td>
                     <td style={{ padding: '10px 12px' }}>
                       <span style={{
-                        ...badge,
-                        background: `${intensityBronze[w.intensity]}22`,
-                        color: intensityBronze[w.intensity],
+                        ...badge(intensityBronze[w.intensity]),
+                        background: `${intensityBronze[w.intensity]}1a`,
                         border: `1px solid ${intensityBronze[w.intensity]}55`,
                       }}>
                         {w.intensity}/5 {intensityLabels[w.intensity]}
@@ -330,15 +267,15 @@ function MetricsTab() {
           <div style={cardTitle}>📈 Evolución del peso</div>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(139,94,26,0.1)" />
-              <XAxis dataKey="date" tickFormatter={formatDate} tick={{ fontSize: 11, fill: '#7a6040' }} />
-              <YAxis tick={{ fontSize: 11, fill: '#7a6040' }} domain={['auto', 'auto']} />
+              <CartesianGrid strokeDasharray="3 3" stroke={C.gridLine} />
+              <XAxis dataKey="date" tickFormatter={formatDate} tick={{ fontSize: 11, fill: C.textMuted }} />
+              <YAxis tick={{ fontSize: 11, fill: C.textMuted }} domain={['auto', 'auto']} />
               <Tooltip
                 formatter={(v) => [`${v} kg`, 'Peso']}
                 labelFormatter={l => `Fecha: ${l}`}
                 contentStyle={tooltipStyle}
               />
-              <Line type="monotone" dataKey="weight_kg" stroke="#c9a055" strokeWidth={2.5} dot={{ r: 3, fill: '#c9a055' }} />
+              <Line type="monotone" dataKey="weight_kg" stroke={C.bronzeDark} strokeWidth={2.5} dot={{ r: 3, fill: C.bronzeDark }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -348,23 +285,24 @@ function MetricsTab() {
       <div style={card}>
         <div style={cardTitle}>📋 Historial de medidas</div>
         {loading ? (
-          <div style={{ color: '#7a6040', textAlign: 'center', padding: 20 }}>Cargando...</div>
+          <div style={{ color: '#a0907a', textAlign: 'center', padding: 20 }}>Cargando...</div>
         ) : !metrics || metrics.length === 0 ? (
-          <div style={{ color: '#7a6040', textAlign: 'center', padding: 20 }}>Sin registros de medidas</div>
+          <div style={{ color: '#a0907a', textAlign: 'center', padding: 20 }}>Sin registros de medidas</div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
               <thead>
-                <tr style={{ background: '#f0e0b0' }}>
+                <tr style={{ background: '#f5f0e8' }}>
                   {['Fecha', 'Peso (kg)', 'Cintura', 'Cadera', 'Pecho', 'Notas', ''].map(h => (
                     <th key={h} style={{
                       padding: '10px 12px',
                       textAlign: 'left',
-                      color: '#7a4e0d',
+                      color: C.bronzeDark,
                       fontWeight: 700,
-                      fontSize: 12,
-                      letterSpacing: '0.04em',
-                      borderBottom: '2px solid #c9a055',
+                      fontSize: 10,
+                      letterSpacing: '0.05em',
+                      textTransform: 'uppercase',
+                      borderBottom: `1px solid ${C.border}`,
                     }}>{h}</th>
                   ))}
                 </tr>
@@ -372,17 +310,17 @@ function MetricsTab() {
               <tbody>
                 {metrics.map((m, i) => (
                   <tr key={m.id} style={{
-                    background: i % 2 === 0 ? '#fffbf0' : '#fdf6e3',
-                    borderBottom: '1px solid rgba(201,160,85,0.2)',
+                    background: i % 2 === 0 ? '#ffffff' : '#faf6f0',
+                    borderBottom: `1px solid ${C.border}`,
                   }}>
-                    <td style={{ padding: '10px 12px', color: '#7a6040' }}>
+                    <td style={{ padding: '10px 12px', color: C.textMuted }}>
                       {new Date(m.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' })}
                     </td>
-                    <td style={{ padding: '10px 12px', fontWeight: 600, color: '#2a1a08' }}>{m.weight_kg ?? '—'}</td>
-                    <td style={{ padding: '10px 12px', color: '#2a1a08' }}>{m.waist_cm ? `${m.waist_cm} cm` : '—'}</td>
-                    <td style={{ padding: '10px 12px', color: '#2a1a08' }}>{m.hip_cm ? `${m.hip_cm} cm` : '—'}</td>
-                    <td style={{ padding: '10px 12px', color: '#2a1a08' }}>{m.chest_cm ? `${m.chest_cm} cm` : '—'}</td>
-                    <td style={{ padding: '10px 12px', color: '#7a6040', fontSize: 13 }}>{m.notes || '—'}</td>
+                    <td style={{ padding: '10px 12px', fontWeight: 600, color: C.text }}>{m.weight_kg ?? '—'}</td>
+                    <td style={{ padding: '10px 12px', color: C.text }}>{m.waist_cm ? `${m.waist_cm} cm` : '—'}</td>
+                    <td style={{ padding: '10px 12px', color: C.text }}>{m.hip_cm ? `${m.hip_cm} cm` : '—'}</td>
+                    <td style={{ padding: '10px 12px', color: C.text }}>{m.chest_cm ? `${m.chest_cm} cm` : '—'}</td>
+                    <td style={{ padding: '10px 12px', color: C.textSub, fontSize: 13 }}>{m.notes || '—'}</td>
                     <td style={{ padding: '10px 12px' }}>
                       <button style={btnDanger} onClick={() => handleDelete(m.id)}>🗑️</button>
                     </td>
@@ -469,47 +407,37 @@ function RecordsTab() {
       <div style={card}>
         <div style={cardTitle}>🏆 Récords personales</div>
         {loading ? (
-          <div style={{ color: '#7a6040', textAlign: 'center', padding: 20 }}>Cargando...</div>
+          <div style={{ color: '#a0907a', textAlign: 'center', padding: 20 }}>Cargando...</div>
         ) : !records || records.length === 0 ? (
-          <div style={{ color: '#7a6040', textAlign: 'center', padding: 20 }}>Sin récords registrados</div>
+          <div style={{ color: '#a0907a', textAlign: 'center', padding: 20 }}>Sin récords registrados</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {records.map(r => (
               <div key={r.id} style={{
                 display: 'flex', alignItems: 'center', gap: 14,
                 padding: '12px 16px',
-                background: '#fdf6e3',
+                background: C.cardAlt,
                 borderRadius: 8,
-                border: '1px solid rgba(201,160,85,0.3)',
-                borderLeft: '3px solid #c9a055',
+                border: `1px solid ${C.border}`,
+                borderLeft: `3px solid ${C.bronze}`,
               }}>
                 <div style={{
                   width: 44, height: 44,
-                  background: 'rgba(201,160,85,0.15)',
-                  border: '1px solid rgba(201,160,85,0.4)',
+                  background: C.marbleLight,
+                  border: `1px solid ${C.border}`,
                   borderRadius: 8,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 20, flexShrink: 0,
                 }}>🏆</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    fontWeight: 700,
-                    fontSize: 14,
-                    color: '#2a1a08',
-                    fontFamily: "Georgia, 'Times New Roman', serif",
-                  }}>{r.exercise_name}</div>
-                  {r.notes && <div style={{ fontSize: 12, color: '#7a6040' }}>{r.notes}</div>}
+                  <div style={{ fontWeight: 700, fontSize: 14, color: C.text }}>{r.exercise_name}</div>
+                  {r.notes && <div style={{ fontSize: 12, color: C.textMuted }}>{r.notes}</div>}
                 </div>
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <div style={{
-                    fontSize: 20,
-                    fontWeight: 800,
-                    color: '#c9a055',
-                    fontFamily: "Georgia, 'Times New Roman', serif",
-                  }}>{r.value}</div>
-                  <div style={{ fontSize: 12, color: '#7a6040' }}>{r.unit}</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: C.bronzeDark, fontVariantNumeric: 'tabular-nums' }}>{r.value}</div>
+                  <div style={{ fontSize: 11, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{r.unit}</div>
                 </div>
-                <div style={{ textAlign: 'right', color: '#7a6040', fontSize: 12, flexShrink: 0, minWidth: 60 }}>
+                <div style={{ textAlign: 'right', color: C.textMuted, fontSize: 12, flexShrink: 0, minWidth: 70 }}>
                   {new Date(r.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' })}
                 </div>
                 <button style={btnDanger} onClick={() => handleDelete(r.id)}>🗑️</button>
@@ -534,20 +462,16 @@ export default function Ejercicio() {
 
   return (
     <div style={pageStyle}>
-      <div style={{ marginBottom: 24 }}>
+      <div style={{ marginBottom: 28 }}>
         <h1 style={{
-          fontSize: 28,
-          fontWeight: 800,
-          color: C.text,
-          fontFamily: "Georgia, 'Times New Roman', serif",
-          letterSpacing: '0.04em',
-          margin: 0,
-          paddingBottom: 8,
-          borderBottom: `3px solid ${C.bronze}`,
-          display: 'inline-block',
-          textTransform: 'uppercase',
+          fontSize: 22, fontWeight: 800, color: C.text,
+          letterSpacing: '0.08em', textTransform: 'uppercase',
+          margin: 0, marginBottom: 4,
         }}>Ejercicio</h1>
-        <p style={{ color: C.textSub, fontSize: 14, marginTop: 6 }}>Registra tus entrenamientos y progreso físico</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ height: 2, width: 32, background: C.bronze, borderRadius: 2 }} />
+          <p style={{ color: C.textMuted, fontSize: 13, margin: 0 }}>Registra tus entrenamientos y progreso físico</p>
+        </div>
       </div>
 
       {/* Tabs */}

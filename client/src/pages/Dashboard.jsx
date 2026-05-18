@@ -6,49 +6,7 @@ import {
   LineChart, Line, BarChart, Bar,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
-
-// Same palette as Progreso
-const C = {
-  pageBg:    '#eddfc8',
-  cardBg:    '#ffffff',
-  border:    '#e5e0d6',
-  bronze:    '#c4a882',
-  bronzeDark:'#9a7040',
-  marble:    '#e5e0d6',
-  text:      '#1e1812',
-  textMuted: '#a0907a',
-  textSub:   '#6b5a40',
-  gridLine:  '#e5e0d6',
-};
-
-const card = {
-  background: C.cardBg,
-  borderRadius: 8,
-  padding: 20,
-  boxShadow: '0 1px 3px rgba(30,24,18,0.07), 0 4px 12px rgba(30,24,18,0.04)',
-  border: `1px solid ${C.border}`,
-};
-
-const tooltipStyle = {
-  background: C.cardBg,
-  border: `1px solid ${C.bronze}`,
-  borderRadius: 4,
-  fontSize: 12,
-  color: C.text,
-  boxShadow: '0 2px 8px rgba(30,24,18,0.1)',
-};
-
-const sectionTitle = {
-  fontSize: 11,
-  fontWeight: 700,
-  color: C.bronzeDark,
-  marginBottom: 14,
-  marginTop: 32,
-  letterSpacing: '0.12em',
-  textTransform: 'uppercase',
-  borderBottom: `1px solid ${C.border}`,
-  paddingBottom: 10,
-};
+import { C, card, tooltipStyle, badge, categoryColor } from '../theme.js';
 
 function formatDate(d) {
   if (!d) return '';
@@ -56,19 +14,23 @@ function formatDate(d) {
   return `${dt.getDate()}/${dt.getMonth() + 1}`;
 }
 
+const subTitle = {
+  fontSize: 11, fontWeight: 700, color: C.bronzeDark,
+  letterSpacing: '0.1em', textTransform: 'uppercase',
+  borderBottom: `1px solid ${C.border}`, paddingBottom: 10, marginBottom: 16,
+};
+
 export default function Dashboard() {
   const { data, loading, error } = useApi('/api/dashboard');
 
   if (loading) return (
-    <div style={{ padding: '28px 32px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh' }}>
-      <div style={{ textAlign: 'center', color: C.textMuted }}>
-        <div style={{ fontSize: 13, letterSpacing: '0.08em' }}>CARGANDO...</div>
-      </div>
+    <div style={{ padding: '28px 32px', minHeight: '50vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: C.pageBg }}>
+      <div style={{ color: C.textMuted, fontSize: 13, letterSpacing: '0.08em' }}>CARGANDO...</div>
     </div>
   );
 
   if (error) return (
-    <div style={{ padding: '28px 32px', color: C.bronzeDark }}>Error: {error}</div>
+    <div style={{ padding: '28px 32px', color: C.terracotta, background: C.pageBg, minHeight: '100vh' }}>Error: {error}</div>
   );
 
   const { summary, weightHistory, caloriesHistory, activeGoals, recentWorkouts, streaks } = data;
@@ -93,19 +55,37 @@ export default function Dashboard() {
 
       {/* Stat cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-        <StatCard icon="🔥" label="Racha entrenamiento"   value={`${summary.currentStreak} días`}   sub={workoutStreak ? `Récord: ${workoutStreak.longest_streak} días` : undefined} color={C.bronzeDark} />
-        <StatCard icon="🍽️" label="Calorías hoy"          value={summary.caloriesHoy > 0 ? `${summary.caloriesHoy} kcal` : '—'} sub="Objetivo: 2000 kcal" color={C.bronze} />
-        <StatCard icon="💪" label="Entrenos esta semana"   value={summary.workoutsThisWeek}           sub="Últimos 7 días"       color={C.bronzeDark} />
-        <StatCard icon="⚖️" label="Peso actual"            value={summary.currentWeight ? `${summary.currentWeight} kg` : '—'}  sub="Último registro"   color={C.bronze} />
+        <StatCard
+          icon="🔥" label="Racha entrenamiento"
+          value={`${summary.currentStreak} días`}
+          sub={workoutStreak ? `Récord: ${workoutStreak.longest_streak} días` : undefined}
+          color={C.bronzeDark}
+        />
+        <StatCard
+          icon="🍽️" label="Calorías hoy"
+          value={summary.caloriesHoy > 0 ? `${summary.caloriesHoy} kcal` : '—'}
+          sub="Objetivo: 2000 kcal"
+          color={C.terracotta}
+        />
+        <StatCard
+          icon="💪" label="Entrenos esta semana"
+          value={summary.workoutsThisWeek}
+          sub="Últimos 7 días"
+          color={C.bronze}
+        />
+        <StatCard
+          icon="⚖️" label="Peso actual"
+          value={summary.currentWeight ? `${summary.currentWeight} kg` : '—'}
+          sub="Último registro"
+          color={C.aegean}
+        />
       </div>
 
-      {/* Charts */}
+      {/* Charts row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, marginTop: 32 }}>
 
         <div style={card}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: C.bronzeDark, marginBottom: 16, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-            Evolución del peso — 30 días
-          </div>
+          <div style={subTitle}>Evolución del peso — 30 días</div>
           {weightHistory && weightHistory.length > 1 ? (
             <ResponsiveContainer width="100%" height={180}>
               <LineChart data={weightHistory} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
@@ -113,7 +93,9 @@ export default function Dashboard() {
                 <XAxis dataKey="date" tickFormatter={formatDate} tick={{ fontSize: 11, fill: C.textMuted }} axisLine={{ stroke: C.border }} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: C.textMuted }} domain={['auto', 'auto']} axisLine={false} tickLine={false} />
                 <Tooltip formatter={(v) => [`${v} kg`, 'Peso']} labelFormatter={(l) => `Fecha: ${l}`} contentStyle={tooltipStyle} />
-                <Line type="monotone" dataKey="weight_kg" stroke={C.bronzeDark} strokeWidth={2.5} dot={{ r: 2, fill: C.bronzeDark, strokeWidth: 0 }} activeDot={{ r: 4, fill: C.bronze, stroke: C.cardBg, strokeWidth: 2 }} />
+                <Line type="monotone" dataKey="weight_kg" stroke={C.bronzeDark} strokeWidth={2.5}
+                      dot={{ r: 2, fill: C.bronzeDark, strokeWidth: 0 }}
+                      activeDot={{ r: 4, fill: C.bronze, stroke: C.cardBg, strokeWidth: 2 }} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
@@ -122,9 +104,7 @@ export default function Dashboard() {
         </div>
 
         <div style={card}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: C.bronzeDark, marginBottom: 16, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-            Calorías — últimos 7 días
-          </div>
+          <div style={subTitle}>Calorías — últimos 7 días</div>
           {caloriesHistory && caloriesHistory.length > 0 ? (
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={caloriesHistory} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
@@ -132,7 +112,7 @@ export default function Dashboard() {
                 <XAxis dataKey="date" tickFormatter={formatDate} tick={{ fontSize: 11, fill: C.textMuted }} axisLine={{ stroke: C.border }} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: C.textMuted }} axisLine={false} tickLine={false} />
                 <Tooltip formatter={(v) => [`${v} kcal`, 'Calorías']} labelFormatter={(l) => `Fecha: ${l}`} contentStyle={tooltipStyle} />
-                <Bar dataKey="calories" fill={C.bronze} radius={[3, 3, 0, 0]} />
+                <Bar dataKey="calories" fill={C.terracotta} radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -142,18 +122,14 @@ export default function Dashboard() {
       </div>
 
       {/* Active goals */}
-      <div style={sectionTitle}>Objetivos activos</div>
+      <div style={{ ...subTitle, marginTop: 32 }}>Objetivos activos</div>
       {activeGoals && activeGoals.length > 0 ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
           {activeGoals.map(goal => (
-            <div key={goal.id} style={{ ...card, borderLeft: `3px solid ${C.bronze}` }}>
+            <div key={goal.id} style={{ ...card, borderLeft: `3px solid ${categoryColor(goal.category)}` }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                 <div style={{ fontWeight: 600, fontSize: 14, color: C.text }}>{goal.name}</div>
-                <span style={{
-                  fontSize: 10, fontWeight: 700, color: C.bronzeDark,
-                  background: '#f5f0e8', padding: '2px 8px', borderRadius: 99,
-                  border: `1px solid ${C.border}`, textTransform: 'uppercase', letterSpacing: '0.05em',
-                }}>{goal.category}</span>
+                <span style={badge(categoryColor(goal.category))}>{goal.category}</span>
               </div>
               {goal.description && (
                 <div style={{ fontSize: 12, color: C.textSub, marginBottom: 10 }}>{goal.description}</div>
@@ -176,20 +152,18 @@ export default function Dashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, marginTop: 32 }}>
 
         <div style={card}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: C.bronzeDark, marginBottom: 16, letterSpacing: '0.1em', textTransform: 'uppercase', borderBottom: `1px solid ${C.border}`, paddingBottom: 10 }}>
-            Últimos entrenamientos
-          </div>
+          <div style={subTitle}>Últimos entrenamientos</div>
           {recentWorkouts && recentWorkouts.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {recentWorkouts.map(w => (
                 <div key={w.id} style={{
                   display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '10px 12px', background: '#faf6f0',
+                  padding: '10px 12px', background: C.cardAlt,
                   borderRadius: 6, borderLeft: `3px solid ${C.bronze}`,
                 }}>
                   <div style={{
                     width: 34, height: 34, borderRadius: 6,
-                    background: '#f5f0e8', border: `1px solid ${C.border}`,
+                    background: C.marbleLight, border: `1px solid ${C.border}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0,
                   }}>💪</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -208,30 +182,31 @@ export default function Dashboard() {
         </div>
 
         <div style={card}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: C.bronzeDark, marginBottom: 16, letterSpacing: '0.1em', textTransform: 'uppercase', borderBottom: `1px solid ${C.border}`, paddingBottom: 10 }}>
-            Rachas actuales
-          </div>
+          <div style={subTitle}>Rachas actuales</div>
           {streaks && streaks.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {streaks.map(s => {
-                const icons  = { entrenamiento: '💪', dieta: '🌿', agua: '🌊' };
-                const labels = { entrenamiento: 'Entrenamiento', dieta: 'Dieta', agua: 'Hidratación' };
+                const meta = {
+                  entrenamiento: { icon: '💪', label: 'Entrenamiento', color: C.bronzeDark },
+                  dieta:         { icon: '🌿', label: 'Dieta',         color: C.cypress },
+                  agua:          { icon: '🌊', label: 'Hidratación',   color: C.aegean },
+                }[s.habit_type] || { icon: '🏆', label: s.habit_type, color: C.bronze };
                 return (
                   <div key={s.id} style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '12px 14px', background: '#faf6f0',
+                    padding: '12px 14px', background: C.cardAlt,
                     borderRadius: 6, border: `1px solid ${C.border}`,
-                    borderLeft: `3px solid ${C.bronze}`,
+                    borderLeft: `3px solid ${meta.color}`,
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 18 }}>{icons[s.habit_type] || '🏆'}</span>
+                      <span style={{ fontSize: 18 }}>{meta.icon}</span>
                       <div>
-                        <div style={{ fontWeight: 600, fontSize: 13, color: C.text }}>{labels[s.habit_type] || s.habit_type}</div>
+                        <div style={{ fontWeight: 600, fontSize: 13, color: C.text }}>{meta.label}</div>
                         <div style={{ fontSize: 11, color: C.textMuted }}>Récord: {s.longest_streak} días</div>
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 24, fontWeight: 800, color: C.bronzeDark, fontVariantNumeric: 'tabular-nums' }}>{s.current_streak}</div>
+                      <div style={{ fontSize: 24, fontWeight: 800, color: meta.color, fontVariantNumeric: 'tabular-nums' }}>{s.current_streak}</div>
                       <div style={{ fontSize: 10, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>días</div>
                     </div>
                   </div>

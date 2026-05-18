@@ -1,45 +1,45 @@
 import React, { useState } from 'react';
+import { C } from '../theme.js';
 
-export default function StatCard({ icon, label, value, sub, color = '#9a7040' }) {
+export default function StatCard({ icon, label, value, sub, color = C.bronzeDark }) {
   const [hovered, setHovered] = useState(false);
   return (
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: '#ffffff',
+        background: C.cardBg,
         borderRadius: 8,
-        padding: '20px 24px',
+        padding: '18px 22px',
         boxShadow: hovered
           ? '0 4px 14px rgba(30,24,18,0.12)'
           : '0 1px 3px rgba(30,24,18,0.07), 0 4px 12px rgba(30,24,18,0.04)',
         display: 'flex',
         alignItems: 'center',
-        gap: 16,
+        gap: 14,
         minWidth: 0,
-        border: '1px solid #e5e0d6',
+        border: `1px solid ${C.border}`,
         borderTop: `3px solid ${color}`,
         transition: 'box-shadow 0.2s ease',
       }}
     >
       <div style={{
-        width: 46,
-        height: 46,
+        width: 44, height: 44,
         borderRadius: 8,
-        background: '#f5f0e8',
+        background: C.marbleLight,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: 22,
+        fontSize: 20,
         flexShrink: 0,
-        border: '1px solid #e5e0d6',
+        border: `1px solid ${C.border}`,
       }}>
         {icon}
       </div>
       <div style={{ minWidth: 0 }}>
         <div style={{
           fontSize: 10,
-          color: '#a0907a',
+          color: C.textMuted,
           marginBottom: 4,
           fontWeight: 700,
           textTransform: 'uppercase',
@@ -52,7 +52,7 @@ export default function StatCard({ icon, label, value, sub, color = '#9a7040' })
           lineHeight: 1,
           fontVariantNumeric: 'tabular-nums',
         }}>{value}</div>
-        {sub && <div style={{ fontSize: 11, color: '#a0907a', marginTop: 4 }}>{sub}</div>}
+        {sub && <div style={{ fontSize: 11, color: C.textMuted, marginTop: 4 }}>{sub}</div>}
       </div>
     </div>
   );

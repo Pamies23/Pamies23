@@ -1,74 +1,19 @@
 import React, { useState } from 'react';
 import { useApi, apiPost, apiPut, apiDelete } from '../hooks/useApi.js';
 import ProgressBar from '../components/ProgressBar.jsx';
+import {
+  C, card, inputStyle, labelStyle, btnPrimary, btnSecondary,
+  badge, categoryColor, statusColor,
+} from '../theme.js';
 
-const C = {
-  pageBg:     '#eddfc8',
-  cardBg:     '#ffffff',
-  border:     '#e5e0d6',
-  bronze:     '#c4a882',
-  bronzeDark: '#9a7040',
-  marble:     '#e5e0d6',
-  text:       '#1e1812',
-  textMuted:  '#a0907a',
-  textSub:    '#6b5a40',
-  gridLine:   '#e5e0d6',
-};
-
-const pageStyle = { padding: '28px 32px', maxWidth: 1100, background: C.pageBg, minHeight: '100vh' };
-
-const card = {
-  background: C.cardBg,
-  borderRadius: 8,
-  padding: 20,
-  boxShadow: '0 1px 3px rgba(30,24,18,0.07), 0 4px 12px rgba(30,24,18,0.04)',
-  border: `1px solid ${C.border}`,
-};
-
-const inputStyle = {
-  width: '100%',
-  padding: '8px 12px',
-  border: `1px solid ${C.border}`,
-  borderRadius: 6,
-  fontSize: 14,
-  fontFamily: 'inherit',
-  outline: 'none',
-  background: '#ffffff',
-  color: C.text,
-  boxSizing: 'border-box',
-};
-
-const labelStyle = {
-  fontSize: 12,
-  fontWeight: 600,
-  color: C.bronzeDark,
-  marginBottom: 4,
-  display: 'block',
-  letterSpacing: '0.03em',
-};
-
-const btnPrimary = {
-  background: C.bronzeDark,
-  color: '#ffffff',
+const btnGhost = {
+  background: 'none',
+  color: C.textSub,
   border: 'none',
-  borderRadius: 6,
-  padding: '8px 16px',
-  fontSize: 14,
-  fontWeight: 600,
   cursor: 'pointer',
-  fontFamily: 'inherit',
-};
-
-const btnSecondary = {
-  background: '#f5f0e8',
-  color: C.bronzeDark,
-  border: `1px solid ${C.border}`,
-  borderRadius: 6,
-  padding: '8px 16px',
   fontSize: 14,
-  fontWeight: 600,
-  cursor: 'pointer',
-  fontFamily: 'inherit',
+  padding: '4px 8px',
+  borderRadius: 4,
 };
 
 const btnDanger = {
@@ -76,47 +21,15 @@ const btnDanger = {
   color: C.textMuted,
   border: 'none',
   cursor: 'pointer',
-  fontSize: 18,
+  fontSize: 14,
   padding: '4px 8px',
-};
-
-const btnGhost = {
-  background: 'none',
-  color: C.textSub,
-  border: 'none',
-  cursor: 'pointer',
-  fontSize: 13,
-  padding: '4px 8px',
-};
-
-const badge = {
-  background: '#f5f0e8',
-  color: C.bronzeDark,
-  border: `1px solid ${C.border}`,
-  fontSize: 10,
-  fontWeight: 700,
-  padding: '2px 8px',
-  borderRadius: 99,
-  textTransform: 'uppercase',
-  letterSpacing: '0.05em',
 };
 
 const EMPTY_GOAL = { name: '', description: '', category: 'ejercicio', target_value: '', current_value: '', unit: '', deadline: '', status: 'activo' };
 const EMPTY_MILESTONE = { name: '', target_value: '' };
 
-function categoryBadge(cat) {
-  const labels = { ejercicio: 'Ejercicio', dieta: 'Dieta', general: 'General' };
-  return (
-    <span style={badge}>{labels[cat] || cat}</span>
-  );
-}
-
-function statusBadge(status) {
-  const labels = { activo: 'Activo', completado: 'Completado', pausado: 'Pausado' };
-  return (
-    <span style={badge}>{labels[status] || status}</span>
-  );
-}
+const CAT_LABELS = { ejercicio: 'Ejercicio', dieta: 'Dieta', general: 'General' };
+const STATUS_LABELS = { activo: 'Activo', completado: 'Completado', pausado: 'Pausado' };
 
 function GoalForm({ initial, onSave, onCancel }) {
   const [form, setForm] = useState(initial || EMPTY_GOAL);
@@ -211,11 +124,7 @@ function MilestoneList({ goalId, onClose }) {
     }
   };
 
-  const toggleMilestone = async (id) => {
-    await apiPut(`/api/milestones/${id}`, {});
-    refetch();
-  };
-
+  const toggleMilestone = async (id) => { await apiPut(`/api/milestones/${id}`, {}); refetch(); };
   const deleteMilestone = async (id) => {
     if (!confirm('¿Eliminar este hito?')) return;
     await apiDelete(`/api/milestones/${id}`);
@@ -224,23 +133,18 @@ function MilestoneList({ goalId, onClose }) {
 
   return (
     <div style={{
-      marginTop: 16,
-      padding: 16,
-      background: '#faf6f0',
-      borderRadius: 8,
-      border: `1px solid ${C.border}`,
+      marginTop: 16, padding: 16,
+      background: C.cardAlt, borderRadius: 8, border: `1px solid ${C.border}`,
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <span style={{
-          fontWeight: 700,
-          fontSize: 14,
-          color: C.bronzeDark,
-          fontFamily: "Georgia, 'Times New Roman', serif",
-        }}>🏁 Hitos del objetivo</span>
-        <button style={{ ...btnGhost, color: C.textSub }} onClick={onClose}>✕ Cerrar</button>
+          fontWeight: 700, fontSize: 11, color: C.bronzeDark,
+          letterSpacing: '0.12em', textTransform: 'uppercase',
+        }}>Hitos del objetivo</span>
+        <button style={btnGhost} onClick={onClose}>✕ Cerrar</button>
       </div>
       {loading ? (
-        <div style={{ color: C.textSub, fontSize: 13 }}>Cargando...</div>
+        <div style={{ color: C.textMuted, fontSize: 13 }}>Cargando...</div>
       ) : (
         <>
           {milestones && milestones.length > 0 ? (
@@ -248,14 +152,14 @@ function MilestoneList({ goalId, onClose }) {
               {milestones.map(m => (
                 <div key={m.id} style={{
                   display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px',
-                  background: '#faf6f0', borderRadius: 6, borderLeft: `3px solid ${C.bronze}`,
-                  border: `1px solid ${C.border}`, borderLeft: `3px solid ${C.bronze}`,
+                  background: C.cardBg, borderRadius: 6,
+                  border: `1px solid ${C.border}`,
+                  borderLeft: `3px solid ${m.completed_at ? C.cypress : C.bronze}`,
                 }}>
                   <input
-                    type="checkbox"
-                    checked={!!m.completed_at}
+                    type="checkbox" checked={!!m.completed_at}
                     onChange={() => toggleMilestone(m.id)}
-                    style={{ width: 16, height: 16, cursor: 'pointer', accentColor: C.bronze }}
+                    style={{ width: 16, height: 16, cursor: 'pointer', accentColor: C.cypress }}
                   />
                   <span style={{
                     flex: 1, fontSize: 13,
@@ -266,7 +170,7 @@ function MilestoneList({ goalId, onClose }) {
                     <span style={{ fontSize: 12, color: C.textSub, marginRight: 8 }}>Meta: {m.target_value}</span>
                   )}
                   {m.completed_at && (
-                    <span style={{ fontSize: 11, color: C.bronzeDark, marginRight: 4 }}>
+                    <span style={{ fontSize: 11, color: C.cypress, marginRight: 4 }}>
                       ✓ {new Date(m.completed_at).toLocaleDateString('es-ES')}
                     </span>
                   )}
@@ -275,25 +179,21 @@ function MilestoneList({ goalId, onClose }) {
               ))}
             </div>
           ) : (
-            <div style={{ fontSize: 13, color: C.textSub, marginBottom: 12 }}>Sin hitos aún. ¡Añade uno!</div>
+            <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>Sin hitos aún. ¡Añade uno!</div>
           )}
           <form onSubmit={handleAdd} style={{ display: 'flex', gap: 8 }}>
             <input
-              style={{ ...inputStyle, flex: 1 }}
-              value={form.name}
+              style={{ ...inputStyle, flex: 1 }} value={form.name}
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-              placeholder="Nombre del hito"
-              required
+              placeholder="Nombre del hito" required
             />
             <input
-              style={{ ...inputStyle, width: 90 }}
-              type="number"
-              step="0.01"
+              style={{ ...inputStyle, width: 90 }} type="number" step="0.01"
               value={form.target_value}
               onChange={e => setForm(f => ({ ...f, target_value: e.target.value }))}
               placeholder="Valor"
             />
-            <button type="submit" style={{ ...btnPrimary, padding: '9px 14px' }} disabled={adding}>
+            <button type="submit" style={btnPrimary} disabled={adding}>
               {adding ? '...' : '+ Añadir'}
             </button>
           </form>
@@ -312,24 +212,13 @@ export default function Objetivos() {
 
   const filtered = goals ? goals.filter(g => filter === 'todos' || g.status === filter) : [];
 
-  const handleCreate = async (data) => {
-    await apiPost('/api/goals', data);
-    setShowForm(false);
-    refetch();
-  };
-
-  const handleEdit = async (data) => {
-    await apiPut(`/api/goals/${editGoal.id}`, data);
-    setEditGoal(null);
-    refetch();
-  };
-
+  const handleCreate = async (data) => { await apiPost('/api/goals', data); setShowForm(false); refetch(); };
+  const handleEdit = async (data) => { await apiPut(`/api/goals/${editGoal.id}`, data); setEditGoal(null); refetch(); };
   const handleDelete = async (id) => {
     if (!confirm('¿Eliminar este objetivo y todos sus hitos?')) return;
     await apiDelete(`/api/goals/${id}`);
     refetch();
   };
-
   const toggleStatus = async (goal) => {
     const nextStatus = goal.status === 'activo' ? 'pausado' : 'activo';
     await apiPut(`/api/goals/${goal.id}`, { status: nextStatus });
@@ -337,46 +226,35 @@ export default function Objetivos() {
   };
 
   return (
-    <div style={pageStyle}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+    <div style={{ padding: '28px 32px', maxWidth: 1100, background: C.pageBg, minHeight: '100vh' }}>
+
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
         <div>
           <h1 style={{
-            fontSize: 28,
-            fontWeight: 800,
-            color: C.text,
-            fontFamily: "Georgia, 'Times New Roman', serif",
-            letterSpacing: '0.04em',
-            margin: 0,
-            paddingBottom: 8,
-            borderBottom: `3px solid ${C.bronze}`,
-            display: 'inline-block',
-            textTransform: 'uppercase',
+            fontSize: 22, fontWeight: 800, color: C.text,
+            letterSpacing: '0.08em', textTransform: 'uppercase',
+            margin: 0, marginBottom: 4,
           }}>Objetivos</h1>
-          <p style={{ color: C.textSub, fontSize: 14, marginTop: 6 }}>Gestiona tus metas de fitness</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ height: 2, width: 32, background: C.bronze, borderRadius: 2 }} />
+            <p style={{ color: C.textMuted, fontSize: 13, margin: 0 }}>Gestiona tus metas de fitness</p>
+          </div>
         </div>
-        <button
-          style={btnPrimary}
-          onClick={() => { setShowForm(true); setEditGoal(null); }}
-        >
+        <button style={btnPrimary} onClick={() => { setShowForm(true); setEditGoal(null); }}>
           + Nuevo objetivo
         </button>
       </div>
 
-      {/* Modal form */}
+      {/* Form */}
       {(showForm || editGoal) && (
-        <div style={{
-          ...card,
-          marginBottom: 24,
-          borderTop: `3px solid ${C.bronze}`,
-        }}>
+        <div style={{ ...card, marginBottom: 20, borderTop: `3px solid ${C.bronze}` }}>
           <div style={{
-            fontWeight: 700,
-            fontSize: 16,
-            marginBottom: 16,
-            color: C.bronzeDark,
-            fontFamily: "Georgia, 'Times New Roman', serif",
+            fontWeight: 700, fontSize: 11, color: C.bronzeDark,
+            letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 16,
+            borderBottom: `1px solid ${C.border}`, paddingBottom: 10,
           }}>
-            {editGoal ? '✏️ Editar objetivo' : '🎯 Nuevo objetivo'}
+            {editGoal ? 'Editar objetivo' : 'Nuevo objetivo'}
           </div>
           <GoalForm
             initial={editGoal}
@@ -397,15 +275,13 @@ export default function Objetivos() {
           <button
             key={f.key}
             style={{
-              padding: '7px 16px',
-              borderRadius: 6,
-              fontSize: 13,
-              fontWeight: 600,
-              border: 'none',
+              padding: '7px 16px', borderRadius: 6, fontSize: 12, fontWeight: 700,
+              border: filter === f.key ? 'none' : `1px solid ${C.border}`,
               cursor: 'pointer',
-              background: filter === f.key ? C.bronzeDark : '#f5f0e8',
+              background: filter === f.key ? C.bronzeDark : C.marbleLight,
               color: filter === f.key ? '#ffffff' : C.bronzeDark,
-              transition: 'all 0.15s',
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
             }}
             onClick={() => setFilter(f.key)}
           >
@@ -415,72 +291,44 @@ export default function Objetivos() {
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', color: C.textSub, padding: 40, fontFamily: "Georgia, 'Times New Roman', serif" }}>
-          Cargando objetivos...
-        </div>
+        <div style={{ textAlign: 'center', color: C.textMuted, padding: 40, letterSpacing: '0.08em' }}>CARGANDO OBJETIVOS...</div>
       ) : filtered.length === 0 ? (
-        <div style={{ ...card, textAlign: 'center', color: C.textSub, padding: 40 }}>
+        <div style={{ ...card, textAlign: 'center', color: C.textMuted, padding: 40 }}>
           {filter === 'todos' ? 'No hay objetivos aún. ¡Crea uno!' : `No hay objetivos ${filter}s.`}
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {filtered.map(goal => {
-            const pct = goal.target_value > 0
-              ? Math.min(100, Math.round((goal.current_value / goal.target_value) * 100))
-              : 0;
+            const catColor = categoryColor(goal.category);
             return (
-              <div key={goal.id} style={{
-                ...card,
-                borderLeft: `4px solid ${C.bronze}`,
-              }}>
+              <div key={goal.id} style={{ ...card, borderLeft: `4px solid ${catColor}` }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
-                      <span style={{
-                        fontWeight: 700,
-                        fontSize: 16,
-                        color: C.text,
-                        fontFamily: "Georgia, 'Times New Roman', serif",
-                      }}>{goal.name}</span>
-                      {categoryBadge(goal.category)}
-                      {statusBadge(goal.status)}
+                      <span style={{ fontWeight: 700, fontSize: 16, color: C.text }}>{goal.name}</span>
+                      <span style={badge(catColor)}>{CAT_LABELS[goal.category] || goal.category}</span>
+                      <span style={badge(statusColor(goal.status))}>{STATUS_LABELS[goal.status] || goal.status}</span>
                     </div>
                     {goal.description && (
                       <div style={{ fontSize: 13, color: C.textSub, marginBottom: 10 }}>{goal.description}</div>
                     )}
                     {goal.target_value && (
-                      <div style={{ marginBottom: 10 }}>
+                      <div style={{ marginBottom: 4 }}>
                         <ProgressBar value={goal.current_value || 0} max={goal.target_value} showLabel />
-                        <div style={{ display: 'flex', gap: 16, marginTop: 6, fontSize: 12, color: C.textSub }}>
-                          <span>📊 {goal.current_value} / {goal.target_value} {goal.unit}</span>
-                          {goal.deadline && (
-                            <span>⏰ Límite: {new Date(goal.deadline).toLocaleDateString('es-ES')}</span>
-                          )}
+                        <div style={{ display: 'flex', gap: 16, marginTop: 6, fontSize: 12, color: C.textMuted }}>
+                          <span>{goal.current_value} / {goal.target_value} {goal.unit}</span>
+                          {goal.deadline && <span>⏰ {new Date(goal.deadline).toLocaleDateString('es-ES')}</span>}
                         </div>
                       </div>
                     )}
                   </div>
-                  <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                    <button
-                      style={{ ...btnGhost, fontSize: 18 }}
-                      onClick={() => setExpandedMilestones(expandedMilestones === goal.id ? null : goal.id)}
-                      title="Ver hitos"
-                    >🏁</button>
-                    <button
-                      style={{ ...btnGhost, fontSize: 18 }}
-                      onClick={() => { setEditGoal(goal); setShowForm(false); }}
-                      title="Editar"
-                    >✏️</button>
-                    <button
-                      style={{ ...btnGhost, fontSize: 14 }}
-                      onClick={() => toggleStatus(goal)}
-                      title={goal.status === 'activo' ? 'Pausar' : 'Activar'}
-                    >{goal.status === 'activo' ? '⏸️' : '▶️'}</button>
-                    <button
-                      style={{ ...btnDanger, fontSize: 18 }}
-                      onClick={() => handleDelete(goal.id)}
-                      title="Eliminar"
-                    >🗑️</button>
+                  <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
+                    <button style={btnGhost} onClick={() => setExpandedMilestones(expandedMilestones === goal.id ? null : goal.id)} title="Ver hitos">🏁</button>
+                    <button style={btnGhost} onClick={() => { setEditGoal(goal); setShowForm(false); }} title="Editar">✏️</button>
+                    <button style={btnGhost} onClick={() => toggleStatus(goal)} title={goal.status === 'activo' ? 'Pausar' : 'Activar'}>
+                      {goal.status === 'activo' ? '⏸️' : '▶️'}
+                    </button>
+                    <button style={btnDanger} onClick={() => handleDelete(goal.id)} title="Eliminar">🗑️</button>
                   </div>
                 </div>
                 {expandedMilestones === goal.id && (
