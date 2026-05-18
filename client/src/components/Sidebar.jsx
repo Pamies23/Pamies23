@@ -18,7 +18,7 @@ export default function Sidebar({ open, onToggle }) {
           onClick={onToggle}
           style={{
             display: 'none',
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 99,
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 99,
             '@media (max-width: 768px)': { display: 'block' },
           }}
         />
@@ -27,8 +27,8 @@ export default function Sidebar({ open, onToggle }) {
         style={{
           width: open ? 240 : 64,
           minHeight: '100vh',
-          background: '#f8f9fa',
-          borderRight: '1px solid #e5e7eb',
+          background: '#1c1409',
+          borderRight: '1px solid #3a2810',
           display: 'flex',
           flexDirection: 'column',
           transition: 'width 0.2s ease',
@@ -39,22 +39,30 @@ export default function Sidebar({ open, onToggle }) {
           overflowY: 'auto',
           overflowX: 'hidden',
           zIndex: 100,
+          boxShadow: '2px 0 12px rgba(0,0,0,0.4)',
         }}
       >
         {/* Header */}
         <div style={{
           padding: '16px 12px',
-          borderBottom: '1px solid #e5e7eb',
+          borderBottom: '1px solid rgba(201,160,85,0.25)',
           display: 'flex',
           alignItems: 'center',
           gap: 12,
           minHeight: 64,
+          background: 'rgba(201,160,85,0.05)',
         }}>
-          <span style={{ fontSize: 24, flexShrink: 0 }}>🏋️</span>
+          <span style={{ fontSize: 24, flexShrink: 0 }}>⚔️</span>
           {open && (
             <div>
-              <div style={{ fontWeight: 700, fontSize: 15, color: '#1a202c' }}>FitTracker</div>
-              <div style={{ fontSize: 11, color: '#6b7280' }}>Tu progreso personal</div>
+              <div style={{
+                fontWeight: 700,
+                fontSize: 16,
+                color: '#c9a055',
+                fontFamily: "Georgia, 'Times New Roman', serif",
+                letterSpacing: '0.04em',
+              }}>FitTracker</div>
+              <div style={{ fontSize: 11, color: 'rgba(201,160,133,0.6)', letterSpacing: '0.06em' }}>Tu progreso personal</div>
             </div>
           )}
           <button
@@ -64,11 +72,12 @@ export default function Sidebar({ open, onToggle }) {
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              fontSize: 16,
-              color: '#6b7280',
+              fontSize: 14,
+              color: '#c9a084',
               padding: '4px',
               borderRadius: 4,
               flexShrink: 0,
+              opacity: 0.8,
             }}
             title={open ? 'Cerrar menú' : 'Abrir menú'}
           >
@@ -88,16 +97,18 @@ export default function Sidebar({ open, onToggle }) {
                 alignItems: 'center',
                 gap: 12,
                 padding: '10px 12px',
-                borderRadius: 8,
+                borderRadius: 6,
                 textDecoration: 'none',
-                color: isActive ? '#2563eb' : '#374151',
-                background: isActive ? '#dbeafe' : 'transparent',
+                color: isActive ? '#c9a055' : '#c9a084',
+                background: isActive ? 'rgba(201,160,85,0.1)' : 'transparent',
                 fontWeight: isActive ? 600 : 400,
                 fontSize: 14,
                 marginBottom: 2,
-                transition: 'background 0.15s',
+                transition: 'all 0.15s',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
+                borderLeft: isActive ? '3px solid #c9a055' : '3px solid transparent',
+                paddingLeft: isActive ? '9px' : '12px',
               })}
             >
               <span style={{ fontSize: 18, flexShrink: 0 }}>{item.icon}</span>
@@ -108,8 +119,12 @@ export default function Sidebar({ open, onToggle }) {
 
         {/* Footer */}
         {open && (
-          <div style={{ padding: '12px 16px', borderTop: '1px solid #e5e7eb' }}>
-            <div style={{ fontSize: 11, color: '#9ca3af' }}>
+          <div style={{
+            padding: '12px 16px',
+            borderTop: '1px solid rgba(201,160,85,0.2)',
+            background: 'rgba(0,0,0,0.15)',
+          }}>
+            <div style={{ fontSize: 11, color: 'rgba(201,160,85,0.4)', letterSpacing: '0.05em' }}>
               © 2025 FitTracker
             </div>
           </div>
