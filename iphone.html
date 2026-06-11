@@ -36,6 +36,18 @@
     --shadow: 0 18px 50px -22px rgba(20, 21, 40, 0.20);
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+    /* ---- temas de fondo (degradado claro arriba → oscuro abajo) ---- */
+    --grad-top: #79bda6;
+    --grad: linear-gradient(180deg,
+      #79bda6 0%, #569681 26%, #3a7261 52%, #27554a 76%, #18382f 100%);
+    --scrim-rgb: 121, 189, 166;
+  }
+  body.theme-ocean {
+    --grad-top: #bfd2d8;
+    --grad: linear-gradient(180deg,
+      #bfd2d8 0%, #8ea6ad 26%, #5c7981 52%, #2e5059 76%, #002731 100%);
+    --scrim-rgb: 191, 210, 216;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -44,8 +56,11 @@
 
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Segoe UI', sans-serif;
-    background: #18382f;
+    /* mismo color que el tope del degradado: Safari pinta con él la franja
+       de la barra de estado / Dynamic Island, manteniendo la continuidad */
+    background: var(--grad-top);
     color: var(--ink);
+    transition: background 0.5s ease;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     overscroll-behavior-y: none;
@@ -59,14 +74,10 @@
     position: fixed;
     inset: 0;
     z-index: 0;
-    background: linear-gradient(180deg,
-      #79bda6 0%,
-      #569681 26%,
-      #3a7261 52%,
-      #27554a 76%,
-      #18382f 100%);
+    background: var(--grad);
     overflow: hidden;
     pointer-events: none;
+    transition: background 0.5s ease;
   }
   .blobs {
     position: absolute;
@@ -102,7 +113,7 @@
     position: relative;
     z-index: 1;
     min-height: 100%;
-    padding: calc(var(--safe-top) + 8px) 14px calc(var(--safe-bottom) + 28px);
+    padding: calc(var(--safe-top) + 8px) 14px calc(var(--safe-bottom) + 96px);
     max-width: 520px;
     margin: 0 auto;
   }
@@ -114,18 +125,19 @@
   .topscrim {
     position: fixed;
     top: 0; left: 0; right: 0;
-    height: calc(var(--safe-top) + 104px);
-    /* cristal progresivo: el contenido no desaparece, se ve difuminado
-       a través, con más blur cuanto más arriba. La máscara hace que el
-       efecto se desvanezca hacia abajo sin línea de corte. */
-    -webkit-backdrop-filter: blur(18px) saturate(170%);
-    backdrop-filter: blur(18px) saturate(170%);
-    -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 48%, transparent 100%);
-    mask-image: linear-gradient(180deg, #000 0%, #000 48%, transparent 100%);
+    height: calc(var(--safe-top) + 50px);
+    /* liquid glass: blur + película translúcida. El contenido que sube se ve
+       difuminado a través del cristal (no desaparece). La máscara desvanece el
+       efecto hacia abajo, terminando ANTES del borde de la primera tarjeta. */
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    backdrop-filter: blur(22px) saturate(180%);
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 58%, transparent 100%);
+    mask-image: linear-gradient(180deg, #000 0%, #000 58%, transparent 100%);
     background: linear-gradient(180deg,
-      rgba(121,189,166,0.42) 0%,
-      rgba(121,189,166,0.18) 60%,
-      rgba(121,189,166,0) 100%);
+      rgba(var(--scrim-rgb), 0.34) 0%,
+      rgba(var(--scrim-rgb), 0.14) 65%,
+      rgba(var(--scrim-rgb), 0) 100%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
     z-index: 10;
     pointer-events: none;
   }
@@ -135,8 +147,8 @@
     position: sticky;
     top: calc(var(--safe-top) + 6px);
     z-index: 20;
-    padding: 8px 14px 12px;
-    margin-bottom: 8px;
+    padding: 8px 14px 14px;
+    margin-bottom: 14px;
   }
   .topbar h1 {
     font-size: 17px; font-weight: 700; color: #fff;
@@ -260,6 +272,74 @@
     padding: 10px 20px 0; line-height: 1.6;
   }
   .foot a { color: #fff !important; }
+
+  /* ---------- vistas ---------- */
+  .view[hidden] { display: none; }
+
+  /* ---------- ajustes: selector de fondo ---------- */
+  .swatches { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 4px; }
+  .swatch {
+    position: relative;
+    border: 1px solid rgba(255,255,255,0.18);
+    background: transparent;
+    border-radius: var(--radius-md);
+    padding: 10px; cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.25s ease, transform 0.15s ease;
+  }
+  .swatch:active { transform: scale(0.98); }
+  .swatch.active { border-color: rgba(255,255,255,0.9); }
+  .swatch-prev {
+    display: block; height: 92px; border-radius: 12px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
+  }
+  .prev-green { background: linear-gradient(180deg, #79bda6, #3a7261 55%, #18382f); }
+  .prev-ocean { background: linear-gradient(180deg, #bfd2d8, #5c7981 55%, #002731); }
+  .swatch-label {
+    display: block; text-align: center; color: #fff;
+    font-size: 13px; font-weight: 600; margin-top: 10px;
+  }
+  .swatch-check {
+    position: absolute; top: 16px; right: 16px;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: #fff; color: #1c3b32; font-size: 14px; font-weight: 800;
+    display: grid; place-items: center;
+    opacity: 0; transform: scale(0.6); transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .swatch.active .swatch-check { opacity: 1; transform: scale(1); }
+
+  /* ---------- menú inferior: cristal bien marcado ---------- */
+  .tabbar {
+    position: fixed;
+    left: 50%; transform: translateX(-50%);
+    bottom: calc(var(--safe-bottom) + 12px);
+    z-index: 30;
+    display: flex; gap: 6px;
+    padding: 7px;
+    border-radius: 26px;
+    background: linear-gradient(155deg, rgba(255,255,255,0.26), rgba(255,255,255,0.10));
+    -webkit-backdrop-filter: blur(34px) saturate(200%);
+    backdrop-filter: blur(34px) saturate(200%);
+    border: 1px solid rgba(255,255,255,0.30);
+    box-shadow: 0 18px 44px -14px rgba(0,0,0,0.5),
+                inset 0 1px 0 rgba(255,255,255,0.4);
+  }
+  .tab {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    min-width: 96px; padding: 9px 18px;
+    border: none; background: transparent; cursor: pointer;
+    border-radius: 20px;
+    color: rgba(255,255,255,0.62);
+    font-family: inherit; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.02em;
+    transition: color 0.25s ease, background 0.25s ease;
+  }
+  .tab svg { width: 22px; height: 22px; display: block; }
+  .tab.active {
+    color: #fff;
+    background: rgba(255,255,255,0.16);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.25);
+  }
 </style>
 </head>
 <body>
@@ -277,6 +357,9 @@
   <div class="topbar">
     <h1>NRE Real Estate</h1>
   </div>
+
+  <!-- ============ VISTA: ANÁLISIS ============ -->
+  <div id="view-analisis" class="view">
 
   <!-- ===== hero / gráfica ===== -->
   <div class="card hero">
@@ -376,6 +459,44 @@
     <a href="index.html?desktop=1" style="color:var(--accent);font-weight:600;text-decoration:none;">Ver versión de escritorio →</a>
     <div style="margin-top:8px;">Simulación orientativa · no constituye asesoramiento financiero</div>
   </div>
+
+  </div><!-- /view-analisis -->
+
+  <!-- ============ VISTA: AJUSTES ============ -->
+  <div id="view-ajustes" class="view" hidden>
+    <div class="card">
+      <div class="section-title">Color de fondo</div>
+      <div class="swatches">
+        <button class="swatch active" data-theme="green" type="button">
+          <span class="swatch-prev prev-green"></span>
+          <span class="swatch-label">Verde</span>
+          <span class="swatch-check">✓</span>
+        </button>
+        <button class="swatch" data-theme="ocean" type="button">
+          <span class="swatch-prev prev-ocean"></span>
+          <span class="swatch-label">Océano</span>
+          <span class="swatch-check">✓</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ menú inferior ============ -->
+  <nav class="tabbar">
+    <button class="tab active" data-view="analisis" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 3v18h18"/><path d="M7 14l3.5-4 3 3L21 7"/>
+      </svg>
+      Análisis
+    </button>
+    <button class="tab" data-view="ajustes" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+      Ajustes
+    </button>
+  </nav>
 </div>
 
 <script>
@@ -685,6 +806,35 @@
   svg.addEventListener('pointerup', e => endScrub(e.pointerType === 'mouse' ? 0 : 1100));
   svg.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') endScrub(0); });
   svg.addEventListener('pointercancel', () => endScrub(0));
+
+  // ---------- navegación por pestañas ----------
+  const views = { analisis: $('view-analisis'), ajustes: $('view-ajustes') };
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const v = tab.dataset.view;
+      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === tab));
+      views.analisis.hidden = v !== 'analisis';
+      views.ajustes.hidden = v !== 'ajustes';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+
+  // ---------- selector de tema (color de fondo) ----------
+  const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+  const THEME_TOP = { green: '#79bda6', ocean: '#bfd2d8' };
+  function applyTheme(name) {
+    document.body.classList.toggle('theme-ocean', name === 'ocean');
+    document.querySelectorAll('.swatch').forEach(s =>
+      s.classList.toggle('active', s.dataset.theme === name));
+    if (themeColorMeta) themeColorMeta.setAttribute('content', THEME_TOP[name] || THEME_TOP.green);
+    try { localStorage.setItem('nre-theme', name); } catch (_) {}
+  }
+  document.querySelectorAll('.swatch').forEach(s =>
+    s.addEventListener('click', () => applyTheme(s.dataset.theme)));
+  try {
+    const saved = localStorage.getItem('nre-theme');
+    if (saved) applyTheme(saved);
+  } catch (_) {}
 
   // ---------- parallax: los blobs del fondo se desplazan más despacio
   // que el contenido, reforzando la sensación de capas ----------
