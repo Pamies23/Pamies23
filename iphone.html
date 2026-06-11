@@ -172,9 +172,10 @@
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 45%, rgba(0,0,0,0.4) 78%, transparent 100%);
     mask-image: linear-gradient(180deg, #000 0%, #000 45%, rgba(0,0,0,0.4) 78%, transparent 100%);
+    /* casi sin película de color: el contenido (la gráfica) debe seguir
+       viéndose a través del cristal, solo difuminado */
     background: linear-gradient(180deg,
-      rgba(var(--scrim-rgb), 0.30) 0%,
-      rgba(var(--scrim-rgb), 0.10) 65%,
+      rgba(var(--scrim-rgb), 0.10) 0%,
       rgba(var(--scrim-rgb), 0) 100%);
     z-index: 10;
     pointer-events: none;
@@ -511,7 +512,6 @@
 
   <div class="foot">
     <a href="index.html?desktop=1" style="color:var(--accent);font-weight:600;text-decoration:none;">Ver versión de escritorio →</a>
-    <div style="margin-top:8px;">Simulación orientativa · no constituye asesoramiento financiero</div>
   </div>
 
   </div><!-- /view-analisis -->
