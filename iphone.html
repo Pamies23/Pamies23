@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <meta name="apple-mobile-web-app-title" content="NRE Real Estate" />
-<meta name="theme-color" content="#5fa893" />
+<meta name="theme-color" content="#79bda6" />
 <title>Real Estate · Pamies</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -44,28 +44,40 @@
 
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Segoe UI', sans-serif;
-    background: #2c5d50;
-    background: linear-gradient(165deg, #5fa893 0%, #3f7e6d 32%, #2c5d50 64%, #21473d 100%);
-    background-attachment: fixed;
+    background: #18382f;
     color: var(--ink);
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     overscroll-behavior-y: none;
   }
 
-  /* ---------- liquid background blobs ---------- */
-  .blobs {
+  /* ---------- fondo FIJO: el contenido se desliza por encima ----------
+     El degradado va de claro (arriba) a oscuro (abajo). Como las tarjetas
+     son de cristal con backdrop-filter, al hacer scroll van muestreando la
+     zona del fondo que tienen detrás y su tinte cambia con la posición. */
+  .bg {
     position: fixed;
     inset: 0;
     z-index: 0;
+    background: linear-gradient(180deg,
+      #79bda6 0%,
+      #569681 26%,
+      #3a7261 52%,
+      #27554a 76%,
+      #18382f 100%);
     overflow: hidden;
     pointer-events: none;
-    filter: blur(60px) saturate(120%);
   }
-  .blob { position: absolute; border-radius: 50%; opacity: 0.32; will-change: transform; }
+  .blobs {
+    position: absolute;
+    inset: 0;
+    filter: blur(60px) saturate(120%);
+    will-change: transform;
+  }
+  .blob { position: absolute; border-radius: 50%; opacity: 0.34; will-change: transform; }
   .blob-1 {
     width: 90vw; height: 90vw;
-    background: radial-gradient(circle at 30% 30%, #bdf0dd, transparent 65%);
+    background: radial-gradient(circle at 30% 30%, #d6f6e7, transparent 65%);
     top: -34vw; left: -25vw;
     animation: drift1 24s ease-in-out infinite alternate;
   }
@@ -77,7 +89,7 @@
   }
   .blob-3 {
     width: 65vw; height: 65vw;
-    background: radial-gradient(circle at 50% 50%, #d8f7ea, transparent 65%);
+    background: radial-gradient(circle at 50% 50%, #b9efd9, transparent 65%);
     top: 35%; left: 40%;
     animation: drift3 34s ease-in-out infinite alternate;
   }
@@ -95,26 +107,39 @@
     margin: 0 auto;
   }
 
-  /* ---------- top bar ---------- */
+  /* ---------- top bar sticky de cristal: el contenido pasa por debajo ---------- */
   .topbar {
-    padding: 8px 8px 18px;
+    position: sticky;
+    top: calc(var(--safe-top) + 6px);
+    z-index: 20;
+    padding: 13px 18px;
+    margin-bottom: 14px;
+    border-radius: 24px;
+    background: linear-gradient(155deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05));
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.22);
+    box-shadow: 0 10px 30px -16px rgba(0,0,0,0.35),
+                inset 0 1px 0 rgba(255,255,255,0.30);
   }
   .topbar h1 {
-    font-size: 20px; font-weight: 800; color: #fff;
+    font-size: 17px; font-weight: 700; color: #fff;
     letter-spacing: 0.14em; text-transform: uppercase;
   }
-  .topbar p { font-size: 12px; color: rgba(255,255,255,0.72); margin-top: 3px; letter-spacing: 0.01em; }
+  .topbar p { font-size: 11.5px; color: rgba(255,255,255,0.68); margin-top: 2px; letter-spacing: 0.01em; }
 
-  /* ---------- liquid glass ---------- */
+  /* ---------- liquid glass ----------
+     Relleno muy ligero para que el cristal deje pasar el tono del fondo:
+     la tarjeta se aclara u oscurece según la zona del degradado que cruza. */
   .card {
     position: relative;
-    background: linear-gradient(155deg, rgba(255,255,255,0.24), rgba(255,255,255,0.09));
-    -webkit-backdrop-filter: blur(28px) saturate(180%);
-    backdrop-filter: blur(28px) saturate(180%);
-    border: 1px solid rgba(255,255,255,0.28);
+    background: linear-gradient(155deg, rgba(255,255,255,0.15), rgba(255,255,255,0.04));
+    -webkit-backdrop-filter: blur(30px) saturate(190%);
+    backdrop-filter: blur(30px) saturate(190%);
+    border: 1px solid rgba(255,255,255,0.24);
     border-radius: var(--radius-xl);
     box-shadow: 0 16px 40px -12px rgba(0,0,0,0.35),
-                inset 0 1px 0 rgba(255,255,255,0.35);
+                inset 0 1px 0 rgba(255,255,255,0.32);
     padding: 22px;
     margin-bottom: 16px;
   }
@@ -219,10 +244,12 @@
 </head>
 <body>
 
-<div class="blobs">
-  <div class="blob blob-1"></div>
-  <div class="blob blob-2"></div>
-  <div class="blob blob-3"></div>
+<div class="bg">
+  <div class="blobs" id="blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
 </div>
 
 <div class="app">
@@ -638,6 +665,19 @@
   svg.addEventListener('pointerup', e => endScrub(e.pointerType === 'mouse' ? 0 : 1100));
   svg.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') endScrub(0); });
   svg.addEventListener('pointercancel', () => endScrub(0));
+
+  // ---------- parallax: los blobs del fondo se desplazan más despacio
+  // que el contenido, reforzando la sensación de capas ----------
+  const blobs = $('blobs');
+  let parallaxTick = false;
+  window.addEventListener('scroll', () => {
+    if (parallaxTick) return;
+    parallaxTick = true;
+    requestAnimationFrame(() => {
+      blobs.style.transform = `translateY(${window.scrollY * -0.08}px)`;
+      parallaxTick = false;
+    });
+  }, { passive: true });
 
   // primer render
   update();

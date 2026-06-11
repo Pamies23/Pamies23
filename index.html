@@ -29,33 +29,43 @@
 
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Segoe UI', sans-serif;
-    background: #2c5d50;
-    background: linear-gradient(165deg, #5fa893 0%, #3f7e6d 32%, #2c5d50 64%, #21473d 100%);
-    background-attachment: fixed;
+    background: #18382f;
     color: var(--ink);
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
   }
 
-  /* ---------- liquid background blobs ---------- */
-  .blobs {
+  /* ---------- fondo FIJO: el contenido se desliza por encima ----------
+     Degradado de claro (arriba) a oscuro (abajo); las tarjetas de cristal
+     muestrean la zona que cruzan y su tinte cambia con la posición. */
+  .bg {
     position: fixed;
     inset: 0;
     z-index: 0;
+    background: linear-gradient(180deg,
+      #79bda6 0%,
+      #569681 26%,
+      #3a7261 52%,
+      #27554a 76%,
+      #18382f 100%);
     overflow: hidden;
     pointer-events: none;
+  }
+  .blobs {
+    position: absolute;
+    inset: 0;
     filter: blur(70px) saturate(120%);
+    will-change: transform;
   }
   .blob {
     position: absolute;
     border-radius: 50%;
-    opacity: 0.55;
+    opacity: 0.34;
     will-change: transform;
   }
-  .blob { opacity: 0.32; }
   .blob-1 {
     width: 55vmax; height: 55vmax;
-    background: radial-gradient(circle at 30% 30%, #bdf0dd, transparent 65%);
+    background: radial-gradient(circle at 30% 30%, #d6f6e7, transparent 65%);
     top: -22vmax; left: -12vmax;
     animation: drift1 26s ease-in-out infinite alternate;
   }
@@ -67,7 +77,7 @@
   }
   .blob-3 {
     width: 35vmax; height: 35vmax;
-    background: radial-gradient(circle at 50% 50%, #d8f7ea, transparent 65%);
+    background: radial-gradient(circle at 50% 50%, #b9efd9, transparent 65%);
     top: 30%; left: 55%;
     animation: drift3 38s ease-in-out infinite alternate;
   }
@@ -105,13 +115,13 @@
 
   /* ---------- liquid glass ---------- */
   .card {
-    background: linear-gradient(155deg, rgba(255,255,255,0.24), rgba(255,255,255,0.09));
-    -webkit-backdrop-filter: blur(28px) saturate(180%);
-    backdrop-filter: blur(28px) saturate(180%);
-    border: 1px solid rgba(255,255,255,0.28);
+    background: linear-gradient(155deg, rgba(255,255,255,0.15), rgba(255,255,255,0.04));
+    -webkit-backdrop-filter: blur(30px) saturate(190%);
+    backdrop-filter: blur(30px) saturate(190%);
+    border: 1px solid rgba(255,255,255,0.24);
     border-radius: var(--radius-lg);
     box-shadow: 0 16px 40px -12px rgba(0,0,0,0.35),
-                inset 0 1px 0 rgba(255,255,255,0.35);
+                inset 0 1px 0 rgba(255,255,255,0.32);
     padding: 28px;
   }
 
@@ -242,10 +252,12 @@
   })();
 </script>
 
-<div class="blobs">
-  <div class="blob blob-1"></div>
-  <div class="blob blob-2"></div>
-  <div class="blob blob-3"></div>
+<div class="bg">
+  <div class="blobs" id="blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
 </div>
 
 <div class="page">
@@ -658,6 +670,18 @@
     hoverLayer.style.opacity = 0;
     tip.classList.remove('show');
   });
+
+  // parallax sutil de los blobs al hacer scroll
+  const blobs = $('blobs');
+  let parallaxTick = false;
+  window.addEventListener('scroll', () => {
+    if (parallaxTick) return;
+    parallaxTick = true;
+    requestAnimationFrame(() => {
+      blobs.style.transform = `translateY(${window.scrollY * -0.08}px)`;
+      parallaxTick = false;
+    });
+  }, { passive: true });
 
   // first paint
   update();
