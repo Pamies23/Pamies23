@@ -17,8 +17,7 @@
   (() => {
     try {
       const t = localStorage.getItem('nre-theme');
-      if (t === 'ocean') document.documentElement.classList.add('theme-ocean');
-      else if (t === 'copper') document.documentElement.classList.add('theme-copper');
+      if (t && t !== 'green') document.documentElement.classList.add('theme-' + t);
     } catch (_) {}
     // ¿lanzada desde la pantalla de inicio? (modo app a pantalla completa)
     if (window.navigator.standalone === true ||
@@ -55,30 +54,43 @@
 
     /* ---- temas de fondo (degradado claro arriba → oscuro abajo) ---- */
     --grad-top: #79bda6;
+    --grad-bottom: #18382f;
     --scrim-rgb: 121, 189, 166;
   }
   /* la clase de tema vive en <html>: se aplica en el <head> antes de pintar */
   html.theme-ocean {
     --grad-top: #bfd2d8;
+    --grad-bottom: #002731;
     --scrim-rgb: 191, 210, 216;
   }
   html.theme-copper {
     --grad-top: #cf9d7c;
+    --grad-bottom: #2e1a0e;
     --scrim-rgb: 207, 157, 124;
+  }
+  html.theme-forest {
+    --grad-top: #8aa896;
+    --grad-bottom: #141f18;
+    --scrim-rgb: 138, 168, 150;
+  }
+  html.theme-sand {
+    --grad-top: #b8a88c;
+    --grad-bottom: #221c13;
+    --scrim-rgb: 184, 168, 140;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
   html, body { height: 100%; }
-  /* el lienzo raíz también del color del tope: es lo que Safari muestrea
-     para tintar la franja del notch si decide ignorar el theme-color */
-  html { background: var(--grad-top); transition: background 0.5s ease; }
+  /* el lienzo raíz del color OSCURO del final del degradado: es lo que asoma
+     en la franja inferior (teclado, barra de Safari, glitches de viewport),
+     así el color llega hasta el fondo. La franja del notch la cubre la capa
+     .bg fija, que sí es clara arriba. */
+  html { background: var(--grad-bottom); transition: background 0.5s ease; }
 
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Segoe UI', sans-serif;
-    /* mismo color que el tope del degradado: Safari pinta con él la franja
-       de la barra de estado / Dynamic Island, manteniendo la continuidad */
-    background: var(--grad-top);
+    background: var(--grad-bottom);
     color: var(--ink);
     transition: background 0.5s ease;
     overflow-x: hidden;
@@ -103,28 +115,21 @@
     pointer-events: none;
   }
   /* los degradados CSS no se interpolan: el cambio de tema se hace por
-     crossfade de una segunda capa con el degradado océano encima */
-  .bg::after {
-    content: '';
+     crossfade de capas, una por tema, apiladas sobre el degradado verde base */
+  .bg-layer {
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg,
-      #bfd2d8 0%, #bfd2d8 14%, #8ea6ad 34%, #5c7981 56%, #2e5059 78%, #002731 100%);
     opacity: 0;
     transition: opacity 0.7s ease;
   }
-  html.theme-ocean .bg::after { opacity: 1; }
-  /* tercera capa para el tema cobre, mismo mecanismo de crossfade */
-  .bg::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg,
-      #cf9d7c 0%, #cf9d7c 14%, #a87454 34%, #7d5239 56%, #54341f 78%, #2e1a0e 100%);
-    opacity: 0;
-    transition: opacity 0.7s ease;
-  }
-  html.theme-copper .bg::before { opacity: 1; }
+  .bg-ocean  { background: linear-gradient(180deg, #bfd2d8 0%, #bfd2d8 14%, #8ea6ad 34%, #5c7981 56%, #2e5059 78%, #002731 100%); }
+  .bg-copper { background: linear-gradient(180deg, #cf9d7c 0%, #cf9d7c 14%, #a87454 34%, #7d5239 56%, #54341f 78%, #2e1a0e 100%); }
+  .bg-forest { background: linear-gradient(180deg, #8aa896 0%, #8aa896 14%, #5f7d6b 34%, #41594b 56%, #2a3c31 78%, #141f18 100%); }
+  .bg-sand   { background: linear-gradient(180deg, #b8a88c 0%, #b8a88c 14%, #94846b 34%, #6d5f4b 56%, #483e2f 78%, #221c13 100%); }
+  html.theme-ocean  .bg-ocean,
+  html.theme-copper .bg-copper,
+  html.theme-forest .bg-forest,
+  html.theme-sand   .bg-sand { opacity: 1; }
   .blobs {
     position: absolute;
     inset: 0;
@@ -387,6 +392,8 @@
   .prev-green  { background: linear-gradient(180deg, #79bda6, #3a7261 55%, #18382f); }
   .prev-ocean  { background: linear-gradient(180deg, #bfd2d8, #5c7981 55%, #002731); }
   .prev-copper { background: linear-gradient(180deg, #cf9d7c, #7d5239 55%, #2e1a0e); }
+  .prev-forest { background: linear-gradient(180deg, #8aa896, #41594b 55%, #141f18); }
+  .prev-sand   { background: linear-gradient(180deg, #b8a88c, #6d5f4b 55%, #221c13); }
   .swatch-label {
     display: block; text-align: center; color: #fff;
     font-size: 13px; font-weight: 600; margin-top: 10px;
@@ -448,6 +455,10 @@
 <body>
 
 <div class="bg">
+  <div class="bg-layer bg-ocean"></div>
+  <div class="bg-layer bg-copper"></div>
+  <div class="bg-layer bg-forest"></div>
+  <div class="bg-layer bg-sand"></div>
   <div class="blobs" id="blobs">
     <div class="blob blob-1"></div>
     <div class="blob blob-2"></div>
@@ -475,22 +486,18 @@
       <svg id="chart" viewBox="0 0 390 300" role="img" aria-label="Gráfica de cashflow acumulado">
         <defs>
           <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#5b5bf0" stop-opacity="0.26"/>
-            <stop offset="100%" stop-color="#5b5bf0" stop-opacity="0"/>
-          </linearGradient>
-          <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stop-color="#7b6cf6"/>
-            <stop offset="100%" stop-color="#4f8df9"/>
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.22"/>
+            <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
           </linearGradient>
         </defs>
         <path id="area" fill="url(#areaGrad)"></path>
         <!-- línea de 0 -->
-        <line id="zeroLine" stroke="rgba(255,255,255,0.42)" stroke-width="1.25" stroke-dasharray="1 7" stroke-linecap="round"></line>
-        <path id="line" fill="none" stroke="url(#lineGrad)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path>
+        <line id="zeroLine" stroke="rgba(255,255,255,0.68)" stroke-width="1.6" stroke-dasharray="1 7" stroke-linecap="round"></line>
+        <path id="line" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path>
         <g id="xLabels"></g>
         <g id="hoverLayer" style="opacity:0; transition: opacity 0.18s ease;">
-          <line id="hoverLine" stroke="#c3c6d4" stroke-width="1.4" stroke-dasharray="3 4"></line>
-          <circle id="hoverDot" r="6" fill="#fff" stroke="#5b5bf0" stroke-width="3.5"></circle>
+          <line id="hoverLine" stroke="rgba(255,255,255,0.65)" stroke-width="1.4" stroke-dasharray="3 4"></line>
+          <circle id="hoverDot" r="6" fill="#fff" stroke="rgba(10,28,22,0.55)" stroke-width="3.5"></circle>
         </g>
       </svg>
       <div class="tooltip" id="tooltip">
@@ -615,10 +622,6 @@
     </div>
   </div>
 
-  <div class="foot">
-    <a href="index.html?desktop=1" style="color:var(--accent);font-weight:600;text-decoration:none;">Ver versión de escritorio →</a>
-  </div>
-
   </div><!-- /view-analisis -->
 
   <!-- ============ VISTA: AJUSTES ============ -->
@@ -641,7 +644,21 @@
           <span class="swatch-label">Cobre</span>
           <span class="swatch-check">✓</span>
         </button>
+        <button class="swatch" data-theme="forest" type="button">
+          <span class="swatch-prev prev-forest"></span>
+          <span class="swatch-label">Bosque</span>
+          <span class="swatch-check">✓</span>
+        </button>
+        <button class="swatch" data-theme="sand" type="button">
+          <span class="swatch-prev prev-sand"></span>
+          <span class="swatch-label">Arena</span>
+          <span class="swatch-check">✓</span>
+        </button>
       </div>
+    </div>
+
+    <div class="foot">
+      <a href="index.html?desktop=1" style="color:#fff;font-weight:600;text-decoration:none;">Ver versión de escritorio →</a>
     </div>
   </div>
 
@@ -1028,6 +1045,7 @@
     views.analisis.hidden = name !== 'analisis';
     views.ajustes.hidden = name !== 'ajustes';
     const v = views[name];
+    v.style.animation = '';            // restaura la animación de entrada tras un swipe previo
     v.classList.remove('slide-left', 'slide-right');
     if (dir) v.classList.add(dir === 'left' ? 'slide-left' : 'slide-right');
     window.scrollTo(0, 0);
@@ -1074,30 +1092,119 @@
     if (dragMoved) { pill.style.transition = ''; pill.style.transform = ''; }
   });
 
-  // ---------- swipe horizontal para cambiar de vista (como las páginas de iOS) ----------
-  // Deslizar el dedo hacia la izquierda lleva a Ajustes (la página de la derecha)
-  // y hacia la derecha vuelve a Análisis. Se ignoran los gestos que empiezan en
-  // la gráfica (scrubbing), el menú o un control.
-  let swX0 = 0, swY0 = 0, swOk = false;
+  // ---------- swipe interactivo entre vistas (como las páginas de iOS) ----------
+  // Las dos páginas se mueven CON el dedo: la actual sale y la vecina entra
+  // pegada a él. Al soltar, se decide por distancia o velocidad (flick) y la
+  // transición se completa con un muelle. La píldora del menú acompaña el
+  // gesto de forma proporcional. Hacia la izquierda → Ajustes; derecha → Análisis.
+  let pgAxis = null, pgTracking = false;
+  let pgX0 = 0, pgY0 = 0, pgDx = 0, pgW = 1, pgDir = 0;
+  let pgOut = null, pgIn = null, pgPillBase = 0, pgPillTarget = 0;
+  let pgLastX = 0, pgLastT = 0, pgVx = 0, pgSettling = false;
+
+  function beginPager() {
+    pgW = window.innerWidth;
+    const cur = views.analisis.hidden ? 'ajustes' : 'analisis';
+    const next = cur === 'analisis' ? 'ajustes' : 'analisis';
+    pgOut = views[cur]; pgIn = views[next];
+    pgDir = cur === 'analisis' ? -1 : 1;        // sentido del dedo que avanza a la otra página
+    pgPillBase = cur === 'ajustes' ? maxOff() : 0;
+    pgPillTarget = next === 'ajustes' ? maxOff() : 0;
+    // la vista entrante se superpone a la altura del viewport actual, fuera de pantalla
+    pgIn.hidden = false;
+    pgIn.style.cssText =
+      `position:absolute; top:${window.scrollY + pgOut.offsetTop}px; left:14px; right:14px;` +
+      `transition:none; animation:none; transform:translateX(${pgDir < 0 ? pgW : -pgW}px);`;
+    pgOut.style.transition = 'none';
+    pill.style.transition = 'none';
+  }
+
+  function applyPager(dx) {
+    // hacia la página vecina acompaña 1:1; en sentido contrario, goma elástica
+    let d = pgDir < 0 ? Math.min(0, dx) : Math.max(0, dx);
+    d += (dx - d) * 0.18;
+    pgOut.style.transform = `translateX(${d}px)`;
+    pgIn.style.transform = `translateX(${(pgDir < 0 ? pgW : -pgW) + d}px)`;
+    const p = Math.max(0, Math.min(1, (pgDir < 0 ? -d : d) / pgW));
+    pill.style.transform = `translateX(${pgPillBase + (pgPillTarget - pgPillBase) * p}px)`;
+  }
+
+  function finishPager(committedName) {
+    pgSettling = false;
+    if (pgOut) pgOut.style.cssText = '';
+    // animation:none evita que la vista reproduzca su animación de entrada
+    // al limpiar los estilos del gesto (ya entró deslizando con el dedo)
+    if (pgIn) pgIn.style.cssText = committedName ? 'animation:none;' : '';
+    pill.style.transition = ''; pill.style.transform = '';
+    if (committedName) {
+      views.analisis.hidden = committedName !== 'analisis';
+      views.ajustes.hidden = committedName !== 'ajustes';
+      window.scrollTo(0, 0);
+    } else if (pgIn) {
+      pgIn.hidden = true;
+    }
+    pgOut = pgIn = null;
+  }
+
   document.addEventListener('touchstart', e => {
-    swOk = !e.target.closest('#chartWrap, .tabbar, input, button');
-    if (!swOk) return;
-    swX0 = e.touches[0].clientX; swY0 = e.touches[0].clientY;
-  }, { passive: true });
-  document.addEventListener('touchend', e => {
-    if (!swOk) return;
-    swOk = false;
-    const t = e.changedTouches[0];
-    const dx = t.clientX - swX0, dy = t.clientY - swY0;
-    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.4) return;   // gesto vertical o corto
-    if (dx < 0) setView('ajustes', 'left');
-    else setView('analisis', 'right');
+    if (pgSettling || e.touches.length !== 1) { pgTracking = false; return; }
+    if (e.target.closest('#chartWrap, .tabbar, input')) { pgTracking = false; return; }
+    pgTracking = true; pgAxis = null; pgDx = 0;
+    pgX0 = pgLastX = e.touches[0].clientX; pgY0 = e.touches[0].clientY;
+    pgLastT = e.timeStamp; pgVx = 0;
   }, { passive: true });
 
+  document.addEventListener('touchmove', e => {
+    if (!pgTracking) return;
+    const t = e.touches[0];
+    const dx = t.clientX - pgX0, dy = t.clientY - pgY0;
+    if (!pgAxis) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;     // aún sin dirección clara
+      pgAxis = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'x' : 'y';
+      if (pgAxis !== 'x') { pgTracking = false; return; }   // scroll vertical normal
+      beginPager();
+    }
+    e.preventDefault();                                     // gesto horizontal: sin scroll
+    if (e.timeStamp > pgLastT) {
+      pgVx = (t.clientX - pgLastX) / (e.timeStamp - pgLastT);
+      pgLastT = e.timeStamp; pgLastX = t.clientX;
+    }
+    pgDx = dx;
+    applyPager(dx);
+  }, { passive: false });
+
+  function endPager() {
+    if (!pgTracking) return;
+    pgTracking = false;
+    if (pgAxis !== 'x' || !pgOut) return;
+    const advance = pgDir < 0 ? -pgDx : pgDx;
+    const flick = pgDir < 0 ? pgVx < -0.45 : pgVx > 0.45;
+    const commit = advance > pgW * 0.35 || (flick && advance > 30);
+    const dur = 'transform 0.32s cubic-bezier(0.22, 1, 0.36, 1)';
+    pgOut.style.transition = dur; pgIn.style.transition = dur; pill.style.transition = '';
+    pgSettling = true;
+    if (commit) {
+      const name = pgIn === views.ajustes ? 'ajustes' : 'analisis';
+      pgOut.style.transform = `translateX(${pgDir < 0 ? -pgW : pgW}px)`;
+      pgIn.style.transform = 'translateX(0px)';
+      pill.style.transform = '';
+      tabbar.classList.toggle('on-ajustes', name === 'ajustes');
+      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === name));
+      setTimeout(() => finishPager(name), 340);
+    } else {
+      pgOut.style.transform = 'translateX(0px)';
+      pgIn.style.transform = `translateX(${pgDir < 0 ? pgW : -pgW}px)`;
+      pill.style.transform = '';
+      setTimeout(() => finishPager(null), 340);
+    }
+  }
+  document.addEventListener('touchend', endPager);
+  document.addEventListener('touchcancel', endPager);
+
   // ---------- selector de tema (color de fondo) ----------
+  const THEMES = ['green', 'ocean', 'copper', 'forest', 'sand'];
   function applyTheme(name, persist) {
-    document.documentElement.classList.toggle('theme-ocean', name === 'ocean');
-    document.documentElement.classList.toggle('theme-copper', name === 'copper');
+    THEMES.forEach(n => document.documentElement.classList.toggle('theme-' + n, n === name && n !== 'green'));
     document.querySelectorAll('.swatch').forEach(s =>
       s.classList.toggle('active', s.dataset.theme === name));
     if (persist) { try { localStorage.setItem('nre-theme', name); } catch (_) {} }
@@ -1105,8 +1212,7 @@
   document.querySelectorAll('.swatch').forEach(s =>
     s.addEventListener('click', () => applyTheme(s.dataset.theme, true)));
   // el tema guardado ya se aplicó en el <head>; aquí solo sincronizamos los swatches
-  if (document.documentElement.classList.contains('theme-ocean')) applyTheme('ocean', false);
-  else if (document.documentElement.classList.contains('theme-copper')) applyTheme('copper', false);
+  applyTheme(THEMES.find(n => document.documentElement.classList.contains('theme-' + n)) || 'green', false);
 
   // ---------- parallax: los blobs del fondo se desplazan más despacio
   // que el contenido, reforzando la sensación de capas ----------
