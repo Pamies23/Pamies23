@@ -63,10 +63,10 @@
     --grad-bottom: #002731;
     --scrim-rgb: 191, 210, 216;
   }
-  html.theme-copper {
-    --grad-top: #cf9d7c;
-    --grad-bottom: #2e1a0e;
-    --scrim-rgb: 207, 157, 124;
+  html.theme-navy {
+    --grad-top: #4a6a96;
+    --grad-bottom: #122544;
+    --scrim-rgb: 74, 106, 150;
   }
   html.theme-forest {
     --grad-top: #8aa896;
@@ -123,11 +123,13 @@
     transition: opacity 0.7s ease;
   }
   .bg-ocean  { background: linear-gradient(180deg, #bfd2d8 0%, #bfd2d8 14%, #8ea6ad 34%, #5c7981 56%, #2e5059 78%, #002731 100%); }
-  .bg-copper { background: linear-gradient(180deg, #cf9d7c 0%, #cf9d7c 14%, #a87454 34%, #7d5239 56%, #54341f 78%, #2e1a0e 100%); }
+  /* navy: se oscurece hacia el centro para que las cifras blancas resalten,
+     y vuelve a abrir ligeramente al fondo */
+  .bg-navy   { background: linear-gradient(180deg, #4a6a96 0%, #3a577f 14%, #1d3358 36%, #0c1c3a 54%, #0a1730 74%, #122544 100%); }
   .bg-forest { background: linear-gradient(180deg, #8aa896 0%, #8aa896 14%, #5f7d6b 34%, #41594b 56%, #2a3c31 78%, #141f18 100%); }
   .bg-sand   { background: linear-gradient(180deg, #ab9d85 0%, #ab9d85 14%, #877a64 34%, #635a47 56%, #423c2e 78%, #211d16 100%); }
   html.theme-ocean  .bg-ocean,
-  html.theme-copper .bg-copper,
+  html.theme-navy   .bg-navy,
   html.theme-forest .bg-forest,
   html.theme-sand   .bg-sand { opacity: 1; }
   .blobs {
@@ -138,7 +140,7 @@
     will-change: transform;
   }
   /* blobs NEUTROS (solo luz, sin tinte): así no contaminan de verde
-     los temas cálidos como Arena o Cobre */
+     los temas cálidos como Arena */
   .blob { position: absolute; border-radius: 50%; opacity: 0.16; will-change: transform; }
   .blob-1 {
     width: 88vw; height: 88vw;
@@ -393,7 +395,7 @@
   }
   .prev-green  { background: linear-gradient(180deg, #79bda6, #3a7261 55%, #18382f); }
   .prev-ocean  { background: linear-gradient(180deg, #bfd2d8, #5c7981 55%, #002731); }
-  .prev-copper { background: linear-gradient(180deg, #cf9d7c, #7d5239 55%, #2e1a0e); }
+  .prev-navy   { background: linear-gradient(180deg, #4a6a96, #0c1c3a 55%, #122544); }
   .prev-forest { background: linear-gradient(180deg, #8aa896, #41594b 55%, #141f18); }
   .prev-sand   { background: linear-gradient(180deg, #ab9d85, #635a47 55%, #211d16); }
   .swatch-label {
@@ -458,7 +460,7 @@
 
 <div class="bg">
   <div class="bg-layer bg-ocean"></div>
-  <div class="bg-layer bg-copper"></div>
+  <div class="bg-layer bg-navy"></div>
   <div class="bg-layer bg-forest"></div>
   <div class="bg-layer bg-sand"></div>
   <div class="blobs" id="blobs">
@@ -645,9 +647,9 @@
           <span class="swatch-label">Océano</span>
           <span class="swatch-check">✓</span>
         </button>
-        <button class="swatch" data-theme="copper" type="button">
-          <span class="swatch-prev prev-copper"></span>
-          <span class="swatch-label">Cobre</span>
+        <button class="swatch" data-theme="navy" type="button">
+          <span class="swatch-prev prev-navy"></span>
+          <span class="swatch-label">Navy</span>
           <span class="swatch-check">✓</span>
         </button>
         <button class="swatch" data-theme="forest" type="button">
@@ -1233,7 +1235,7 @@
   document.addEventListener('touchcancel', endPager);
 
   // ---------- selector de tema (color de fondo) ----------
-  const THEMES = ['green', 'ocean', 'copper', 'forest', 'sand'];
+  const THEMES = ['green', 'ocean', 'navy', 'forest', 'sand'];
   function applyTheme(name, persist) {
     THEMES.forEach(n => document.documentElement.classList.toggle('theme-' + n, n === name && n !== 'green'));
     document.querySelectorAll('.swatch').forEach(s =>
