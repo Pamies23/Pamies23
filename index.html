@@ -297,7 +297,7 @@
       <div class="field">
         <label><span class="dot dot-equity"></span>Equity</label>
         <div class="input-wrap">
-          <input id="equity" type="number" value="100000" min="0" step="1000">
+          <input id="equity" class="num" type="text" inputmode="numeric" autocomplete="off">
           <span class="suffix">€</span>
         </div>
       </div>
@@ -305,7 +305,7 @@
       <div class="field">
         <label><span class="dot dot-debt"></span>Deuda</label>
         <div class="input-wrap">
-          <input id="debt" type="number" value="150000" min="0" step="1000">
+          <input id="debt" class="num" type="text" inputmode="numeric" autocomplete="off">
           <span class="suffix">€</span>
         </div>
       </div>
@@ -313,7 +313,7 @@
       <div class="field">
         <label><span class="dot dot-cash"></span>Cashflow anual</label>
         <div class="input-wrap">
-          <input id="cashflow" type="number" value="12000" step="500">
+          <input id="cashflow" class="num" data-signed="1" type="text" inputmode="numeric" autocomplete="off">
           <span class="suffix">€ / año</span>
         </div>
       </div>
@@ -321,7 +321,7 @@
       <div class="field">
         <label><span class="dot dot-sale"></span>Valor de venta estimado</label>
         <div class="input-wrap">
-          <input id="saleValue" type="number" value="320000" min="0" step="5000">
+          <input id="saleValue" class="num" type="text" inputmode="numeric" autocomplete="off">
           <span class="suffix">€</span>
         </div>
       </div>
@@ -372,8 +372,13 @@
           </defs>
           <g id="gridLines"></g>
           <path id="area" fill="url(#areaGrad)"></path>
+          <!-- break-even (0 €) -->
+          <line id="zeroLine" stroke="#b3b8c6" stroke-width="1.25" stroke-dasharray="1 7" stroke-linecap="round"></line>
+          <g id="zeroLabel" style="opacity:0; transition:opacity .3s ease;">
+            <rect id="zeroLabelBg" rx="8" ry="8" height="20" fill="#eef0f6"></rect>
+            <text id="zeroLabelTx" font-size="12" font-weight="700" fill="#7c8295" dominant-baseline="middle">0 € · break-even</text>
+          </g>
           <path id="line" fill="none" stroke="url(#lineGrad)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path>
-          <line id="zeroLine" stroke="#d6d9e4" stroke-width="1.5" stroke-dasharray="2 6" stroke-linecap="round"></line>
           <g id="xLabels"></g>
           <g id="hoverLayer" style="opacity:0; transition: opacity 0.18s ease;">
             <line id="hoverLine" stroke="#c3c6d4" stroke-width="1.5" stroke-dasharray="3 4"></line>
@@ -403,22 +408,45 @@
   const fmtEUR = n => n.toLocaleString('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
   const fmtPct = n => (n * 100).toLocaleString('es-ES', { maximumFractionDigits: 1 }) + ' %';
 
+  // ---------- formato de miles (1.234.567) ----------
+  const groupThousands = s => s.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  function sanitizeNum(raw, allowNeg) {
+    const neg = allowNeg && /^\s*-/.test(raw);
+    let digits = raw.replace(/[^\d]/g, '').replace(/^0+(?=\d)/, '');
+    const display = (neg ? '-' : '') + (digits === '' ? '' : groupThousands(digits));
+    const value = (digits === '' ? 0 : parseInt(digits, 10)) * (neg ? -1 : 1);
+    return { display, value };
+  }
+  const fmtModel = (n, allowNeg) => sanitizeNum(String(n), allowNeg).display;
+
+  // ---------- model (valores numéricos en memoria) ----------
+  const model = { equity: 100000, debt: 150000, cashflow: 12000, saleValue: 320000 };
+  const NUM_FIELDS = [
+    { id: 'equity', signed: false },
+    { id: 'debt', signed: false },
+    { id: 'cashflow', signed: true },
+    { id: 'saleValue', signed: false },
+  ];
+
   // default sale date: +10 years
   const defDate = new Date();
   defDate.setFullYear(defDate.getFullYear() + 10);
   $('saleDate').value = defDate.toISOString().slice(0, 10);
 
-  // ---------- model ----------
+  NUM_FIELDS.forEach(f => { $(f.id).value = fmtModel(model[f.id], f.signed); });
+
   function readInputs() {
-    const equity = Math.max(0, parseFloat($('equity').value) || 0);
-    const debt = Math.max(0, parseFloat($('debt').value) || 0);
-    const cashflow = parseFloat($('cashflow').value) || 0;
-    const saleValue = Math.max(0, parseFloat($('saleValue').value) || 0);
     const now = new Date();
     const sale = new Date($('saleDate').value);
     let years = isNaN(sale) ? 10 : Math.round((sale - now) / (365.25 * 24 * 3600 * 1000));
     years = Math.min(40, Math.max(1, years));
-    return { equity, debt, cashflow, saleValue, years, startYear: now.getFullYear() };
+    return {
+      equity: Math.max(0, model.equity),
+      debt: Math.max(0, model.debt),
+      cashflow: model.cashflow,
+      saleValue: Math.max(0, model.saleValue),
+      years, startYear: now.getFullYear(),
+    };
   }
 
   // annual cashflow series from the equity investor's perspective
@@ -436,16 +464,26 @@
     return out;
   }
 
-  // IRR via bisection
+  // TIR (IRR): tasa que hace VAN = 0. Barremos un rango amplio para localizar el primer
+  // cruce de signo del VAN y afinamos con bisección. Robusto ante flujos intermedios negativos.
   function irr(flows) {
     const npv = r => flows.reduce((s, f, t) => s + f / Math.pow(1 + r, t), 0);
-    let lo = -0.95, hi = 10;
-    if (npv(lo) * npv(hi) > 0) return null;
-    for (let i = 0; i < 80; i++) {
-      const mid = (lo + hi) / 2;
-      (npv(lo) * npv(mid) <= 0) ? (hi = mid) : (lo = mid);
+    if (!flows.some(f => f > 0) || !flows.some(f => f < 0)) return null;
+    let prevR = -0.99, prevV = npv(prevR);
+    for (let r = -0.98; r <= 5; r += 0.005) {
+      const v = npv(r);
+      if (prevV === 0) return prevR;
+      if (prevV * v < 0) {
+        let lo = prevR, hi = r;
+        for (let i = 0; i < 100; i++) {
+          const mid = (lo + hi) / 2;
+          (npv(lo) * npv(mid) <= 0) ? (hi = mid) : (lo = mid);
+        }
+        return (lo + hi) / 2;
+      }
+      prevR = r; prevV = v;
     }
-    return (lo + hi) / 2;
+    return null;
   }
 
   // ---------- chart geometry ----------
@@ -516,6 +554,15 @@
     const z = $('zeroLine');
     z.setAttribute('x1', PAD.left); z.setAttribute('x2', W - PAD.right);
     z.setAttribute('y1', zeroY); z.setAttribute('y2', zeroY);
+    // etiqueta "0 € · break-even" sobre la línea
+    const tx = $('zeroLabelTx'), bg = $('zeroLabelBg');
+    tx.setAttribute('x', PAD.left + 10);
+    tx.setAttribute('y', zeroY);
+    const w = tx.getComputedTextLength() + 20;
+    bg.setAttribute('x', PAD.left);
+    bg.setAttribute('y', zeroY - 10);
+    bg.setAttribute('width', w);
+    $('zeroLabel').style.opacity = 1;
   }
 
   function animateTo(target) {
@@ -607,8 +654,21 @@
     }
   }
 
-  ['equity', 'debt', 'cashflow', 'saleValue', 'saleDate'].forEach(id =>
-    $(id).addEventListener('input', update));
+  // ---------- inputs numéricos: miles en vivo + reseteo al enfocar ----------
+  NUM_FIELDS.forEach(({ id, signed }) => {
+    const el = $(id);
+    el.addEventListener('focus', () => { el.value = ''; });
+    el.addEventListener('input', () => {
+      const { display, value } = sanitizeNum(el.value, signed);
+      el.value = display;
+      const end = el.value.length;
+      try { el.setSelectionRange(end, end); } catch (_) {}
+      model[id] = value;
+      update();
+    });
+    el.addEventListener('blur', () => { el.value = fmtModel(model[id], signed); });
+  });
+  $('saleDate').addEventListener('input', update);
 
   // ---------- hover tooltip ----------
   const svg = $('chart'), wrap = $('chartWrap'), tip = $('tooltip');
