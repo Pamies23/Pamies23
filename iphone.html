@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+
+<!-- iOS / PWA: pantalla completa al añadir a inicio -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Real Estate" />
+<meta name="theme-color" content="#f4f5fa" />
+<title>Real Estate · Pamies</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- icono para la pantalla de inicio -->
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxODAiIGhlaWdodD0iMTgwIiB2aWV3Qm94PSIwIDAgMTgwIDE4MCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjNmE2YWY1Ii8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjOWI4Y2ZmIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjE4MCIgaGVpZ2h0PSIxODAiIHJ4PSI0MCIgZmlsbD0idXJsKCNnKSIvPjx0ZXh0IHg9IjkwIiB5PSIxMjAiIGZvbnQtZmFtaWx5PSJBcmlhbCxzYW5zLXNlcmlmIiBmb250LXNpemU9IjkwIiBmb250LXdlaWdodD0iODAwIiBmaWxsPSIjZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5QPC90ZXh0Pjwvc3ZnPg==" />
+
+<style>
+  :root {
+    --bg: #f4f5fa;
+    --card: #ffffff;
+    --ink: #14151a;
+    --ink-soft: #6b7080;
+    --ink-faint: #9aa0ae;
+    --accent: #5b5bf0;
+    --accent-soft: #ececfe;
+    --positive: #1fc787;
+    --negative: #ff5c7a;
+    --radius-xl: 30px;
+    --radius-lg: 24px;
+    --radius-md: 18px;
+    --shadow: 0 18px 50px -22px rgba(20, 21, 40, 0.20);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: none;
+  }
+
+  /* ---------- liquid background blobs ---------- */
+  .blobs {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    filter: blur(60px) saturate(120%);
+  }
+  .blob { position: absolute; border-radius: 50%; opacity: 0.5; will-change: transform; }
+  .blob-1 {
+    width: 90vw; height: 90vw;
+    background: radial-gradient(circle at 30% 30%, #c7c9ff, transparent 65%);
+    top: -30vw; left: -25vw;
+    animation: drift1 24s ease-in-out infinite alternate;
+  }
+  .blob-2 {
+    width: 80vw; height: 80vw;
+    background: radial-gradient(circle at 60% 40%, #bdeee0, transparent 65%);
+    bottom: -25vw; right: -22vw;
+    animation: drift2 30s ease-in-out infinite alternate;
+  }
+  .blob-3 {
+    width: 65vw; height: 65vw;
+    background: radial-gradient(circle at 50% 50%, #ffd9e3, transparent 65%);
+    top: 35%; left: 40%;
+    animation: drift3 34s ease-in-out infinite alternate;
+  }
+  @keyframes drift1 { to { transform: translate(12vw, 8vw) scale(1.12); } }
+  @keyframes drift2 { to { transform: translate(-10vw, -10vw) scale(1.1); } }
+  @keyframes drift3 { to { transform: translate(-12vw, 8vw) scale(0.88); } }
+
+  /* ---------- shell ---------- */
+  .app {
+    position: relative;
+    z-index: 1;
+    min-height: 100%;
+    padding: calc(var(--safe-top) + 8px) 16px calc(var(--safe-bottom) + 28px);
+    max-width: 520px;
+    margin: 0 auto;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 4px 18px;
+  }
+  .logo {
+    width: 40px; height: 40px;
+    border-radius: 13px;
+    background: linear-gradient(135deg, #6a6af5, #9b8cff);
+    display: grid; place-items: center;
+    color: #fff; font-weight: 800; font-size: 17px;
+    box-shadow: 0 10px 22px -10px rgba(91, 91, 240, 0.6);
+  }
+  .topbar h1 { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
+  .topbar p { font-size: 12px; color: var(--ink-soft); margin-top: 1px; }
+
+  .card {
+    background: var(--card);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow);
+    padding: 22px;
+    margin-bottom: 16px;
+  }
+
+  /* ---------- hero ---------- */
+  .hero .label {
+    font-size: 12px; font-weight: 600; color: var(--ink-soft);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .hero .big {
+    font-size: 38px; font-weight: 800; letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums; margin: 4px 0 2px;
+    line-height: 1.05;
+  }
+  .hero .big.pos { color: var(--positive); }
+  .hero .big.neg { color: var(--negative); }
+  .hero .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 600; color: var(--ink-soft);
+    background: #f3f4f9; border-radius: 999px; padding: 5px 12px;
+    margin-top: 4px;
+  }
+  .chip .arrow { font-weight: 800; }
+  .chip.pos { color: var(--positive); background: rgba(31,199,135,0.12); }
+  .chip.neg { color: var(--negative); background: rgba(255,92,122,0.12); }
+
+  /* ---------- chart ---------- */
+  .chart-wrap { position: relative; width: 100%; margin-top: 14px; touch-action: pan-y; }
+  svg { display: block; width: 100%; height: auto; }
+
+  .tooltip {
+    position: absolute;
+    background: var(--ink); color: #fff;
+    border-radius: 14px; padding: 9px 13px;
+    font-size: 12px; line-height: 1.45;
+    pointer-events: none; opacity: 0; white-space: nowrap;
+    transform: translate(-50%, -8px) scale(0.96);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    box-shadow: 0 14px 30px -12px rgba(0,0,0,0.4);
+    z-index: 5;
+  }
+  .tooltip.show { opacity: 1; transform: translate(-50%, -14px) scale(1); }
+  .tooltip .ty { color: #b9bdc9; font-size: 11px; }
+  .tooltip .tv { font-weight: 700; font-size: 14px; }
+
+  /* ---------- metric strip ---------- */
+  .metrics {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 10px; margin-top: 18px;
+  }
+  .metric { background: #f6f7fc; border-radius: var(--radius-md); padding: 13px 12px; }
+  .metric .k {
+    font-size: 10px; font-weight: 600; color: var(--ink-soft);
+    text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px;
+  }
+  .metric .v {
+    font-size: 16px; font-weight: 700; letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .metric .v.pos { color: var(--positive); }
+  .metric .v.neg { color: var(--negative); }
+
+  /* ---------- inputs ---------- */
+  .section-title {
+    font-size: 13px; font-weight: 700; color: var(--ink-soft);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 4px 6px 12px;
+  }
+  .field { margin-bottom: 16px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 600; color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .dot-equity { background: var(--accent); }
+  .dot-debt { background: #ffb84d; }
+  .dot-cash { background: var(--positive); }
+  .dot-sale { background: #ff8fb1; }
+
+  .input-wrap { position: relative; display: flex; align-items: center; }
+  .input-wrap input {
+    width: 100%;
+    font-family: inherit;
+    font-size: 19px;            /* >=16px evita zoom de iOS al enfocar */
+    font-weight: 600; color: var(--ink);
+    background: #f3f4f9;
+    border: 2px solid transparent;
+    border-radius: var(--radius-md);
+    padding: 15px 56px 15px 18px;
+    outline: none;
+    transition: border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+    appearance: none;
+  }
+  .input-wrap input[type="date"] { padding-right: 18px; min-height: 54px; }
+  .input-wrap input:focus {
+    background: #fff; border-color: var(--accent);
+    box-shadow: 0 0 0 5px var(--accent-soft);
+  }
+  .input-wrap .suffix {
+    position: absolute; right: 18px;
+    font-size: 14px; font-weight: 600; color: var(--ink-faint);
+    pointer-events: none;
+  }
+  input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; }
+
+  .foot {
+    text-align: center; font-size: 11px; color: var(--ink-faint);
+    padding: 8px 20px 0; line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<div class="blobs">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+</div>
+
+<div class="app">
+  <div class="topbar">
+    <div class="logo">P</div>
+    <div>
+      <h1>Real Estate Flow</h1>
+      <p>Simulador de inversión</p>
+    </div>
+  </div>
+
+  <!-- ===== hero / gráfica ===== -->
+  <div class="card hero">
+    <div class="label">Beneficio neto del inversor</div>
+    <div class="big" id="hProfit">—</div>
+    <div class="chip" id="hChip"><span class="arrow">↑</span><span id="hChipTxt">—</span></div>
+
+    <div class="chart-wrap" id="chartWrap">
+      <svg id="chart" viewBox="0 0 390 300" role="img" aria-label="Gráfica de cashflow acumulado">
+        <defs>
+          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#5b5bf0" stop-opacity="0.26"/>
+            <stop offset="100%" stop-color="#5b5bf0" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#7b6cf6"/>
+            <stop offset="100%" stop-color="#4f8df9"/>
+          </linearGradient>
+        </defs>
+        <path id="area" fill="url(#areaGrad)"></path>
+        <path id="line" fill="none" stroke="url(#lineGrad)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path>
+        <line id="zeroLine" stroke="#d6d9e4" stroke-width="1.4" stroke-dasharray="2 6" stroke-linecap="round"></line>
+        <g id="xLabels"></g>
+        <g id="hoverLayer" style="opacity:0; transition: opacity 0.18s ease;">
+          <line id="hoverLine" stroke="#c3c6d4" stroke-width="1.4" stroke-dasharray="3 4"></line>
+          <circle id="hoverDot" r="6" fill="#fff" stroke="#5b5bf0" stroke-width="3.5"></circle>
+        </g>
+      </svg>
+      <div class="tooltip" id="tooltip">
+        <div class="ty" id="ttYear"></div>
+        <div class="tv" id="ttValue"></div>
+      </div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric">
+        <div class="k">Capital</div>
+        <div class="v" id="mEquity">—</div>
+      </div>
+      <div class="metric">
+        <div class="k">Multiplic.</div>
+        <div class="v" id="mMoic">—</div>
+      </div>
+      <div class="metric">
+        <div class="k">TIR</div>
+        <div class="v" id="mIrr">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== inputs ===== -->
+  <div class="card">
+    <div class="section-title" style="padding-top:0;">Tu inversión</div>
+
+    <div class="field">
+      <label><span class="dot dot-equity"></span>Equity</label>
+      <div class="input-wrap">
+        <input id="equity" type="number" inputmode="decimal" value="100000" min="0" step="1000">
+        <span class="suffix">€</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label><span class="dot dot-debt"></span>Deuda</label>
+      <div class="input-wrap">
+        <input id="debt" type="number" inputmode="decimal" value="150000" min="0" step="1000">
+        <span class="suffix">€</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label><span class="dot dot-cash"></span>Cashflow anual</label>
+      <div class="input-wrap">
+        <input id="cashflow" type="number" inputmode="decimal" value="12000" step="500">
+        <span class="suffix">€ / año</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label><span class="dot dot-sale"></span>Valor de venta estimado</label>
+      <div class="input-wrap">
+        <input id="saleValue" type="number" inputmode="decimal" value="320000" min="0" step="5000">
+        <span class="suffix">€</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label><span class="dot dot-sale"></span>Fecha de venta</label>
+      <div class="input-wrap">
+        <input id="saleDate" type="date">
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">Simulación orientativa · no constituye asesoramiento financiero</div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const $ = id => document.getElementById(id);
+  const fmtEUR = n => n.toLocaleString('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+  const fmtEURshort = n => {
+    const a = Math.abs(n);
+    if (a >= 1e6) return (n/1e6).toLocaleString('es-ES',{maximumFractionDigits:2}) + 'M €';
+    if (a >= 1e4) return Math.round(n/1e3).toLocaleString('es-ES') + 'k €';
+    return fmtEUR(n);
+  };
+  const fmtPct = n => (n * 100).toLocaleString('es-ES', { maximumFractionDigits: 1 }) + ' %';
+
+  // fecha de venta por defecto: +10 años
+  const defDate = new Date();
+  defDate.setFullYear(defDate.getFullYear() + 10);
+  $('saleDate').value = defDate.toISOString().slice(0, 10);
+
+  // ---------- modelo ----------
+  function readInputs() {
+    const equity = Math.max(0, parseFloat($('equity').value) || 0);
+    const debt = Math.max(0, parseFloat($('debt').value) || 0);
+    const cashflow = parseFloat($('cashflow').value) || 0;
+    const saleValue = Math.max(0, parseFloat($('saleValue').value) || 0);
+    const now = new Date();
+    const sale = new Date($('saleDate').value);
+    let years = isNaN(sale) ? 10 : Math.round((sale - now) / (365.25 * 24 * 3600 * 1000));
+    years = Math.min(40, Math.max(1, years));
+    return { equity, debt, cashflow, saleValue, years, startYear: now.getFullYear() };
+  }
+
+  function buildFlows({ equity, debt, cashflow, saleValue, years }) {
+    const flows = [-equity];
+    for (let y = 1; y <= years; y++) flows.push(cashflow);
+    flows[years] += saleValue - debt; // venta: precio neto de devolución de deuda
+    return flows;
+  }
+
+  function cumulative(flows) {
+    const out = []; let acc = 0;
+    for (const f of flows) { acc += f; out.push(acc); }
+    return out;
+  }
+
+  function irr(flows) {
+    const npv = r => flows.reduce((s, f, t) => s + f / Math.pow(1 + r, t), 0);
+    let lo = -0.95, hi = 10;
+    if (npv(lo) * npv(hi) > 0) return null;
+    for (let i = 0; i < 80; i++) {
+      const mid = (lo + hi) / 2;
+      (npv(lo) * npv(mid) <= 0) ? (hi = mid) : (lo = mid);
+    }
+    return (lo + hi) / 2;
+  }
+
+  // ---------- geometría (espacio de coordenadas del viewBox) ----------
+  const W = 390, H = 300;
+  const PAD = { top: 18, right: 14, bottom: 34, left: 14 };
+  const IW = W - PAD.left - PAD.right;
+  const IH = H - PAD.top - PAD.bottom;
+
+  function computePoints(cum) {
+    const n = cum.length;
+    let min = Math.min(0, ...cum);
+    let max = Math.max(0, ...cum);
+    if (max === min) { max += 1; min -= 1; }
+    const span = max - min;
+    min -= span * 0.10; max += span * 0.10;
+    const x = i => PAD.left + (n === 1 ? IW / 2 : (i / (n - 1)) * IW);
+    const y = v => PAD.top + (1 - (v - min) / (max - min)) * IH;
+    return { pts: cum.map((v, i) => ({ x: x(i), y: y(v), v })), zeroY: y(0) };
+  }
+
+  function smoothPath(pts) {
+    if (pts.length < 2) return '';
+    let d = `M ${pts[0].x.toFixed(2)} ${pts[0].y.toFixed(2)}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i];
+      const p1 = pts[i], p2 = pts[i + 1];
+      const p3 = pts[i + 2] || p2;
+      const c1x = p1.x + (p2.x - p0.x) / 6, c1y = p1.y + (p2.y - p0.y) / 6;
+      const c2x = p2.x - (p3.x - p1.x) / 6, c2y = p2.y - (p3.y - p1.y) / 6;
+      d += ` C ${c1x.toFixed(2)} ${c1y.toFixed(2)}, ${c2x.toFixed(2)} ${c2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+    }
+    return d;
+  }
+
+  // ---------- animación fluida entre estados ----------
+  let currentPts = null, animFrame = null, displayState = null;
+
+  function resamplePoints(pts, n) {
+    if (pts.length === n) return pts;
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const t = (i / (n - 1)) * (pts.length - 1);
+      const lo = Math.floor(t), hi = Math.min(pts.length - 1, lo + 1), f = t - lo;
+      out.push({
+        x: pts[lo].x + (pts[hi].x - pts[lo].x) * f,
+        y: pts[lo].y + (pts[hi].y - pts[lo].y) * f,
+        v: pts[lo].v + (pts[hi].v - pts[lo].v) * f,
+      });
+    }
+    return out;
+  }
+
+  const easeOut = t => 1 - Math.pow(1 - t, 3);
+
+  function render(pts, zeroY) {
+    $('line').setAttribute('d', smoothPath(pts));
+    const last = pts[pts.length - 1], first = pts[0];
+    const baseline = H - PAD.bottom + 2;
+    $('area').setAttribute('d',
+      smoothPath(pts) + ` L ${last.x.toFixed(2)} ${baseline} L ${first.x.toFixed(2)} ${baseline} Z`);
+    const z = $('zeroLine');
+    z.setAttribute('x1', PAD.left); z.setAttribute('x2', W - PAD.right);
+    z.setAttribute('y1', zeroY); z.setAttribute('y2', zeroY);
+  }
+
+  function animateTo(target) {
+    if (animFrame) cancelAnimationFrame(animFrame);
+    const n = target.pts.length;
+    const from = currentPts ? resamplePoints(currentPts, n)
+      : target.pts.map(p => ({ x: p.x, y: H - PAD.bottom, v: 0 }));
+    const fromZero = displayState ? displayState.zeroY : target.zeroY;
+    const t0 = performance.now(), DUR = 650;
+    const step = now => {
+      const t = Math.min(1, (now - t0) / DUR), e = easeOut(t);
+      const pts = target.pts.map((p, i) => ({
+        x: from[i].x + (p.x - from[i].x) * e,
+        y: from[i].y + (p.y - from[i].y) * e, v: p.v,
+      }));
+      const zeroY = fromZero + (target.zeroY - fromZero) * e;
+      render(pts, zeroY);
+      currentPts = pts;
+      if (t < 1) animFrame = requestAnimationFrame(step);
+    };
+    animFrame = requestAnimationFrame(step);
+    displayState = target;
+  }
+
+  function drawLabels(years, startYear) {
+    const g = $('xLabels'); g.innerHTML = '';
+    const n = years + 1, maxLabels = 5;
+    const stride = Math.max(1, Math.ceil(n / maxLabels));
+    const idx = new Set();
+    for (let i = 0; i < n; i += stride) idx.add(i);
+    idx.add(n - 1);
+    [...idx].forEach(i => {
+      const x = PAD.left + (i / (n - 1)) * IW;
+      const el = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      el.setAttribute('x', x); el.setAttribute('y', H - 12);
+      el.setAttribute('text-anchor', i === 0 ? 'start' : (i === n-1 ? 'end' : 'middle'));
+      el.setAttribute('font-size', '11'); el.setAttribute('font-weight', '600');
+      el.setAttribute('fill', '#9aa0ae');
+      el.textContent = "'" + String(startYear + i).slice(2);
+      g.appendChild(el);
+    });
+  }
+
+  // ---------- count-up de métricas ----------
+  const metricState = {};
+  function setMetric(id, value, format) {
+    const el = $(id);
+    const from = metricState[id] ?? 0;
+    metricState[id] = value;
+    const t0 = performance.now(), DUR = 600;
+    const step = now => {
+      const t = Math.min(1, (now - t0) / DUR);
+      el.textContent = format(from + (value - from) * easeOut(t));
+      if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
+  // ---------- update ----------
+  function update() {
+    const inp = readInputs();
+    const flows = buildFlows(inp);
+    const cum = cumulative(flows);
+    const { pts, zeroY } = computePoints(cum);
+
+    animateTo({ pts, zeroY, years: inp.years, startYear: inp.startYear });
+    drawLabels(inp.years, inp.startYear);
+
+    const profit = cum[cum.length - 1];
+    const moic = inp.equity > 0 ? (profit + inp.equity) / inp.equity : 0;
+    const r = irr(flows);
+
+    // hero
+    setMetric('hProfit', profit, fmtEUR);
+    $('hProfit').classList.toggle('pos', profit >= 0);
+    $('hProfit').classList.toggle('neg', profit < 0);
+    const chip = $('hChip');
+    chip.classList.toggle('pos', profit >= 0);
+    chip.classList.toggle('neg', profit < 0);
+    chip.querySelector('.arrow').textContent = profit >= 0 ? '↑' : '↓';
+    $('hChipTxt').textContent = inp.equity > 0
+      ? fmtPct(profit / inp.equity) + ' sobre equity'
+      : '—';
+
+    setMetric('mEquity', inp.equity, fmtEURshort);
+    setMetric('mMoic', moic, v => v.toLocaleString('es-ES', { maximumFractionDigits: 2 }) + '×');
+    if (r === null) { $('mIrr').textContent = '—'; }
+    else {
+      setMetric('mIrr', r, fmtPct);
+      $('mIrr').classList.toggle('pos', r >= 0);
+      $('mIrr').classList.toggle('neg', r < 0);
+    }
+  }
+
+  ['equity','debt','cashflow','saleValue','saleDate'].forEach(id =>
+    $(id).addEventListener('input', update));
+
+  // ---------- scrubbing táctil ----------
+  const svg = $('chart'), wrap = $('chartWrap'), tip = $('tooltip');
+  const hoverLayer = $('hoverLayer'), hoverLine = $('hoverLine'), hoverDot = $('hoverDot');
+
+  function scrub(clientX) {
+    if (!displayState) return;
+    const rect = svg.getBoundingClientRect();
+    const sx = ((clientX - rect.left) / rect.width) * W;
+    const { pts, years, startYear } = displayState;
+    let best = 0, bd = Infinity;
+    pts.forEach((p, i) => { const d = Math.abs(p.x - sx); if (d < bd) { bd = d; best = i; } });
+    const p = pts[best];
+    hoverLayer.style.opacity = 1;
+    hoverLine.setAttribute('x1', p.x); hoverLine.setAttribute('x2', p.x);
+    hoverLine.setAttribute('y1', PAD.top); hoverLine.setAttribute('y2', H - PAD.bottom);
+    hoverDot.setAttribute('cx', p.x); hoverDot.setAttribute('cy', p.y);
+    const wr = wrap.getBoundingClientRect();
+    tip.style.left = (p.x / W) * wr.width + 'px';
+    tip.style.top = (p.y / H) * wr.height + 'px';
+    tip.classList.add('show');
+    $('ttYear').textContent = best === 0 ? `${startYear} · inversión`
+      : (best === years ? `${startYear + best} · venta` : `${startYear + best}`);
+    $('ttValue').textContent = fmtEUR(p.v);
+  }
+  let hideTimer = null;
+  function endScrub(delay = 0) {
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => {
+      hoverLayer.style.opacity = 0;
+      tip.classList.remove('show');
+    }, delay);
+  }
+
+  // puntero (cubre ratón y dedo)
+  svg.addEventListener('pointerdown', e => { clearTimeout(hideTimer); scrub(e.clientX); });
+  svg.addEventListener('pointermove', e => { if (e.pressure > 0 || e.buttons || e.pointerType === 'mouse') scrub(e.clientX); });
+  // al levantar el dedo, dejamos el valor visible un instante; con ratón se oculta al salir
+  svg.addEventListener('pointerup', e => endScrub(e.pointerType === 'mouse' ? 0 : 1100));
+  svg.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') endScrub(0); });
+  svg.addEventListener('pointercancel', () => endScrub(0));
+
+  // primer render
+  update();
+})();
+</script>
+</body>
+</html>
