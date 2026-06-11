@@ -260,6 +260,19 @@
 </head>
 <body>
 
+<script>
+  // Redirección automática a la versión móvil en teléfonos.
+  // Se puede forzar el escritorio con ?desktop=1 (el enlace "Ver en escritorio" lo añade).
+  (() => {
+    const forceDesktop = /[?&]desktop=1/.test(location.search) ||
+      sessionStorage.getItem('forceDesktop') === '1';
+    if (forceDesktop) { sessionStorage.setItem('forceDesktop', '1'); return; }
+    const isPhone = /iPhone|iPod|Android.*Mobile|Windows Phone/i.test(navigator.userAgent) ||
+      Math.min(window.innerWidth, window.innerHeight) < 600;
+    if (isPhone) location.replace('iphone.html');
+  })();
+</script>
+
 <div class="blobs">
   <div class="blob blob-1"></div>
   <div class="blob blob-2"></div>
@@ -375,7 +388,10 @@
     </div>
   </div>
 
-  <footer>Simulación orientativa · no constituye asesoramiento financiero</footer>
+  <footer>
+    <a href="iphone.html" style="color:var(--accent);font-weight:600;text-decoration:none;">Abrir versión móvil →</a>
+    <div style="margin-top:8px;">Simulación orientativa · no constituye asesoramiento financiero</div>
+  </footer>
 </div>
 
 <script>
