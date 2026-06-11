@@ -85,8 +85,11 @@
     position: fixed;
     inset: 0;
     z-index: 0;
+    /* la zona alta se mantiene plana en #79bda6 un tramo, para que el material
+       que Safari pinta tras la barra de estado (un muestreo del color superior)
+       coincida con el contenido y la unión sea casi imperceptible */
     background: linear-gradient(180deg,
-      #79bda6 0%, #569681 26%, #3a7261 52%, #27554a 76%, #18382f 100%);
+      #79bda6 0%, #79bda6 14%, #569681 34%, #3a7261 56%, #27554a 78%, #18382f 100%);
     overflow: hidden;
     pointer-events: none;
   }
@@ -97,7 +100,7 @@
     position: absolute;
     inset: 0;
     background: linear-gradient(180deg,
-      #bfd2d8 0%, #8ea6ad 26%, #5c7981 52%, #2e5059 76%, #002731 100%);
+      #bfd2d8 0%, #bfd2d8 14%, #8ea6ad 34%, #5c7981 56%, #2e5059 78%, #002731 100%);
     opacity: 0;
     transition: opacity 0.7s ease;
   }
@@ -109,11 +112,11 @@
     filter: blur(60px) saturate(120%);
     will-change: transform;
   }
-  .blob { position: absolute; border-radius: 50%; opacity: 0.34; will-change: transform; }
+  .blob { position: absolute; border-radius: 50%; opacity: 0.26; will-change: transform; }
   .blob-1 {
-    width: 90vw; height: 90vw;
+    width: 88vw; height: 88vw;
     background: radial-gradient(circle at 30% 30%, #d6f6e7, transparent 65%);
-    top: -34vw; left: -25vw;
+    top: -50vw; left: -25vw;     /* más arriba: no ilumina la franja del notch */
     animation: drift1 24s ease-in-out infinite alternate;
   }
   .blob-2 {
