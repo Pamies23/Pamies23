@@ -102,7 +102,7 @@
     position: relative;
     z-index: 1;
     min-height: 100%;
-    padding: calc(var(--safe-top) + 8px) 8px calc(var(--safe-bottom) + 28px);
+    padding: calc(var(--safe-top) + 8px) 14px calc(var(--safe-bottom) + 28px);
     max-width: 520px;
     margin: 0 auto;
   }
@@ -115,10 +115,16 @@
     position: fixed;
     top: 0; left: 0; right: 0;
     height: calc(var(--safe-top) + 104px);
+    /* cristal progresivo: el contenido no desaparece, se ve difuminado
+       a través, con más blur cuanto más arriba. La máscara hace que el
+       efecto se desvanezca hacia abajo sin línea de corte. */
+    -webkit-backdrop-filter: blur(18px) saturate(170%);
+    backdrop-filter: blur(18px) saturate(170%);
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 48%, transparent 100%);
+    mask-image: linear-gradient(180deg, #000 0%, #000 48%, transparent 100%);
     background: linear-gradient(180deg,
-      #79bda6 0%,
-      #79bda6 52%,
-      rgba(121,189,166,0.55) 78%,
+      rgba(121,189,166,0.42) 0%,
+      rgba(121,189,166,0.18) 60%,
       rgba(121,189,166,0) 100%);
     z-index: 10;
     pointer-events: none;
@@ -270,7 +276,6 @@
   <div class="topscrim"></div>
   <div class="topbar">
     <h1>NRE Real Estate</h1>
-    <p>Simulador de inversión inmobiliaria</p>
   </div>
 
   <!-- ===== hero / gráfica ===== -->
