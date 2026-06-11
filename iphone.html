@@ -7,7 +7,7 @@
 <!-- iOS / PWA: pantalla completa al añadir a inicio -->
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="NRE Real Estate" />
 <script>
   // Aplica el tema guardado ANTES del primer pintado (clase en <html>) para
@@ -19,6 +19,10 @@
       if (localStorage.getItem('nre-theme') === 'ocean')
         document.documentElement.classList.add('theme-ocean');
     } catch (_) {}
+    // ¿lanzada desde la pantalla de inicio? (modo app a pantalla completa)
+    if (window.navigator.standalone === true ||
+        (window.matchMedia && matchMedia('(display-mode: standalone)').matches))
+      document.documentElement.classList.add('standalone');
   })();
 </script>
 <title>Real Estate · Pamies</title>
@@ -28,7 +32,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <!-- icono para la pantalla de inicio -->
-<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxODAiIGhlaWdodD0iMTgwIiB2aWV3Qm94PSIwIDAgMTgwIDE4MCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjNmE2YWY1Ii8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjOWI4Y2ZmIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjE4MCIgaGVpZ2h0PSIxODAiIHJ4PSI0MCIgZmlsbD0idXJsKCNnKSIvPjx0ZXh0IHg9IjkwIiB5PSIxMjAiIGZvbnQtZmFtaWx5PSJBcmlhbCxzYW5zLXNlcmlmIiBmb250LXNpemU9IjkwIiBmb250LXdlaWdodD0iODAwIiBmaWxsPSIjZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5QPC90ZXh0Pjwvc3ZnPg==" />
+<link rel="apple-touch-icon" href="icon-nre.png" />
 
 <style>
   :root {
@@ -182,6 +186,20 @@
     z-index: 10;
     pointer-events: none;
   }
+  /* En modo app (pantalla de inicio) el contenido pasa BAJO el notch y el texto
+     de la barra de estado es blanco: cambiamos el velo claro por uno oscuro muy
+     sutil que da legibilidad sin tapar — el contenido se sigue viendo borroso
+     por debajo. Esto es lo que da la continuidad total tipo Revolut. */
+  html.standalone .topscrim {
+    height: calc(var(--safe-top) + 46px);
+    -webkit-backdrop-filter: blur(16px) saturate(170%);
+    backdrop-filter: blur(16px) saturate(170%);
+    background: linear-gradient(180deg,
+      rgba(6,22,18,0.34) 0%,
+      rgba(6,22,18,0.14) 52%,
+      rgba(6,22,18,0) 100%);
+  }
+  html.standalone .topscrim-soft { height: calc(var(--safe-top) + 70px); }
 
   /* ---------- título: texto sobre el fondo continuo, sin pastilla ---------- */
   .topbar {
