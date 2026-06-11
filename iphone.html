@@ -9,18 +9,15 @@
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <meta name="apple-mobile-web-app-title" content="NRE Real Estate" />
-<meta name="theme-color" content="#79bda6" />
 <script>
-  // Aplica el tema guardado ANTES del primer pintado: Safari decide el tinte
-  // de la barra de estado al parsear, y mutarlo después es poco fiable (la
-  // franja del notch quedaba desincronizada). Clase en <html> + meta en head.
+  // Aplica el tema guardado ANTES del primer pintado (clase en <html>) para
+  // que el degradado nazca correcto. NO usamos theme-color a propósito: así
+  // Safari NO pinta una franja plana en el notch y deja ver nuestra capa de
+  // fondo continua + el contenido difuminado a través del cristal.
   (() => {
     try {
-      if (localStorage.getItem('nre-theme') === 'ocean') {
+      if (localStorage.getItem('nre-theme') === 'ocean')
         document.documentElement.classList.add('theme-ocean');
-        document.querySelector('meta[name="theme-color"]')
-          .setAttribute('content', '#bfd2d8');
-      }
     } catch (_) {}
   })();
 </script>
@@ -172,14 +169,12 @@
     backdrop-filter: blur(14px) saturate(170%);
     -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 45%, rgba(0,0,0,0.4) 78%, transparent 100%);
     mask-image: linear-gradient(180deg, #000 0%, #000 45%, rgba(0,0,0,0.4) 78%, transparent 100%);
-    /* Película del color del fondo: opaca SOLO en el borde superior, para
-       empalmar sin costura con la franja que pinta Safari/el notch, y
-       desvaneciéndose enseguida. El contenido llega arriba y se le ve a
-       través del cristal, cada vez más tenue — como Revolut. */
+    /* Película de color MUY tenue: solo un velo para legibilidad del reloj.
+       El peso lo lleva el blur, así el contenido se sigue viendo a través
+       (más difuminado arriba, nítido abajo) — continuidad, no una tapa. */
     background: linear-gradient(180deg,
-      rgba(var(--scrim-rgb), 0.90) 0%,
-      rgba(var(--scrim-rgb), 0.55) 34%,
-      rgba(var(--scrim-rgb), 0.16) 68%,
+      rgba(var(--scrim-rgb), 0.30) 0%,
+      rgba(var(--scrim-rgb), 0.12) 55%,
       rgba(var(--scrim-rgb), 0) 100%);
     z-index: 10;
     pointer-events: none;
@@ -881,18 +876,10 @@
   });
 
   // ---------- selector de tema (color de fondo) ----------
-  const THEME_TOP = { green: '#79bda6', ocean: '#bfd2d8' };
   function applyTheme(name, persist) {
     document.documentElement.classList.toggle('theme-ocean', name === 'ocean');
     document.querySelectorAll('.swatch').forEach(s =>
       s.classList.toggle('active', s.dataset.theme === name));
-    // Safari a veces ignora cambios en caliente del theme-color: recrear el
-    // nodo <meta> fuerza la relectura y la franja del notch acompaña al tema
-    document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.remove());
-    const meta = document.createElement('meta');
-    meta.name = 'theme-color';
-    meta.content = THEME_TOP[name] || THEME_TOP.green;
-    document.head.appendChild(meta);
     if (persist) { try { localStorage.setItem('nre-theme', name); } catch (_) {} }
   }
   document.querySelectorAll('.swatch').forEach(s =>
