@@ -74,9 +74,9 @@
     --scrim-rgb: 138, 168, 150;
   }
   html.theme-sand {
-    --grad-top: #b8a88c;
-    --grad-bottom: #221c13;
-    --scrim-rgb: 184, 168, 140;
+    --grad-top: #ab9d85;
+    --grad-bottom: #211d16;
+    --scrim-rgb: 171, 157, 133;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -125,7 +125,7 @@
   .bg-ocean  { background: linear-gradient(180deg, #bfd2d8 0%, #bfd2d8 14%, #8ea6ad 34%, #5c7981 56%, #2e5059 78%, #002731 100%); }
   .bg-copper { background: linear-gradient(180deg, #cf9d7c 0%, #cf9d7c 14%, #a87454 34%, #7d5239 56%, #54341f 78%, #2e1a0e 100%); }
   .bg-forest { background: linear-gradient(180deg, #8aa896 0%, #8aa896 14%, #5f7d6b 34%, #41594b 56%, #2a3c31 78%, #141f18 100%); }
-  .bg-sand   { background: linear-gradient(180deg, #b8a88c 0%, #b8a88c 14%, #94846b 34%, #6d5f4b 56%, #483e2f 78%, #221c13 100%); }
+  .bg-sand   { background: linear-gradient(180deg, #ab9d85 0%, #ab9d85 14%, #877a64 34%, #635a47 56%, #423c2e 78%, #211d16 100%); }
   html.theme-ocean  .bg-ocean,
   html.theme-copper .bg-copper,
   html.theme-forest .bg-forest,
@@ -137,22 +137,24 @@
     filter: blur(60px) saturate(120%);
     will-change: transform;
   }
-  .blob { position: absolute; border-radius: 50%; opacity: 0.26; will-change: transform; }
+  /* blobs NEUTROS (solo luz, sin tinte): así no contaminan de verde
+     los temas cálidos como Arena o Cobre */
+  .blob { position: absolute; border-radius: 50%; opacity: 0.16; will-change: transform; }
   .blob-1 {
     width: 88vw; height: 88vw;
-    background: radial-gradient(circle at 30% 30%, #d6f6e7, transparent 65%);
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.95), transparent 65%);
     top: -50vw; left: -25vw;     /* más arriba: no ilumina la franja del notch */
     animation: drift1 24s ease-in-out infinite alternate;
   }
   .blob-2 {
     width: 80vw; height: 80vw;
-    background: radial-gradient(circle at 60% 40%, #8fe0c4, transparent 65%);
+    background: radial-gradient(circle at 60% 40%, rgba(255,255,255,0.8), transparent 65%);
     bottom: -25vw; right: -22vw;
     animation: drift2 30s ease-in-out infinite alternate;
   }
   .blob-3 {
     width: 65vw; height: 65vw;
-    background: radial-gradient(circle at 50% 50%, #b9efd9, transparent 65%);
+    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.85), transparent 65%);
     top: 35%; left: 40%;
     animation: drift3 34s ease-in-out infinite alternate;
   }
@@ -393,7 +395,7 @@
   .prev-ocean  { background: linear-gradient(180deg, #bfd2d8, #5c7981 55%, #002731); }
   .prev-copper { background: linear-gradient(180deg, #cf9d7c, #7d5239 55%, #2e1a0e); }
   .prev-forest { background: linear-gradient(180deg, #8aa896, #41594b 55%, #141f18); }
-  .prev-sand   { background: linear-gradient(180deg, #b8a88c, #6d5f4b 55%, #221c13); }
+  .prev-sand   { background: linear-gradient(180deg, #ab9d85, #635a47 55%, #211d16); }
   .swatch-label {
     display: block; text-align: center; color: #fff;
     font-size: 13px; font-weight: 600; margin-top: 10px;
@@ -489,14 +491,18 @@
             <stop offset="0%" stop-color="#ffffff" stop-opacity="0.22"/>
             <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
           </linearGradient>
+          <!-- al hacer scrub, recorta la línea brillante hasta la posición del dedo -->
+          <clipPath id="scrubClip"><rect id="scrubRect" x="0" y="0" width="0" height="300"/></clipPath>
         </defs>
-        <path id="area" fill="url(#areaGrad)"></path>
+        <path id="area" style="transition: opacity 0.25s ease;" fill="url(#areaGrad)"></path>
         <!-- línea de 0 -->
         <line id="zeroLine" stroke="rgba(255,255,255,0.68)" stroke-width="1.6" stroke-dasharray="1 7" stroke-linecap="round"></line>
-        <path id="line" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path>
+        <path id="line" style="transition: opacity 0.25s ease;" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path>
+        <!-- réplica brillante de la línea, visible solo a la izquierda del dedo -->
+        <path id="lineHot" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" clip-path="url(#scrubClip)" style="display:none"></path>
         <g id="xLabels"></g>
         <g id="hoverLayer" style="opacity:0; transition: opacity 0.18s ease;">
-          <line id="hoverLine" stroke="rgba(255,255,255,0.65)" stroke-width="1.4" stroke-dasharray="3 4"></line>
+          <line id="hoverLine" stroke="rgba(255,255,255,0.9)" stroke-width="1.1"></line>
           <circle id="hoverDot" r="6" fill="#fff" stroke="rgba(10,28,22,0.55)" stroke-width="3.5"></circle>
         </g>
       </svg>
@@ -741,18 +747,37 @@
     let years = isNaN(sale) ? 10 : Math.round((sale - now) / (365.25 * 24 * 3600 * 1000));
     years = Math.min(40, Math.max(1, years));
     const { equity, debt } = derived();
+    // hipoteca: amortización francesa (cuota constante)
+    const months = Math.max(1, Math.round(model.termYears)) * 12;
+    const i = Math.max(0, model.ratePct) / 100 / 12;
+    const cuota = debt <= 0 ? 0
+      : (i > 0 ? debt * i / (1 - Math.pow(1 + i, -months)) : debt / months);
     return {
-      equity, debt,
+      equity, debt, months, i, cuota,
       cashflow: model.cashflow,
       saleValue: Math.max(0, model.saleValue),
       years, startYear: now.getFullYear(),
     };
   }
 
-  function buildFlows({ equity, debt, cashflow, saleValue, years }) {
+  // capital pendiente tras k meses pagados de un préstamo a n meses
+  function remainingDebt(debt, i, n, k) {
+    if (k >= n) return 0;
+    if (i === 0) return debt * (1 - k / n);
+    const f = Math.pow(1 + i, n), g = Math.pow(1 + i, k);
+    return debt * (f - g) / (f - 1);
+  }
+
+  function buildFlows({ equity, debt, cashflow, saleValue, years, cuota, months, i }) {
     const flows = [-equity];
-    for (let y = 1; y <= years; y++) flows.push(cashflow);
-    flows[years] += saleValue - debt; // venta: precio neto de devolución de deuda
+    for (let y = 1; y <= years; y++) {
+      // el cashflow de cada año va neto de las cuotas del préstamo que toquen
+      const pagados = (y - 1) * 12;
+      const meses = Math.max(0, Math.min(12, months - pagados));
+      flows.push(cashflow - cuota * meses);
+    }
+    // venta: precio menos la deuda VIVA en ese momento (el resto ya se amortizó vía cuota)
+    flows[years] += saleValue - remainingDebt(debt, i, months, years * 12);
     return flows;
   }
 
@@ -838,7 +863,9 @@
   const easeOut = t => 1 - Math.pow(1 - t, 3);
 
   function render(pts, zeroY) {
-    $('line').setAttribute('d', smoothPath(pts));
+    const d = smoothPath(pts);
+    $('line').setAttribute('d', d);
+    $('lineHot').setAttribute('d', d);
     const last = pts[pts.length - 1], first = pts[0];
     const baseline = H - PAD.bottom + 2;
     $('area').setAttribute('d',
@@ -943,13 +970,9 @@
     setMetric('outEquity', inp.equity, fmtEUR);
     setMetric('outDebt', inp.debt, fmtEUR);
 
-    // financiación: amortización francesa (cuota constante)
-    const months = Math.max(1, Math.round(model.termYears)) * 12;
-    const i = Math.max(0, model.ratePct) / 100 / 12;
-    const cuota = inp.debt <= 0 ? 0
-      : (i > 0 ? inp.debt * i / (1 - Math.pow(1 + i, -months)) : inp.debt / months);
-    const totalPagado = cuota * months;
-    setMetric('outCuota', cuota, fmtEUR2);
+    // financiación (la cuota ya viene calculada en readInputs y descontada del CF)
+    const totalPagado = inp.cuota * inp.months;
+    setMetric('outCuota', inp.cuota, fmtEUR2);
     setMetric('outIntereses', totalPagado - inp.debt, fmtEUR);
     setMetric('outTotal', totalPagado, fmtEUR);
   }
@@ -1008,6 +1031,11 @@
     hoverLine.setAttribute('x1', p.x); hoverLine.setAttribute('x2', p.x);
     hoverLine.setAttribute('y1', PAD.top); hoverLine.setAttribute('y2', H - PAD.bottom);
     hoverDot.setAttribute('cx', p.x); hoverDot.setAttribute('cy', p.y);
+    // efecto Revolut: lo recorrido brilla, lo que queda por delante se apaga
+    $('line').style.opacity = 0.3;
+    $('area').style.opacity = 0.45;
+    $('lineHot').style.display = '';
+    $('scrubRect').setAttribute('width', p.x);
     const wr = wrap.getBoundingClientRect();
     tip.style.left = (p.x / W) * wr.width + 'px';
     tip.style.top = (p.y / H) * wr.height + 'px';
@@ -1022,6 +1050,9 @@
     hideTimer = setTimeout(() => {
       hoverLayer.style.opacity = 0;
       tip.classList.remove('show');
+      $('line').style.opacity = '';
+      $('area').style.opacity = '';
+      $('lineHot').style.display = 'none';
     }, delay);
   }
 
