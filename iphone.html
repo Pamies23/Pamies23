@@ -8,8 +8,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-<meta name="apple-mobile-web-app-title" content="Real Estate" />
-<meta name="theme-color" content="#f4f5fa" />
+<meta name="apple-mobile-web-app-title" content="NRE Real Estate" />
+<meta name="theme-color" content="#5fa893" />
 <title>Real Estate · Pamies</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -44,7 +44,9 @@
 
   body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background: var(--bg);
+    background: #2c5d50;
+    background: linear-gradient(165deg, #5fa893 0%, #3f7e6d 32%, #2c5d50 64%, #21473d 100%);
+    background-attachment: fixed;
     color: var(--ink);
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
@@ -60,22 +62,22 @@
     pointer-events: none;
     filter: blur(60px) saturate(120%);
   }
-  .blob { position: absolute; border-radius: 50%; opacity: 0.5; will-change: transform; }
+  .blob { position: absolute; border-radius: 50%; opacity: 0.32; will-change: transform; }
   .blob-1 {
     width: 90vw; height: 90vw;
-    background: radial-gradient(circle at 30% 30%, #c7c9ff, transparent 65%);
-    top: -30vw; left: -25vw;
+    background: radial-gradient(circle at 30% 30%, #bdf0dd, transparent 65%);
+    top: -34vw; left: -25vw;
     animation: drift1 24s ease-in-out infinite alternate;
   }
   .blob-2 {
     width: 80vw; height: 80vw;
-    background: radial-gradient(circle at 60% 40%, #bdeee0, transparent 65%);
+    background: radial-gradient(circle at 60% 40%, #8fe0c4, transparent 65%);
     bottom: -25vw; right: -22vw;
     animation: drift2 30s ease-in-out infinite alternate;
   }
   .blob-3 {
     width: 65vw; height: 65vw;
-    background: radial-gradient(circle at 50% 50%, #ffd9e3, transparent 65%);
+    background: radial-gradient(circle at 50% 50%, #d8f7ea, transparent 65%);
     top: 35%; left: 40%;
     animation: drift3 34s ease-in-out infinite alternate;
   }
@@ -95,21 +97,13 @@
 
   /* ---------- top bar ---------- */
   .topbar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 4px 18px;
+    padding: 8px 8px 18px;
   }
-  .logo {
-    width: 40px; height: 40px;
-    border-radius: 13px;
-    background: linear-gradient(135deg, #6a6af5, #9b8cff);
-    display: grid; place-items: center;
-    color: #fff; font-weight: 800; font-size: 17px;
-    box-shadow: 0 10px 22px -10px rgba(91, 91, 240, 0.6);
+  .topbar h1 {
+    font-size: 20px; font-weight: 800; color: #fff;
+    letter-spacing: 0.14em; text-transform: uppercase;
   }
-  .topbar h1 { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
-  .topbar p { font-size: 12px; color: var(--ink-soft); margin-top: 1px; }
+  .topbar p { font-size: 12px; color: rgba(255,255,255,0.72); margin-top: 3px; letter-spacing: 0.01em; }
 
   .card {
     background: var(--card);
@@ -177,56 +171,43 @@
   .metric .v.pos { color: var(--positive); }
   .metric .v.neg { color: var(--negative); }
 
-  /* ---------- inputs ---------- */
+  /* ---------- inputs como filas (nombre · cifra) ---------- */
   .section-title {
     font-size: 13px; font-weight: 700; color: var(--ink-soft);
     text-transform: uppercase; letter-spacing: 0.06em;
-    padding: 4px 6px 12px;
+    padding: 2px 4px 6px;
   }
-  .field { margin-bottom: 16px; }
-  .field:last-child { margin-bottom: 0; }
-  .field label {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 13px; font-weight: 600; color: var(--ink-soft);
-    margin-bottom: 8px;
+  .row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 16px 4px;
+    border-bottom: 1px solid rgba(20, 21, 40, 0.07);
   }
-  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
-  .dot-equity { background: var(--accent); }
-  .dot-debt { background: #ffb84d; }
-  .dot-cash { background: var(--positive); }
-  .dot-sale { background: #ff8fb1; }
-
-  .input-wrap { position: relative; display: flex; align-items: center; }
-  .input-wrap input {
-    width: 100%;
+  .row:last-child { border-bottom: none; }
+  .row-name { font-size: 15.5px; font-weight: 600; color: var(--ink); }
+  .row-val { display: flex; align-items: center; gap: 6px; }
+  .row-val input {
     font-family: inherit;
-    font-size: 19px;            /* >=16px evita zoom de iOS al enfocar */
-    font-weight: 600; color: var(--ink);
-    background: #f3f4f9;
-    border: 2px solid transparent;
-    border-radius: var(--radius-md);
-    padding: 15px 56px 15px 18px;
-    outline: none;
-    transition: border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+    font-size: 18px;            /* >=16px evita el zoom de iOS al enfocar */
+    font-weight: 700; color: var(--ink);
+    text-align: right;
+    border: none; background: transparent; outline: none;
+    padding: 4px 2px; margin: -4px 0;
+    width: 130px; max-width: 46vw;
+    font-variant-numeric: tabular-nums;
     appearance: none;
+    transition: color 0.2s ease;
   }
-  .input-wrap input[type="date"] { padding-right: 18px; min-height: 54px; }
-  .input-wrap input:focus {
-    background: #fff; border-color: var(--accent);
-    box-shadow: 0 0 0 5px var(--accent-soft);
-  }
-  .input-wrap .suffix {
-    position: absolute; right: 18px;
-    font-size: 14px; font-weight: 600; color: var(--ink-faint);
-    pointer-events: none;
-  }
+  .row-val input:focus { color: var(--accent); }
+  .row-val input[type="date"] { width: 150px; }
+  .row-val .unit { font-size: 14px; font-weight: 600; color: var(--ink-faint); white-space: nowrap; }
   input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   input[type=number] { -moz-appearance: textfield; }
 
   .foot {
-    text-align: center; font-size: 11px; color: var(--ink-faint);
-    padding: 8px 20px 0; line-height: 1.5;
+    text-align: center; font-size: 11px; color: rgba(255,255,255,0.7);
+    padding: 10px 20px 0; line-height: 1.6;
   }
+  .foot a { color: #fff !important; }
 </style>
 </head>
 <body>
@@ -239,11 +220,8 @@
 
 <div class="app">
   <div class="topbar">
-    <div class="logo">P</div>
-    <div>
-      <h1>Real Estate Flow</h1>
-      <p>Simulador de inversión</p>
-    </div>
+    <h1>NRE Real Estate</h1>
+    <p>Simulador de inversión inmobiliaria</p>
   </div>
 
   <!-- ===== hero / gráfica ===== -->
@@ -302,45 +280,45 @@
 
   <!-- ===== inputs ===== -->
   <div class="card">
-    <div class="section-title" style="padding-top:0;">Tu inversión</div>
+    <div class="section-title">Tu inversión</div>
 
-    <div class="field">
-      <label><span class="dot dot-equity"></span>Equity</label>
-      <div class="input-wrap">
+    <div class="row">
+      <span class="row-name">Equity</span>
+      <span class="row-val">
         <input id="equity" class="num" type="text" inputmode="numeric" autocomplete="off">
-        <span class="suffix">€</span>
-      </div>
+        <span class="unit">€</span>
+      </span>
     </div>
 
-    <div class="field">
-      <label><span class="dot dot-debt"></span>Deuda</label>
-      <div class="input-wrap">
+    <div class="row">
+      <span class="row-name">Deuda</span>
+      <span class="row-val">
         <input id="debt" class="num" type="text" inputmode="numeric" autocomplete="off">
-        <span class="suffix">€</span>
-      </div>
+        <span class="unit">€</span>
+      </span>
     </div>
 
-    <div class="field">
-      <label><span class="dot dot-cash"></span>Cashflow anual</label>
-      <div class="input-wrap">
+    <div class="row">
+      <span class="row-name">Cashflow anual</span>
+      <span class="row-val">
         <input id="cashflow" class="num" data-signed="1" type="text" inputmode="numeric" autocomplete="off">
-        <span class="suffix">€ / año</span>
-      </div>
+        <span class="unit">€/año</span>
+      </span>
     </div>
 
-    <div class="field">
-      <label><span class="dot dot-sale"></span>Valor de venta estimado</label>
-      <div class="input-wrap">
+    <div class="row">
+      <span class="row-name">Valor de venta</span>
+      <span class="row-val">
         <input id="saleValue" class="num" type="text" inputmode="numeric" autocomplete="off">
-        <span class="suffix">€</span>
-      </div>
+        <span class="unit">€</span>
+      </span>
     </div>
 
-    <div class="field">
-      <label><span class="dot dot-sale"></span>Fecha de venta</label>
-      <div class="input-wrap">
+    <div class="row">
+      <span class="row-name">Fecha de venta</span>
+      <span class="row-val">
         <input id="saleDate" type="date">
-      </div>
+      </span>
     </div>
   </div>
 

@@ -29,7 +29,9 @@
 
   body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background: var(--bg);
+    background: #2c5d50;
+    background: linear-gradient(165deg, #5fa893 0%, #3f7e6d 32%, #2c5d50 64%, #21473d 100%);
+    background-attachment: fixed;
     color: var(--ink);
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
@@ -50,21 +52,22 @@
     opacity: 0.55;
     will-change: transform;
   }
+  .blob { opacity: 0.32; }
   .blob-1 {
     width: 55vmax; height: 55vmax;
-    background: radial-gradient(circle at 30% 30%, #c7c9ff, transparent 65%);
-    top: -20vmax; left: -12vmax;
+    background: radial-gradient(circle at 30% 30%, #bdf0dd, transparent 65%);
+    top: -22vmax; left: -12vmax;
     animation: drift1 26s ease-in-out infinite alternate;
   }
   .blob-2 {
     width: 45vmax; height: 45vmax;
-    background: radial-gradient(circle at 60% 40%, #bdeee0, transparent 65%);
+    background: radial-gradient(circle at 60% 40%, #8fe0c4, transparent 65%);
     bottom: -18vmax; right: -10vmax;
     animation: drift2 32s ease-in-out infinite alternate;
   }
   .blob-3 {
     width: 35vmax; height: 35vmax;
-    background: radial-gradient(circle at 50% 50%, #ffd9e3, transparent 65%);
+    background: radial-gradient(circle at 50% 50%, #d8f7ea, transparent 65%);
     top: 30%; left: 55%;
     animation: drift3 38s ease-in-out infinite alternate;
   }
@@ -82,24 +85,13 @@
   }
 
   header {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-bottom: 36px;
+    margin-bottom: 32px;
   }
-  .logo {
-    width: 42px; height: 42px;
-    border-radius: 14px;
-    background: linear-gradient(135deg, #6a6af5, #9b8cff);
-    display: grid;
-    place-items: center;
-    color: #fff;
-    font-weight: 800;
-    font-size: 18px;
-    box-shadow: 0 10px 24px -10px rgba(91, 91, 240, 0.6);
+  header h1 {
+    font-size: 24px; font-weight: 800; color: #fff;
+    letter-spacing: 0.16em; text-transform: uppercase;
   }
-  header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
-  header p { font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
+  header p { font-size: 13px; color: rgba(255,255,255,0.72); margin-top: 4px; }
 
   .grid {
     display: grid;
@@ -130,58 +122,29 @@
     margin-bottom: 22px;
   }
 
-  /* ---------- inputs ---------- */
-  .field { margin-bottom: 18px; }
-  .field label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--ink-soft);
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+  /* ---------- inputs como filas (nombre · cifra) ---------- */
+  .row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 15px 2px;
+    border-bottom: 1px solid rgba(20, 21, 40, 0.07);
   }
-  .dot { width: 8px; height: 8px; border-radius: 50%; }
-  .dot-equity { background: var(--accent); }
-  .dot-debt { background: #ffb84d; }
-  .dot-cash { background: var(--positive); }
-  .dot-sale { background: #ff8fb1; }
-
-  .input-wrap {
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
-  .input-wrap input {
-    width: 100%;
+  .row:last-child { border-bottom: none; }
+  .row-name { font-size: 15px; font-weight: 600; color: var(--ink); }
+  .row-val { display: flex; align-items: center; gap: 6px; }
+  .row-val input {
     font-family: inherit;
-    font-size: 17px;
-    font-weight: 600;
-    color: var(--ink);
-    background: #f3f4f9;
-    border: 2px solid transparent;
-    border-radius: var(--radius-md);
-    padding: 14px 48px 14px 18px;
-    outline: none;
-    transition: border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+    font-size: 17px; font-weight: 700; color: var(--ink);
+    text-align: right;
+    border: none; background: transparent; outline: none;
+    padding: 4px 2px; margin: -4px 0;
+    width: 120px; max-width: 150px;
+    font-variant-numeric: tabular-nums;
     appearance: none;
+    transition: color 0.2s ease;
   }
-  .input-wrap input[type="date"] { padding-right: 18px; }
-  .input-wrap input:focus {
-    background: #fff;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 5px var(--accent-soft);
-  }
-  .input-wrap .suffix {
-    position: absolute;
-    right: 18px;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--ink-faint);
-    pointer-events: none;
-  }
+  .row-val input:focus { color: var(--accent); }
+  .row-val input[type="date"] { width: 140px; }
+  .row-val .unit { font-size: 13px; font-weight: 600; color: var(--ink-faint); white-space: nowrap; }
   input::-webkit-outer-spin-button,
   input::-webkit-inner-spin-button { -webkit-appearance: none; }
   input[type=number] { -moz-appearance: textfield; }
@@ -254,8 +217,9 @@
     margin-top: 34px;
     text-align: center;
     font-size: 12px;
-    color: var(--ink-faint);
+    color: rgba(255,255,255,0.72);
   }
+  footer a { color: #fff !important; }
 </style>
 </head>
 <body>
@@ -281,11 +245,8 @@
 
 <div class="page">
   <header>
-    <div class="logo">P</div>
-    <div>
-      <h1>Real Estate Flow</h1>
-      <p>Simulador de inversión inmobiliaria</p>
-    </div>
+    <h1>NRE Real Estate</h1>
+    <p>Simulador de inversión inmobiliaria</p>
   </header>
 
   <div class="grid">
@@ -294,43 +255,43 @@
       <h2>Tu inversión</h2>
       <p class="sub">Define la estructura de capital y los flujos esperados.</p>
 
-      <div class="field">
-        <label><span class="dot dot-equity"></span>Equity</label>
-        <div class="input-wrap">
+      <div class="row">
+        <span class="row-name">Equity</span>
+        <span class="row-val">
           <input id="equity" class="num" type="text" inputmode="numeric" autocomplete="off">
-          <span class="suffix">€</span>
-        </div>
+          <span class="unit">€</span>
+        </span>
       </div>
 
-      <div class="field">
-        <label><span class="dot dot-debt"></span>Deuda</label>
-        <div class="input-wrap">
+      <div class="row">
+        <span class="row-name">Deuda</span>
+        <span class="row-val">
           <input id="debt" class="num" type="text" inputmode="numeric" autocomplete="off">
-          <span class="suffix">€</span>
-        </div>
+          <span class="unit">€</span>
+        </span>
       </div>
 
-      <div class="field">
-        <label><span class="dot dot-cash"></span>Cashflow anual</label>
-        <div class="input-wrap">
+      <div class="row">
+        <span class="row-name">Cashflow anual</span>
+        <span class="row-val">
           <input id="cashflow" class="num" data-signed="1" type="text" inputmode="numeric" autocomplete="off">
-          <span class="suffix">€ / año</span>
-        </div>
+          <span class="unit">€/año</span>
+        </span>
       </div>
 
-      <div class="field">
-        <label><span class="dot dot-sale"></span>Valor de venta estimado</label>
-        <div class="input-wrap">
+      <div class="row">
+        <span class="row-name">Valor de venta</span>
+        <span class="row-val">
           <input id="saleValue" class="num" type="text" inputmode="numeric" autocomplete="off">
-          <span class="suffix">€</span>
-        </div>
+          <span class="unit">€</span>
+        </span>
       </div>
 
-      <div class="field" style="margin-bottom: 0;">
-        <label><span class="dot dot-sale"></span>Fecha de venta</label>
-        <div class="input-wrap">
+      <div class="row">
+        <span class="row-name">Fecha de venta</span>
+        <span class="row-val">
           <input id="saleDate" type="date">
-        </div>
+        </span>
       </div>
     </div>
 
