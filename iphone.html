@@ -43,7 +43,7 @@
   html, body { height: 100%; }
 
   body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Segoe UI', sans-serif;
     background: #2c5d50;
     background: linear-gradient(165deg, #5fa893 0%, #3f7e6d 32%, #2c5d50 64%, #21473d 100%);
     background-attachment: fixed;
@@ -105,35 +105,41 @@
   }
   .topbar p { font-size: 12px; color: rgba(255,255,255,0.72); margin-top: 3px; letter-spacing: 0.01em; }
 
+  /* ---------- liquid glass ---------- */
   .card {
-    background: var(--card);
+    position: relative;
+    background: linear-gradient(155deg, rgba(255,255,255,0.24), rgba(255,255,255,0.09));
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    backdrop-filter: blur(28px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.28);
     border-radius: var(--radius-xl);
-    box-shadow: var(--shadow);
+    box-shadow: 0 16px 40px -12px rgba(0,0,0,0.35),
+                inset 0 1px 0 rgba(255,255,255,0.35);
     padding: 22px;
     margin-bottom: 16px;
   }
 
   /* ---------- hero ---------- */
   .hero .label {
-    font-size: 12px; font-weight: 600; color: var(--ink-soft);
+    font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.72);
     text-transform: uppercase; letter-spacing: 0.06em;
   }
   .hero .big {
-    font-size: 38px; font-weight: 800; letter-spacing: -0.03em;
+    font-size: 38px; font-weight: 700; letter-spacing: -0.03em;
     font-variant-numeric: tabular-nums; margin: 4px 0 2px;
-    line-height: 1.05;
+    line-height: 1.05; color: #fff;
   }
-  .hero .big.pos { color: var(--positive); }
-  .hero .big.neg { color: var(--negative); }
+  .hero .big.pos, .hero .big.neg { color: #fff; }
   .hero .chip {
     display: inline-flex; align-items: center; gap: 6px;
-    font-size: 13px; font-weight: 600; color: var(--ink-soft);
-    background: #f3f4f9; border-radius: 999px; padding: 5px 12px;
+    font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.82);
+    background: rgba(255,255,255,0.12); border-radius: 999px; padding: 5px 12px;
     margin-top: 4px;
+    border: 1px solid rgba(255,255,255,0.14);
   }
   .chip .arrow { font-weight: 800; }
-  .chip.pos { color: var(--positive); background: rgba(31,199,135,0.12); }
-  .chip.neg { color: var(--negative); background: rgba(255,92,122,0.12); }
+  .chip.pos { color: #3fe7ab; background: rgba(63,231,171,0.16); border-color: rgba(63,231,171,0.22); }
+  .chip.neg { color: #ff8097; background: rgba(255,128,151,0.16); border-color: rgba(255,128,151,0.22); }
 
   /* ---------- chart ---------- */
   .chart-wrap { position: relative; width: 100%; margin-top: 14px; touch-action: pan-y; }
@@ -159,36 +165,37 @@
     display: grid; grid-template-columns: repeat(3, 1fr);
     gap: 10px; margin-top: 18px;
   }
-  .metric { background: #f6f7fc; border-radius: var(--radius-md); padding: 13px 12px; }
+  .metric {
+    background: rgba(255,255,255,0.09);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: var(--radius-md); padding: 13px 12px;
+  }
   .metric .k {
-    font-size: 10px; font-weight: 600; color: var(--ink-soft);
+    font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.6);
     text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px;
   }
   .metric .v {
-    font-size: 16px; font-weight: 700; letter-spacing: -0.02em;
+    font-size: 16px; font-weight: 700; letter-spacing: -0.02em; color: #fff;
     font-variant-numeric: tabular-nums;
   }
-  .metric .v.pos { color: var(--positive); }
-  .metric .v.neg { color: var(--negative); }
+  .metric .v.pos, .metric .v.neg { color: #fff; }
 
   /* ---------- inputs como filas (nombre · cifra) ---------- */
   .section-title {
-    font-size: 13px; font-weight: 700; color: var(--ink-soft);
+    font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.62);
     text-transform: uppercase; letter-spacing: 0.06em;
     padding: 2px 4px 6px;
   }
   .row {
     display: flex; align-items: center; justify-content: space-between;
-    gap: 12px; padding: 16px 4px;
-    border-bottom: 1px solid rgba(20, 21, 40, 0.07);
+    gap: 12px; padding: 15px 4px;
   }
-  .row:last-child { border-bottom: none; }
-  .row-name { font-size: 15.5px; font-weight: 600; color: var(--ink); }
+  .row-name { font-size: 15.5px; font-weight: 500; color: #fff; letter-spacing: 0.01em; }
   .row-val { display: flex; align-items: center; gap: 6px; }
   .row-val input {
     font-family: inherit;
     font-size: 18px;            /* >=16px evita el zoom de iOS al enfocar */
-    font-weight: 700; color: var(--ink);
+    font-weight: 600; color: #fff;
     text-align: right;
     border: none; background: transparent; outline: none;
     padding: 4px 2px; margin: -4px 0;
@@ -197,9 +204,9 @@
     appearance: none;
     transition: color 0.2s ease;
   }
-  .row-val input:focus { color: var(--accent); }
-  .row-val input[type="date"] { width: 150px; }
-  .row-val .unit { font-size: 14px; font-weight: 600; color: var(--ink-faint); white-space: nowrap; }
+  .row-val input:focus { color: #5fe7c0; }
+  .row-val input[type="date"] { width: 150px; color-scheme: dark; }
+  .row-val .unit { font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.5); white-space: nowrap; }
   input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   input[type=number] { -moz-appearance: textfield; }
 
@@ -243,12 +250,8 @@
           </linearGradient>
         </defs>
         <path id="area" fill="url(#areaGrad)"></path>
-        <!-- break-even (0 €) -->
-        <line id="zeroLine" stroke="#b3b8c6" stroke-width="1.25" stroke-dasharray="1 7" stroke-linecap="round"></line>
-        <g id="zeroLabel" style="opacity:0; transition:opacity .3s ease;">
-          <rect id="zeroLabelBg" rx="7" ry="7" height="18" fill="#eef0f6"></rect>
-          <text id="zeroLabelTx" font-size="10.5" font-weight="700" fill="#7c8295" dominant-baseline="middle">0 € · break-even</text>
-        </g>
+        <!-- línea de 0 -->
+        <line id="zeroLine" stroke="rgba(255,255,255,0.42)" stroke-width="1.25" stroke-dasharray="1 7" stroke-linecap="round"></line>
         <path id="line" fill="none" stroke="url(#lineGrad)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path>
         <g id="xLabels"></g>
         <g id="hoverLayer" style="opacity:0; transition: opacity 0.18s ease;">
@@ -482,15 +485,6 @@
     const z = $('zeroLine');
     z.setAttribute('x1', PAD.left); z.setAttribute('x2', W - PAD.right);
     z.setAttribute('y1', zeroY); z.setAttribute('y2', zeroY);
-    // etiqueta "0 € · break-even" sobre la línea
-    const tx = $('zeroLabelTx'), bg = $('zeroLabelBg');
-    tx.setAttribute('x', PAD.left + 8);
-    tx.setAttribute('y', zeroY);
-    const w = tx.getComputedTextLength() + 16;
-    bg.setAttribute('x', PAD.left);
-    bg.setAttribute('y', zeroY - 9);
-    bg.setAttribute('width', w);
-    $('zeroLabel').style.opacity = 1;
   }
 
   function animateTo(target) {
@@ -528,7 +522,7 @@
       el.setAttribute('x', x); el.setAttribute('y', H - 12);
       el.setAttribute('text-anchor', i === 0 ? 'start' : (i === n-1 ? 'end' : 'middle'));
       el.setAttribute('font-size', '11'); el.setAttribute('font-weight', '600');
-      el.setAttribute('fill', '#9aa0ae');
+      el.setAttribute('fill', 'rgba(255,255,255,0.55)');
       el.textContent = "'" + String(startYear + i).slice(2);
       g.appendChild(el);
     });

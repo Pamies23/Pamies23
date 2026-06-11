@@ -28,7 +28,7 @@
   html, body { height: 100%; }
 
   body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Segoe UI', sans-serif;
     background: #2c5d50;
     background: linear-gradient(165deg, #5fa893 0%, #3f7e6d 32%, #2c5d50 64%, #21473d 100%);
     background-attachment: fixed;
@@ -103,10 +103,15 @@
     .grid { grid-template-columns: 1fr; }
   }
 
+  /* ---------- liquid glass ---------- */
   .card {
-    background: var(--card);
+    background: linear-gradient(155deg, rgba(255,255,255,0.24), rgba(255,255,255,0.09));
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    backdrop-filter: blur(28px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.28);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow);
+    box-shadow: 0 16px 40px -12px rgba(0,0,0,0.35),
+                inset 0 1px 0 rgba(255,255,255,0.35);
     padding: 28px;
   }
 
@@ -115,10 +120,11 @@
     font-weight: 700;
     letter-spacing: -0.01em;
     margin-bottom: 4px;
+    color: #fff;
   }
   .card .sub {
     font-size: 12.5px;
-    color: var(--ink-soft);
+    color: rgba(255,255,255,0.7);
     margin-bottom: 22px;
   }
 
@@ -126,14 +132,12 @@
   .row {
     display: flex; align-items: center; justify-content: space-between;
     gap: 12px; padding: 15px 2px;
-    border-bottom: 1px solid rgba(20, 21, 40, 0.07);
   }
-  .row:last-child { border-bottom: none; }
-  .row-name { font-size: 15px; font-weight: 600; color: var(--ink); }
+  .row-name { font-size: 15px; font-weight: 500; color: #fff; letter-spacing: 0.01em; }
   .row-val { display: flex; align-items: center; gap: 6px; }
   .row-val input {
     font-family: inherit;
-    font-size: 17px; font-weight: 700; color: var(--ink);
+    font-size: 17px; font-weight: 600; color: #fff;
     text-align: right;
     border: none; background: transparent; outline: none;
     padding: 4px 2px; margin: -4px 0;
@@ -142,9 +146,9 @@
     appearance: none;
     transition: color 0.2s ease;
   }
-  .row-val input:focus { color: var(--accent); }
-  .row-val input[type="date"] { width: 140px; }
-  .row-val .unit { font-size: 13px; font-weight: 600; color: var(--ink-faint); white-space: nowrap; }
+  .row-val input:focus { color: #5fe7c0; }
+  .row-val input[type="date"] { width: 140px; color-scheme: dark; }
+  .row-val .unit { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.5); white-space: nowrap; }
   input::-webkit-outer-spin-button,
   input::-webkit-inner-spin-button { -webkit-appearance: none; }
   input[type=number] { -moz-appearance: textfield; }
@@ -160,7 +164,8 @@
     .metrics { grid-template-columns: repeat(2, 1fr); }
   }
   .metric {
-    background: #f6f7fc;
+    background: rgba(255,255,255,0.09);
+    border: 1px solid rgba(255,255,255,0.12);
     border-radius: var(--radius-md);
     padding: 16px 18px;
     transition: transform 0.3s ease;
@@ -169,7 +174,7 @@
   .metric .k {
     font-size: 11px;
     font-weight: 600;
-    color: var(--ink-soft);
+    color: rgba(255,255,255,0.6);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     margin-bottom: 6px;
@@ -179,9 +184,9 @@
     font-weight: 700;
     letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums;
+    color: #fff;
   }
-  .metric .v.pos { color: var(--positive); }
-  .metric .v.neg { color: var(--negative); }
+  .metric .v.pos, .metric .v.neg { color: #fff; }
 
   /* ---------- chart ---------- */
   .chart-wrap {
@@ -333,12 +338,8 @@
           </defs>
           <g id="gridLines"></g>
           <path id="area" fill="url(#areaGrad)"></path>
-          <!-- break-even (0 €) -->
-          <line id="zeroLine" stroke="#b3b8c6" stroke-width="1.25" stroke-dasharray="1 7" stroke-linecap="round"></line>
-          <g id="zeroLabel" style="opacity:0; transition:opacity .3s ease;">
-            <rect id="zeroLabelBg" rx="8" ry="8" height="20" fill="#eef0f6"></rect>
-            <text id="zeroLabelTx" font-size="12" font-weight="700" fill="#7c8295" dominant-baseline="middle">0 € · break-even</text>
-          </g>
+          <!-- línea de 0 -->
+          <line id="zeroLine" stroke="rgba(255,255,255,0.42)" stroke-width="1.25" stroke-dasharray="1 7" stroke-linecap="round"></line>
           <path id="line" fill="none" stroke="url(#lineGrad)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path>
           <g id="xLabels"></g>
           <g id="hoverLayer" style="opacity:0; transition: opacity 0.18s ease;">
@@ -515,15 +516,6 @@
     const z = $('zeroLine');
     z.setAttribute('x1', PAD.left); z.setAttribute('x2', W - PAD.right);
     z.setAttribute('y1', zeroY); z.setAttribute('y2', zeroY);
-    // etiqueta "0 € · break-even" sobre la línea
-    const tx = $('zeroLabelTx'), bg = $('zeroLabelBg');
-    tx.setAttribute('x', PAD.left + 10);
-    tx.setAttribute('y', zeroY);
-    const w = tx.getComputedTextLength() + 20;
-    bg.setAttribute('x', PAD.left);
-    bg.setAttribute('y', zeroY - 10);
-    bg.setAttribute('width', w);
-    $('zeroLabel').style.opacity = 1;
   }
 
   function animateTo(target) {
@@ -566,7 +558,7 @@
       el.setAttribute('text-anchor', 'middle');
       el.setAttribute('font-size', '12');
       el.setAttribute('font-weight', '600');
-      el.setAttribute('fill', '#9aa0ae');
+      el.setAttribute('fill', 'rgba(255,255,255,0.55)');
       el.textContent = startYear + i;
       g.appendChild(el);
     }
