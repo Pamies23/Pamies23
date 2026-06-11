@@ -167,15 +167,19 @@
   .topscrim {
     position: fixed;
     top: 0; left: 0; right: 0;
-    height: calc(var(--safe-top) + 46px);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    backdrop-filter: blur(20px) saturate(180%);
+    height: calc(var(--safe-top) + 54px);
+    -webkit-backdrop-filter: blur(14px) saturate(170%);
+    backdrop-filter: blur(14px) saturate(170%);
     -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 45%, rgba(0,0,0,0.4) 78%, transparent 100%);
     mask-image: linear-gradient(180deg, #000 0%, #000 45%, rgba(0,0,0,0.4) 78%, transparent 100%);
-    /* casi sin película de color: el contenido (la gráfica) debe seguir
-       viéndose a través del cristal, solo difuminado */
+    /* Película del color del fondo: opaca SOLO en el borde superior, para
+       empalmar sin costura con la franja que pinta Safari/el notch, y
+       desvaneciéndose enseguida. El contenido llega arriba y se le ve a
+       través del cristal, cada vez más tenue — como Revolut. */
     background: linear-gradient(180deg,
-      rgba(var(--scrim-rgb), 0.10) 0%,
+      rgba(var(--scrim-rgb), 0.90) 0%,
+      rgba(var(--scrim-rgb), 0.55) 34%,
+      rgba(var(--scrim-rgb), 0.16) 68%,
       rgba(var(--scrim-rgb), 0) 100%);
     z-index: 10;
     pointer-events: none;
@@ -877,13 +881,18 @@
   });
 
   // ---------- selector de tema (color de fondo) ----------
-  const themeColorMeta = document.querySelector('meta[name="theme-color"]');
   const THEME_TOP = { green: '#79bda6', ocean: '#bfd2d8' };
   function applyTheme(name, persist) {
     document.documentElement.classList.toggle('theme-ocean', name === 'ocean');
     document.querySelectorAll('.swatch').forEach(s =>
       s.classList.toggle('active', s.dataset.theme === name));
-    if (themeColorMeta) themeColorMeta.setAttribute('content', THEME_TOP[name] || THEME_TOP.green);
+    // Safari a veces ignora cambios en caliente del theme-color: recrear el
+    // nodo <meta> fuerza la relectura y la franja del notch acompaña al tema
+    document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.remove());
+    const meta = document.createElement('meta');
+    meta.name = 'theme-color';
+    meta.content = THEME_TOP[name] || THEME_TOP.green;
+    document.head.appendChild(meta);
     if (persist) { try { localStorage.setItem('nre-theme', name); } catch (_) {} }
   }
   document.querySelectorAll('.swatch').forEach(s =>
