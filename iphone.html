@@ -253,7 +253,7 @@
     margin-bottom: 14px;
   }
   .topbar h1 {
-    font-size: 17px; font-weight: 700; color: #fff;
+    font-size: 19px; font-weight: 700; color: #fff;
     letter-spacing: 0.14em; text-transform: uppercase;
     text-shadow: 0 1px 8px rgba(20,50,40,0.18);
   }
@@ -280,18 +280,18 @@
 
   /* ---------- hero ---------- */
   .hero .label {
-    font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.72);
+    font-size: 13.5px; font-weight: 600; color: rgba(255,255,255,0.72);
     text-transform: uppercase; letter-spacing: 0.06em;
   }
   .hero .big {
-    font-size: 38px; font-weight: 700; letter-spacing: -0.03em;
+    font-size: 41px; font-weight: 700; letter-spacing: -0.03em;
     font-variant-numeric: tabular-nums; margin: 4px 0 2px;
     line-height: 1.05; color: #fff;
   }
   .hero .big.pos, .hero .big.neg { color: #fff; }
   .hero .chip {
     display: inline-flex; align-items: center; gap: 6px;
-    font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.82);
+    font-size: 14.5px; font-weight: 600; color: rgba(255,255,255,0.82);
     background: rgba(255,255,255,0.12); border-radius: 999px; padding: 5px 12px;
     margin-top: 4px;
     border: 1px solid rgba(255,255,255,0.14);
@@ -308,7 +308,7 @@
     position: absolute;
     background: var(--ink); color: #fff;
     border-radius: 14px; padding: 9px 13px;
-    font-size: 12px; line-height: 1.45;
+    font-size: 13px; line-height: 1.45;
     pointer-events: none; opacity: 0; white-space: nowrap;
     transform: translate(-50%, -8px) scale(0.96);
     transition: opacity 0.18s ease, transform 0.18s ease;
@@ -316,8 +316,8 @@
     z-index: 5;
   }
   .tooltip.show { opacity: 1; transform: translate(-50%, -14px) scale(1); }
-  .tooltip .ty { color: #b9bdc9; font-size: 11px; }
-  .tooltip .tv { font-weight: 700; font-size: 14px; }
+  .tooltip .ty { color: #b9bdc9; font-size: 12px; }
+  .tooltip .tv { font-weight: 700; font-size: 15.5px; }
 
   /* ---------- metric strip ---------- */
   .metrics {
@@ -331,18 +331,18 @@
     text-align: center;
   }
   .metric .k {
-    font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.6);
+    font-size: 11.5px; font-weight: 600; color: rgba(255,255,255,0.65);
     text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px;
   }
   .metric .v {
-    font-size: 16px; font-weight: 700; letter-spacing: -0.02em; color: #fff;
+    font-size: 17.5px; font-weight: 700; letter-spacing: -0.02em; color: #fff;
     font-variant-numeric: tabular-nums;
   }
   .metric .v.pos, .metric .v.neg { color: #fff; }
 
   /* ---------- inputs como filas (nombre · cifra) ---------- */
   .section-title {
-    font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.62);
+    font-size: 14.5px; font-weight: 700; color: rgba(255,255,255,0.66);
     text-transform: uppercase; letter-spacing: 0.06em;
     padding: 2px 4px 6px;
   }
@@ -350,11 +350,11 @@
     display: flex; align-items: center; justify-content: space-between;
     gap: 12px; padding: 15px 4px;
   }
-  .row-name { font-size: 15.5px; font-weight: 500; color: #fff; letter-spacing: 0.01em; }
+  .row-name { font-size: 17px; font-weight: 500; color: #fff; letter-spacing: 0.01em; }
   .row-val { display: flex; align-items: center; gap: 6px; }
   .row-val input {
     font-family: inherit;
-    font-size: 18px;            /* >=16px evita el zoom de iOS al enfocar */
+    font-size: 19.5px;          /* >=16px evita el zoom de iOS al enfocar */
     font-weight: 600; color: #fff;
     text-align: right;
     border: none; background: transparent; outline: none;
@@ -365,19 +365,18 @@
     transition: color 0.2s ease;
   }
   .row-val input:focus { color: #5fe7c0; }
-  .row-val input[type="date"] { width: 150px; color-scheme: dark; }
-  .row-val .unit { font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.5); white-space: nowrap; }
+  .row-val .unit { font-size: 15.5px; font-weight: 500; color: rgba(255,255,255,0.55); white-space: nowrap; }
   /* filas calculadas automáticamente (no editables) */
   .row.auto .row-name { color: rgba(255,255,255,0.66); }
   .row-out {
-    font-size: 18px; font-weight: 600; color: #fff;
+    font-size: 19.5px; font-weight: 600; color: #fff;
     font-variant-numeric: tabular-nums; white-space: nowrap;
   }
   input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   input[type=number] { -moz-appearance: textfield; }
 
   .foot {
-    text-align: center; font-size: 11px; color: rgba(255,255,255,0.7);
+    text-align: center; font-size: 12.5px; color: rgba(255,255,255,0.75);
     padding: 10px 20px 0; line-height: 1.6;
   }
   .foot a { color: #fff !important; }
@@ -443,7 +442,7 @@
   .prev-stone  { background: linear-gradient(180deg, #8f8d86, #5a584f 55%, #0c0b09); }
   .swatch-label {
     display: block; text-align: center; color: #fff;
-    font-size: 13px; font-weight: 600; margin-top: 10px;
+    font-size: 14.5px; font-weight: 600; margin-top: 10px;
   }
   .swatch-check {
     position: absolute; top: 16px; right: 16px;
@@ -513,7 +512,7 @@
     border: none; background: transparent; cursor: pointer;
     border-radius: 20px;
     color: rgba(255,255,255,0.62);
-    font-family: inherit; font-size: 9.5px; font-weight: 600;
+    font-family: inherit; font-size: 11px; font-weight: 600;
     letter-spacing: 0.03em;
     transition: color 0.3s ease, transform 0.15s ease;
   }
@@ -636,7 +635,7 @@
     </div>
 
     <div class="row">
-      <span class="row-name">CF anual</span>
+      <span class="row-name">CF mensual</span>
       <span class="row-val">
         <input id="cashflow" class="num" data-signed="1" type="text" inputmode="numeric" autocomplete="off">
         <span class="unit">€</span>
@@ -652,9 +651,10 @@
     </div>
 
     <div class="row">
-      <span class="row-name">Fecha de venta</span>
+      <span class="row-name">Plazo de venta</span>
       <span class="row-val">
-        <input id="saleDate" type="date">
+        <input id="saleYears" class="num" type="text" inputmode="numeric" autocomplete="off">
+        <span class="unit">años</span>
       </span>
     </div>
   </div>
@@ -798,13 +798,15 @@
   const fmtModel = (n, allowNeg) => sanitizeNum(String(n), allowNeg).display;
 
   // ---------- modelo (valores numéricos en memoria) ----------
-  // precio + % de deuda son los inputs; equity y deuda se derivan de ellos
-  const model = { price: 250000, debtPct: 60, cashflow: 12000, saleValue: 320000, ratePct: 3, termYears: 25 };
+  // precio + % de deuda son los inputs; equity y deuda se derivan de ellos.
+  // El cashflow se introduce MENSUAL y el modelo lo anualiza (x12).
+  const model = { price: 250000, debtPct: 60, cashflow: 1000, saleValue: 320000, ratePct: 3, termYears: 25, saleYears: 10 };
   const NUM_FIELDS = [
     { id: 'price', signed: false },
     { id: 'cashflow', signed: true },   // el cashflow puede ser negativo
     { id: 'saleValue', signed: false },
     { id: 'termYears', signed: false },
+    { id: 'saleYears', signed: false },
   ];
   // campos porcentuales: admiten decimales con coma (p. ej. 2,75)
   const DEC_FIELDS = ['debtPct', 'ratePct'];
@@ -815,20 +817,12 @@
     return { debt, equity: Math.max(0, model.price - debt) };
   }
 
-  // fecha de venta por defecto: +10 años
-  const defDate = new Date();
-  defDate.setFullYear(defDate.getFullYear() + 10);
-  $('saleDate').value = defDate.toISOString().slice(0, 10);
-
   // pinta los valores iniciales ya formateados con puntos de miles
   NUM_FIELDS.forEach(f => { $(f.id).value = fmtModel(model[f.id], f.signed); });
   DEC_FIELDS.forEach(id => { $(id).value = String(model[id]).replace('.', ','); });
 
   function readInputs() {
-    const now = new Date();
-    const sale = new Date($('saleDate').value);
-    let years = isNaN(sale) ? 10 : Math.round((sale - now) / (365.25 * 24 * 3600 * 1000));
-    years = Math.min(40, Math.max(1, years));
+    const years = Math.min(40, Math.max(1, Math.round(model.saleYears) || 1));
     const { equity, debt } = derived();
     // hipoteca: amortización francesa (cuota constante)
     const months = Math.max(1, Math.round(model.termYears)) * 12;
@@ -837,9 +831,9 @@
       : (i > 0 ? debt * i / (1 - Math.pow(1 + i, -months)) : debt / months);
     return {
       equity, debt, months, i, cuota,
-      cashflow: model.cashflow,
+      cashflow: model.cashflow * 12,    // mensual → anual
       saleValue: Math.max(0, model.saleValue),
-      years, startYear: now.getFullYear(),
+      years, startYear: new Date().getFullYear(),
     };
   }
 
@@ -992,7 +986,7 @@
       const el = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       el.setAttribute('x', x); el.setAttribute('y', H - 12);
       el.setAttribute('text-anchor', i === 0 ? 'start' : (i === n-1 ? 'end' : 'middle'));
-      el.setAttribute('font-size', '11'); el.setAttribute('font-weight', '600');
+      el.setAttribute('font-size', '12.5'); el.setAttribute('font-weight', '600');
       el.setAttribute('fill', 'rgba(255,255,255,0.55)');
       el.textContent = "'" + String(startYear + i).slice(2);
       g.appendChild(el);
@@ -1077,8 +1071,6 @@
     // al salir, si quedó vacío restauramos el último valor formateado
     el.addEventListener('blur', () => { el.value = fmtModel(model[id], signed); });
   });
-  $('saleDate').addEventListener('input', update);
-
   // ---------- inputs porcentuales con decimales (coma) ----------
   function sanitizeDec(raw) {
     let s = raw.replace(/[^\d.,]/g, '').replace(/\./g, ',');
