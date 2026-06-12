@@ -349,16 +349,17 @@
   .row {
     display: flex; align-items: center; justify-content: space-between;
     gap: 12px; padding: 15px 4px;
+    line-height: 1.25;          /* mismo alto de línea en todas las filas (span y button) */
   }
-  .row-name { font-size: 18.5px; font-weight: 500; color: #fff; letter-spacing: 0.01em; }
+  .row-name { font-size: 18.5px; font-weight: 500; color: #fff; letter-spacing: 0.01em; line-height: 1.25; }
   .row-val { display: flex; align-items: center; gap: 6px; }
   .row-val input {
     font-family: inherit;
     font-size: 21px;            /* >=16px evita el zoom de iOS al enfocar */
-    font-weight: 600; color: #fff;
+    font-weight: 600; color: #fff; line-height: 1.25;
     text-align: right;
     border: none; background: transparent; outline: none;
-    padding: 4px 2px; margin: -4px 0;
+    padding: 0 2px; margin: 0;
     width: 130px; max-width: 46vw;
     font-variant-numeric: tabular-nums;
     appearance: none;
@@ -369,7 +370,7 @@
   /* filas calculadas automáticamente (no editables) */
   .row.auto .row-name { color: rgba(255,255,255,0.66); }
   .row-out {
-    font-size: 21px; font-weight: 600; color: #fff;
+    font-size: 21px; font-weight: 600; color: #fff; line-height: 1.25;
     font-variant-numeric: tabular-nums; white-space: nowrap;
   }
   /* ---------- desplegables: filas con desglose ----------
@@ -418,7 +419,9 @@
     letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
   }
   .dc-k { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.6); }
-  .legend { display: flex; flex-direction: column; gap: 9px; margin-top: 16px; }
+  .legend { display: flex; flex-direction: column; gap: 9px; margin: 16px 0 6px; }
+  /* respiro entre la leyenda del donut y la primera fila de conceptos */
+  .legend + .row { margin-top: 8px; }
   .lg-item { display: flex; align-items: center; gap: 10px; }
   .lg-dot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
   .lg-name { flex: 1; font-size: 16px; font-weight: 500; color: rgba(255,255,255,0.66); }
