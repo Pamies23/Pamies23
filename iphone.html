@@ -245,12 +245,11 @@
   html.standalone .topscrim-soft { height: calc(var(--safe-top) + 70px); }
 
   /* ---------- título: texto sobre el fondo continuo, sin pastilla ---------- */
+  /* el título reposa abajo, a un margen elegante del primer cristal,
+     y se va con el contenido al hacer scroll (bajo el velo difuminado) */
   .topbar {
-    position: sticky;
-    top: calc(var(--safe-top) + 6px);
-    z-index: 20;
-    padding: 8px 14px 14px;
-    margin-bottom: 14px;
+    padding: 48px 14px 0;
+    margin-bottom: 16px;
   }
   .topbar h1 {
     font-size: 21px; font-weight: 700; color: #fff;
@@ -449,11 +448,18 @@
     font-size: 23px; font-weight: 800;
     letter-spacing: 0.22em; text-transform: uppercase;
     color: #fff;
-    animation: splashIn 0.9s cubic-bezier(0.22, 1, 0.36, 1);
   }
-  @keyframes splashIn {
-    from { opacity: 0; transform: translateY(10px) scale(0.97); }
-    to   { opacity: 1; transform: none; }
+  /* cada letra entra por separado, con fundido escalonado */
+  #splash i {
+    font-style: normal;
+    display: inline-block;
+    opacity: 0;
+    animation: splashLetter 0.6s ease forwards;
+    animation-delay: calc(var(--d) * 60ms + 150ms);
+  }
+  @keyframes splashLetter {
+    from { opacity: 0; transform: translateY(7px); filter: blur(5px); }
+    to   { opacity: 1; transform: none; filter: none; }
   }
   #splash.off { opacity: 0; pointer-events: none; }
 
@@ -579,7 +585,7 @@
 <body>
 
 <!-- presentación de arranque en frío -->
-<div id="splash" aria-hidden="true"><span>NRE&nbsp;Investments</span></div>
+<div id="splash" aria-hidden="true"><span><i style="--d:0">N</i><i style="--d:1">R</i><i style="--d:2">E</i><i style="--d:3">&nbsp;</i><i style="--d:4">I</i><i style="--d:5">n</i><i style="--d:6">v</i><i style="--d:7">e</i><i style="--d:8">s</i><i style="--d:9">t</i><i style="--d:10">m</i><i style="--d:11">e</i><i style="--d:12">n</i><i style="--d:13">t</i><i style="--d:14">s</i></span></div>
 
 <div class="bg">
   <div class="bg-layer bg-ocean"></div>
@@ -1575,7 +1581,7 @@
     splash.classList.add('off');
     setTimeout(() => splash.remove(), 550);
   }
-  setTimeout(() => dropSplash(false), 1000);
+  setTimeout(() => dropSplash(false), 2150);   // deja terminar la entrada letra a letra
   // vuelta instantánea desde la caché de navegación: sin presentación
   window.addEventListener('pageshow', e => { if (e.persisted) dropSplash(true); });
 
