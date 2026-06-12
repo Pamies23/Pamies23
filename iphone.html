@@ -282,18 +282,18 @@
     padding: 22px;
     margin-bottom: 16px;
   }
-  /* aro de refracción del canto */
+  /* aro de refracción del canto: fino y discreto */
   .card::before {
     content: '';
     position: absolute; inset: 0;
     border-radius: inherit;
-    padding: 9px;
+    padding: 4px;
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite: xor;
     mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     mask-composite: exclude;
-    -webkit-backdrop-filter: blur(5px) saturate(230%) brightness(1.18);
-    backdrop-filter: blur(5px) saturate(230%) brightness(1.18);
+    -webkit-backdrop-filter: blur(3px) saturate(190%) brightness(1.09);
+    backdrop-filter: blur(3px) saturate(190%) brightness(1.09);
     pointer-events: none;
   }
   /* filo luminoso degradado (sustituye al borde plano) */
@@ -307,8 +307,8 @@
     mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     mask-composite: exclude;
     background: linear-gradient(135deg,
-      rgba(255,255,255,0.60) 0%, rgba(255,255,255,0.12) 28%,
-      rgba(255,255,255,0.04) 55%, rgba(255,255,255,0.34) 100%);
+      rgba(255,255,255,0.44) 0%, rgba(255,255,255,0.12) 28%,
+      rgba(255,255,255,0.05) 55%, rgba(255,255,255,0.26) 100%);
     pointer-events: none;
   }
 
