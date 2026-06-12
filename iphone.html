@@ -599,7 +599,7 @@
   <div class="topscrim-soft"></div>
   <div class="topscrim"></div>
   <div class="topbar">
-    <h1>NRE Real Estate</h1>
+    <h1 id="topTitle">Análisis</h1>
   </div>
 
   <!-- ============ VISTA: ANÁLISIS ============ -->
@@ -1339,9 +1339,11 @@
   const tabbar = $('tabbar');
   const curIdx = () => ORDER.findIndex(n => !views[n].hidden);
 
+  const VIEW_TITLES = { analisis: 'Análisis', gastos: 'Gastos', ajustes: 'Ajustes' };
   function syncTabs(name) {
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === name));
     ORDER.forEach((n, i) => tabbar.classList.toggle('pos-' + i, n === name));
+    $('topTitle').textContent = VIEW_TITLES[name];   // el título superior es la pestaña actual
   }
   // dir: 'left' = la vista entra desde la derecha; 'right' = desde la izquierda
   function setView(name, dir) {
