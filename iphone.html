@@ -384,20 +384,48 @@
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
   }
+  /* caja fija y glifo centrado: la rotación es sobre su propio centro,
+     así la flecha no se desplaza al abrir/cerrar */
   .fold-toggle .chev {
-    display: inline-block;
+    display: inline-grid; place-items: center;
+    width: 20px; height: 20px;
     font-size: 20px; line-height: 1; font-weight: 500;
     color: rgba(255,255,255,0.5);
-    transform: translateY(-1px);
     transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   }
-  .fold-toggle.open .chev { transform: translateY(-1px) rotate(90deg); }
+  .fold-toggle.open .chev { transform: rotate(90deg); }
   .fold {
     overflow: hidden;
     max-height: 0; opacity: 0;
     transition: max-height 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
   }
   .fold.open { max-height: 320px; opacity: 1; }
+
+  /* ---------- gastos de compra: donut + leyenda ---------- */
+  .donut-wrap {
+    position: relative;
+    width: 64%; max-width: 230px;
+    margin: 18px auto 8px;
+  }
+  .donut-center {
+    position: absolute; inset: 0;
+    display: grid; place-content: center; justify-items: center;
+    text-align: center; gap: 2px;
+    pointer-events: none;
+  }
+  .dc-v {
+    font-size: 27px; font-weight: 700; color: #fff;
+    letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+  }
+  .dc-k { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.6); }
+  .legend { display: flex; flex-direction: column; gap: 9px; margin-top: 16px; }
+  .lg-item { display: flex; align-items: center; gap: 10px; }
+  .lg-dot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
+  .lg-name { flex: 1; font-size: 16px; font-weight: 500; color: rgba(255,255,255,0.66); }
+  .lg-val {
+    font-size: 16.5px; font-weight: 600; color: #fff;
+    font-variant-numeric: tabular-nums;
+  }
   input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   input[type=number] { -moz-appearance: textfield; }
 
@@ -523,14 +551,15 @@
   .tab-pill {
     position: absolute;
     top: 4px; bottom: 4px; left: 4px;
-    width: calc((100% - 12px) / 2);
+    width: calc((100% - 16px) / 3);   /* tres pestañas: padding 4+4 y dos huecos de 4 */
     border-radius: 20px;
     background: rgba(255,255,255,0.16);
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.25);
     transition: transform 0.38s cubic-bezier(0.3, 1.3, 0.4, 1);
     pointer-events: none;
   }
-  .tabbar.on-ajustes .tab-pill { transform: translateX(calc(100% + 4px)); }
+  .tabbar.pos-1 .tab-pill { transform: translateX(calc(100% + 4px)); }
+  .tabbar.pos-2 .tab-pill { transform: translateX(calc(200% + 8px)); }
   .tab {
     position: relative;
     display: flex; flex-direction: column; align-items: center; gap: 1px;
@@ -733,6 +762,80 @@
 
   </div><!-- /view-analisis -->
 
+  <!-- ============ VISTA: GASTOS DE COMPRA ============ -->
+  <div id="view-gastos" class="view" hidden>
+
+    <div class="card hero">
+      <div class="label">Gastos de compra</div>
+      <div class="big" id="gTotal">—</div>
+
+      <div class="donut-wrap">
+        <svg id="donut" viewBox="0 0 220 220" role="img" aria-label="Reparto de los gastos de compra">
+          <g id="donutSegs" transform="rotate(-90 110 110)"></g>
+        </svg>
+        <div class="donut-center">
+          <div class="dc-v" id="gPct">—</div>
+          <div class="dc-k">del precio</div>
+        </div>
+      </div>
+
+      <div class="legend" id="gLegend"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Conceptos</div>
+
+      <div class="row">
+        <span class="row-name">ITP</span>
+        <span class="row-val">
+          <input id="itpPct" type="text" inputmode="decimal" autocomplete="off">
+          <span class="unit">%</span>
+        </span>
+      </div>
+
+      <div class="row">
+        <span class="row-name">Notaría</span>
+        <span class="row-val">
+          <input id="notaria" class="num" type="text" inputmode="numeric" autocomplete="off">
+          <span class="unit">€</span>
+        </span>
+      </div>
+
+      <div class="row">
+        <span class="row-name">Registro</span>
+        <span class="row-val">
+          <input id="registro" class="num" type="text" inputmode="numeric" autocomplete="off">
+          <span class="unit">€</span>
+        </span>
+      </div>
+
+      <div class="row">
+        <span class="row-name">Gestoría</span>
+        <span class="row-val">
+          <input id="gestoria" class="num" type="text" inputmode="numeric" autocomplete="off">
+          <span class="unit">€</span>
+        </span>
+      </div>
+
+      <div class="row">
+        <span class="row-name">Comisión agencia</span>
+        <span class="row-val">
+          <input id="agencyPct" type="text" inputmode="decimal" autocomplete="off">
+          <span class="unit">%</span>
+        </span>
+      </div>
+
+      <div class="row">
+        <span class="row-name">Tasación</span>
+        <span class="row-val">
+          <input id="tasacion" class="num" type="text" inputmode="numeric" autocomplete="off">
+          <span class="unit">€</span>
+        </span>
+      </div>
+    </div>
+
+  </div><!-- /view-gastos -->
+
   <!-- ============ VISTA: AJUSTES ============ -->
   <div id="view-ajustes" class="view" hidden>
     <div class="card">
@@ -790,6 +893,15 @@
       </svg>
       Análisis
     </button>
+    <button class="tab" data-view="gastos" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M9 15l6-6"/>
+        <circle cx="9.3" cy="9.3" r="0.8" fill="currentColor"/>
+        <circle cx="14.7" cy="14.7" r="0.8" fill="currentColor"/>
+      </svg>
+      Gastos
+    </button>
     <button class="tab" data-view="ajustes" type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="3"/>
@@ -830,16 +942,21 @@
   // ---------- modelo (valores numéricos en memoria) ----------
   // precio + % de deuda son los inputs; equity y deuda se derivan de ellos.
   // El cashflow se introduce MENSUAL y el modelo lo anualiza (x12).
-  const model = { price: 250000, debtPct: 60, cashflow: 1000, saleValue: 320000, ratePct: 3, termYears: 25, saleYears: 10 };
+  const model = { price: 250000, debtPct: 60, cashflow: 1000, saleValue: 320000, ratePct: 3, termYears: 25, saleYears: 10,
+                  itpPct: 8, notaria: 950, registro: 550, gestoria: 420, agencyPct: 3, tasacion: 400 };
   const NUM_FIELDS = [
     { id: 'price', signed: false },
     { id: 'cashflow', signed: true },   // el cashflow puede ser negativo
     { id: 'saleValue', signed: false },
     { id: 'termYears', signed: false },
     { id: 'saleYears', signed: false },
+    { id: 'notaria', signed: false },
+    { id: 'registro', signed: false },
+    { id: 'gestoria', signed: false },
+    { id: 'tasacion', signed: false },
   ];
   // campos porcentuales: admiten decimales con coma (p. ej. 2,75)
-  const DEC_FIELDS = ['debtPct', 'ratePct'];
+  const DEC_FIELDS = ['debtPct', 'ratePct', 'itpPct', 'agencyPct'];
 
   function derived() {
     const pct = Math.min(100, Math.max(0, model.debtPct));
@@ -1082,6 +1199,53 @@
     setMetric('outCuota', inp.cuota, fmtEUR2);
     setMetric('outIntereses', totalPagado - inp.debt, fmtEUR);
     setMetric('outTotal', totalPagado, fmtEUR);
+
+    // gastos de compra: total, % sobre el precio y donut
+    const gv = gastosValues();
+    const gTotal = gv.reduce((a, b) => a + b, 0);
+    setMetric('gTotal', gTotal, fmtEUR);
+    $('gPct').textContent = model.price > 0 ? fmtPct(gTotal / model.price) : '—';
+    let acc = 0;
+    gv.forEach((v, i) => {
+      const len = gTotal > 0 ? (v / gTotal) * DCIRC : 0;
+      const seg = Math.max(0, len - 2.5);               // pequeño respiro entre tramos
+      const c = $('gseg-' + i);
+      c.setAttribute('stroke-dasharray', `${seg} ${DCIRC - seg}`);
+      c.setAttribute('stroke-dashoffset', String(-acc));
+      $('glv-' + i).textContent = fmtEUR(v);
+      acc += len;
+    });
+  }
+
+  // ---------- donut de gastos: segmentos y leyenda (se crean una vez) ----------
+  const G_NAMES = ['ITP', 'Notaría', 'Registro', 'Gestoría', 'Agencia', 'Tasación'];
+  const G_COLORS = ['#5ee7c0', '#6aa6ff', '#ffd166', '#ff8097', '#b18cff', '#7ce3ff'];
+  const DRAD = 86, DCIRC = 2 * Math.PI * DRAD;
+  G_NAMES.forEach((name, i) => {
+    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    c.setAttribute('cx', 110); c.setAttribute('cy', 110); c.setAttribute('r', DRAD);
+    c.setAttribute('fill', 'none');
+    c.setAttribute('stroke', G_COLORS[i]);
+    c.setAttribute('stroke-width', 30);
+    c.setAttribute('stroke-dasharray', `0 ${DCIRC}`);
+    c.id = 'gseg-' + i;
+    c.style.transition = 'stroke-dasharray 0.5s ease, stroke-dashoffset 0.5s ease';
+    $('donutSegs').appendChild(c);
+    $('gLegend').insertAdjacentHTML('beforeend',
+      `<div class="lg-item"><span class="lg-dot" style="background:${G_COLORS[i]}"></span>` +
+      `<span class="lg-name">${name}</span><span class="lg-val" id="glv-${i}">—</span></div>`);
+  });
+
+  function gastosValues() {
+    const p = Math.max(0, model.price);
+    return [
+      p * Math.max(0, model.itpPct) / 100,
+      Math.max(0, model.notaria),
+      Math.max(0, model.registro),
+      Math.max(0, model.gestoria),
+      p * Math.max(0, model.agencyPct) / 100,
+      Math.max(0, model.tasacion),
+    ];
   }
 
   // ---------- inputs numéricos ----------
@@ -1169,17 +1333,21 @@
   svg.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') endScrub(0); });
   svg.addEventListener('pointercancel', () => endScrub(0));
 
-  // ---------- navegación por pestañas ----------
-  const views = { analisis: $('view-analisis'), ajustes: $('view-ajustes') };
+  // ---------- navegación por pestañas (3 páginas ordenadas) ----------
+  const ORDER = ['analisis', 'gastos', 'ajustes'];
+  const views = { analisis: $('view-analisis'), gastos: $('view-gastos'), ajustes: $('view-ajustes') };
   const tabbar = $('tabbar');
+  const curIdx = () => ORDER.findIndex(n => !views[n].hidden);
 
+  function syncTabs(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === name));
+    ORDER.forEach((n, i) => tabbar.classList.toggle('pos-' + i, n === name));
+  }
   // dir: 'left' = la vista entra desde la derecha; 'right' = desde la izquierda
   function setView(name, dir) {
     if (!views[name].hidden) return;                // ya estamos en esa vista
-    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === name));
-    tabbar.classList.toggle('on-ajustes', name === 'ajustes');
-    views.analisis.hidden = name !== 'analisis';
-    views.ajustes.hidden = name !== 'ajustes';
+    syncTabs(name);
+    ORDER.forEach(n => { views[n].hidden = n !== name; });
     const v = views[name];
     v.style.animation = '';            // restaura la animación de entrada tras un swipe previo
     v.classList.remove('slide-left', 'slide-right');
@@ -1187,18 +1355,22 @@
     window.scrollTo(0, 0);
   }
   document.querySelectorAll('.tab').forEach(tab =>
-    tab.addEventListener('click', () => setView(tab.dataset.view)));
+    tab.addEventListener('click', () => {
+      const from = curIdx(), to = ORDER.indexOf(tab.dataset.view);
+      setView(tab.dataset.view, to === from ? null : (to > from ? 'left' : 'right'));
+    }));
 
   // ---------- arrastre de la píldora del menú (estilo iOS) ----------
   // La píldora sigue al dedo mientras lo deslizas por el menú y, al soltar,
   // salta con muelle a la pestaña más cercana y cambia la vista.
   const pill = tabbar.querySelector('.tab-pill');
-  const maxOff = () => (tabbar.clientWidth - 12) / 2 + 4;   // recorrido total: ancho de píldora + hueco
+  const slotW = () => (tabbar.clientWidth - 16) / 3 + 4;   // ancho de píldora + hueco
+  const maxOff = () => slotW() * (ORDER.length - 1);
   let dragId = null, dragX0 = 0, dragFrom = 0, dragMoved = false;
 
   tabbar.addEventListener('pointerdown', e => {
     dragId = e.pointerId; dragX0 = e.clientX; dragMoved = false;
-    dragFrom = tabbar.classList.contains('on-ajustes') ? maxOff() : 0;
+    dragFrom = slotW() * Math.max(0, curIdx());
   });
   tabbar.addEventListener('pointermove', e => {
     if (e.pointerId !== dragId) return;
@@ -1218,8 +1390,9 @@
     if (!dragMoved) return;                         // tap normal: lo resuelve el click
     const off = Math.max(0, Math.min(maxOff(), dragFrom + (e.clientX - dragX0)));
     pill.style.transition = ''; pill.style.transform = '';   // vuelve al control por clase
-    const target = off > maxOff() / 2 ? 'ajustes' : 'analisis';
-    setView(target, target === 'ajustes' ? 'left' : 'right');
+    const from = curIdx();
+    const to = Math.max(0, Math.min(ORDER.length - 1, Math.round(off / slotW())));
+    setView(ORDER[to], to === from ? null : (to > from ? 'left' : 'right'));
   }
   tabbar.addEventListener('pointerup', endPillDrag);
   tabbar.addEventListener('pointercancel', e => {
@@ -1232,30 +1405,39 @@
   // Las dos páginas se mueven CON el dedo: la actual sale y la vecina entra
   // pegada a él. Al soltar, se decide por distancia o velocidad (flick) y la
   // transición se completa con un muelle. La píldora del menú acompaña el
-  // gesto de forma proporcional. Hacia la izquierda → Ajustes; derecha → Análisis.
+  // gesto de forma proporcional. En los extremos (sin página vecina) el
+  // arrastre ofrece solo resistencia elástica.
   let pgAxis = null, pgTracking = false;
   let pgX0 = 0, pgY0 = 0, pgDx = 0, pgW = 1, pgDir = 0;
-  let pgOut = null, pgIn = null, pgPillBase = 0, pgPillTarget = 0;
+  let pgOut = null, pgIn = null, pgInName = null, pgPillBase = 0, pgPillTarget = 0;
   let pgLastX = 0, pgLastT = 0, pgVx = 0, pgSettling = false;
 
-  function beginPager() {
+  function beginPager(dx) {
     pgW = window.innerWidth;
-    const cur = views.analisis.hidden ? 'ajustes' : 'analisis';
-    const next = cur === 'analisis' ? 'ajustes' : 'analisis';
-    pgOut = views[cur]; pgIn = views[next];
-    pgDir = cur === 'analisis' ? -1 : 1;        // sentido del dedo que avanza a la otra página
-    pgPillBase = cur === 'ajustes' ? maxOff() : 0;
-    pgPillTarget = next === 'ajustes' ? maxOff() : 0;
-    // la vista entrante se superpone a la altura del viewport actual, fuera de pantalla
-    pgIn.hidden = false;
-    pgIn.style.cssText =
-      `position:absolute; top:${window.scrollY + pgOut.offsetTop}px; left:14px; right:14px;` +
-      `transition:none; animation:none; transform:translateX(${pgDir < 0 ? pgW : -pgW}px);`;
+    const ci = curIdx();
+    pgDir = dx < 0 ? -1 : 1;                    // -1: avanza hacia la página de la derecha
+    const ni = ci + (pgDir < 0 ? 1 : -1);
+    pgOut = views[ORDER[ci]];
+    pgInName = (ni >= 0 && ni < ORDER.length) ? ORDER[ni] : null;
+    pgIn = pgInName ? views[pgInName] : null;
+    pgPillBase = slotW() * ci;
+    pgPillTarget = pgInName ? slotW() * ni : pgPillBase;
+    if (pgIn) {
+      // la vista entrante se superpone a la altura del viewport actual, fuera de pantalla
+      pgIn.hidden = false;
+      pgIn.style.cssText =
+        `position:absolute; top:${window.scrollY + pgOut.offsetTop}px; left:14px; right:14px;` +
+        `transition:none; animation:none; transform:translateX(${pgDir < 0 ? pgW : -pgW}px);`;
+    }
     pgOut.style.transition = 'none';
     pill.style.transition = 'none';
   }
 
   function applyPager(dx) {
+    if (!pgIn) {                                // extremo: solo goma elástica
+      pgOut.style.transform = `translateX(${dx * 0.22}px)`;
+      return;
+    }
     // hacia la página vecina acompaña 1:1; en sentido contrario, goma elástica
     let d = pgDir < 0 ? Math.min(0, dx) : Math.max(0, dx);
     d += (dx - d) * 0.18;
@@ -1273,13 +1455,12 @@
     if (pgIn) pgIn.style.cssText = committedName ? 'animation:none;' : '';
     pill.style.transition = ''; pill.style.transform = '';
     if (committedName) {
-      views.analisis.hidden = committedName !== 'analisis';
-      views.ajustes.hidden = committedName !== 'ajustes';
+      ORDER.forEach(n => { views[n].hidden = n !== committedName; });
       window.scrollTo(0, 0);
     } else if (pgIn) {
       pgIn.hidden = true;
     }
-    pgOut = pgIn = null;
+    pgOut = pgIn = null; pgInName = null;
   }
 
   document.addEventListener('touchstart', e => {
@@ -1298,7 +1479,7 @@
       if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;     // aún sin dirección clara
       pgAxis = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'x' : 'y';
       if (pgAxis !== 'x') { pgTracking = false; return; }   // scroll vertical normal
-      beginPager();
+      beginPager(dx);
     }
     e.preventDefault();                                     // gesto horizontal: sin scroll
     if (e.timeStamp > pgLastT) {
@@ -1313,19 +1494,24 @@
     if (!pgTracking) return;
     pgTracking = false;
     if (pgAxis !== 'x' || !pgOut) return;
+    const dur = 'transform 0.32s cubic-bezier(0.22, 1, 0.36, 1)';
+    pgSettling = true;
+    if (!pgIn) {                                // extremo: vuelve a su sitio
+      pgOut.style.transition = dur;
+      pgOut.style.transform = 'translateX(0px)';
+      setTimeout(() => finishPager(null), 340);
+      return;
+    }
     const advance = pgDir < 0 ? -pgDx : pgDx;
     const flick = pgDir < 0 ? pgVx < -0.45 : pgVx > 0.45;
     const commit = advance > pgW * 0.35 || (flick && advance > 30);
-    const dur = 'transform 0.32s cubic-bezier(0.22, 1, 0.36, 1)';
     pgOut.style.transition = dur; pgIn.style.transition = dur; pill.style.transition = '';
-    pgSettling = true;
     if (commit) {
-      const name = pgIn === views.ajustes ? 'ajustes' : 'analisis';
+      const name = pgInName;
       pgOut.style.transform = `translateX(${pgDir < 0 ? -pgW : pgW}px)`;
       pgIn.style.transform = 'translateX(0px)';
       pill.style.transform = '';
-      tabbar.classList.toggle('on-ajustes', name === 'ajustes');
-      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === name));
+      syncTabs(name);
       setTimeout(() => finishPager(name), 340);
     } else {
       pgOut.style.transform = 'translateX(0px)';
