@@ -721,11 +721,29 @@
         <span class="unit">años</span>
       </span>
     </div>
+
+    <div class="row auto">
+      <span class="row-name">Gastos de compra</span>
+      <span class="row-val">
+        <span class="row-out" id="outGastosInv">—</span>
+      </span>
+    </div>
   </div>
 
   <!-- ===== financiación ===== -->
   <div class="card">
     <div class="section-title">Financiación</div>
+
+    <div class="donut-wrap">
+      <svg viewBox="0 0 220 220" role="img" aria-label="Reparto del total pagado entre principal e intereses">
+        <g id="loanSegs" transform="rotate(-90 110 110)"></g>
+      </svg>
+      <div class="donut-center">
+        <div class="dc-v" id="loanIntPct">—</div>
+        <div class="dc-k">intereses</div>
+      </div>
+    </div>
+    <div class="legend" id="loanLegend"></div>
 
     <div class="row">
       <span class="row-name">Tipo de interés</span>
@@ -791,6 +809,13 @@
 
     <div class="card">
       <div class="section-title">Conceptos</div>
+
+      <div class="row auto">
+        <span class="row-name">Precio</span>
+        <span class="row-val">
+          <span class="row-out" id="outPrecio">—</span>
+        </span>
+      </div>
 
       <div class="row">
         <span class="row-name">ITP</span>
@@ -983,8 +1008,9 @@
     const i = Math.max(0, model.ratePct) / 100 / 12;
     const cuota = debt <= 0 ? 0
       : (i > 0 ? debt * i / (1 - Math.pow(1 + i, -months)) : debt / months);
+    const gastos = gastosValues().reduce((a, b) => a + b, 0);   // gastos de compra día 1
     return {
-      equity, debt, months, i, cuota,
+      equity, debt, months, i, cuota, gastos,
       cashflow: model.cashflow * 12,    // mensual → anual
       saleValue: Math.max(0, model.saleValue),
       years, startYear: new Date().getFullYear(),
@@ -999,8 +1025,9 @@
     return debt * (f - g) / (f - 1);
   }
 
-  function buildFlows({ equity, debt, cashflow, saleValue, years, cuota, months, i }) {
-    const flows = [-equity];
+  function buildFlows({ equity, debt, cashflow, saleValue, years, cuota, months, i, gastos }) {
+    // desembolso del día 1: equity + todos los gastos de compra
+    const flows = [-(equity + gastos)];
     for (let y = 1; y <= years; y++) {
       // el cashflow de cada año va neto de las cuotas del préstamo que toquen
       const pagados = (y - 1) * 12;
@@ -1173,7 +1200,8 @@
     drawLabels(inp.years, inp.startYear);
 
     const profit = cum[cum.length - 1];
-    const moic = inp.equity > 0 ? (profit + inp.equity) / inp.equity : 0;
+    const invested = inp.equity + inp.gastos;        // capital real desembolsado el día 1
+    const moic = invested > 0 ? (profit + invested) / invested : 0;
     const r = irr(flows);
 
     // hero
@@ -1184,11 +1212,11 @@
     chip.classList.toggle('pos', profit >= 0);
     chip.classList.toggle('neg', profit < 0);
     chip.querySelector('.arrow').textContent = profit >= 0 ? '↑' : '↓';
-    $('hChipTxt').textContent = inp.equity > 0
-      ? fmtPct(profit / inp.equity) + ' sobre equity'
+    $('hChipTxt').textContent = invested > 0
+      ? fmtPct(profit / invested) + ' sobre capital'
       : '—';
 
-    setMetric('mEquity', inp.equity, fmtEURshort);
+    setMetric('mEquity', invested, fmtEURshort);
     setMetric('mMoic', moic, v => v.toLocaleString('es-ES', { maximumFractionDigits: 2 }) + '×');
     if (r === null) { $('mIrr').textContent = '—'; }
     else {
@@ -1203,45 +1231,62 @@
 
     // financiación (la cuota ya viene calculada en readInputs y descontada del CF)
     const totalPagado = inp.cuota * inp.months;
+    const intereses = Math.max(0, totalPagado - inp.debt);
     setMetric('outCuota', inp.cuota, fmtEUR2);
-    setMetric('outIntereses', totalPagado - inp.debt, fmtEUR);
+    setMetric('outIntereses', intereses, fmtEUR);
     setMetric('outTotal', totalPagado, fmtEUR);
+    // donut principal vs intereses
+    loanDonut.set([inp.debt, intereses]);
+    $('loanIntPct').textContent = totalPagado > 0 ? fmtPct(intereses / totalPagado) : '—';
 
-    // gastos de compra: total, % sobre el precio y donut
+    // gastos de compra: total, % sobre el precio, donut y líneas en gris
     const gv = gastosValues();
     const gTotal = gv.reduce((a, b) => a + b, 0);
     setMetric('gTotal', gTotal, fmtEUR);
     $('gPct').textContent = model.price > 0 ? fmtPct(gTotal / model.price) : '—';
-    let acc = 0;
-    gv.forEach((v, i) => {
-      const len = gTotal > 0 ? (v / gTotal) * DCIRC : 0;
-      const seg = Math.max(0, len - 2.5);               // pequeño respiro entre tramos
-      const c = $('gseg-' + i);
-      c.setAttribute('stroke-dasharray', `${seg} ${DCIRC - seg}`);
-      c.setAttribute('stroke-dashoffset', String(-acc));
-      $('glv-' + i).textContent = fmtEUR(v);
-      acc += len;
-    });
+    gastosDonut.set(gv);
+    setMetric('outGastosInv', gTotal, fmtEUR);     // línea gris en "Tu inversión"
+    setMetric('outPrecio', model.price, fmtEUR);   // línea gris en "Conceptos"
   }
 
-  // ---------- donut de gastos: segmentos y leyenda (se crean una vez) ----------
-  const G_NAMES = ['ITP', 'Notaría', 'Registro', 'Gestoría', 'Agencia', 'Tasación'];
-  const G_COLORS = ['#5ee7c0', '#6aa6ff', '#ffd166', '#ff8097', '#b18cff', '#7ce3ff'];
+  // ---------- donut reutilizable: crea segmentos + leyenda y devuelve .set() ----------
   const DRAD = 86, DCIRC = 2 * Math.PI * DRAD;
-  G_NAMES.forEach((name, i) => {
-    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    c.setAttribute('cx', 110); c.setAttribute('cy', 110); c.setAttribute('r', DRAD);
-    c.setAttribute('fill', 'none');
-    c.setAttribute('stroke', G_COLORS[i]);
-    c.setAttribute('stroke-width', 30);
-    c.setAttribute('stroke-dasharray', `0 ${DCIRC}`);
-    c.id = 'gseg-' + i;
-    c.style.transition = 'stroke-dasharray 0.5s ease, stroke-dashoffset 0.5s ease';
-    $('donutSegs').appendChild(c);
-    $('gLegend').insertAdjacentHTML('beforeend',
-      `<div class="lg-item"><span class="lg-dot" style="background:${G_COLORS[i]}"></span>` +
-      `<span class="lg-name">${name}</span><span class="lg-val" id="glv-${i}">—</span></div>`);
-  });
+  function makeDonut(segGroupId, legendId, names, colors) {
+    const segs = names.map((name, i) => {
+      const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      c.setAttribute('cx', 110); c.setAttribute('cy', 110); c.setAttribute('r', DRAD);
+      c.setAttribute('fill', 'none');
+      c.setAttribute('stroke', colors[i]);
+      c.setAttribute('stroke-width', 30);
+      c.setAttribute('stroke-dasharray', `0 ${DCIRC}`);
+      c.style.transition = 'stroke-dasharray 0.5s ease, stroke-dashoffset 0.5s ease';
+      $(segGroupId).appendChild(c);
+      $(legendId).insertAdjacentHTML('beforeend',
+        `<div class="lg-item"><span class="lg-dot" style="background:${colors[i]}"></span>` +
+        `<span class="lg-name">${name}</span><span class="lg-val" id="${legendId}-v${i}">—</span></div>`);
+      return c;
+    });
+    return {
+      set(vals) {
+        const total = vals.reduce((a, b) => a + b, 0);
+        let acc = 0;
+        vals.forEach((v, i) => {
+          const len = total > 0 ? (v / total) * DCIRC : 0;
+          const seg = Math.max(0, len - 2.5);          // pequeño respiro entre tramos
+          segs[i].setAttribute('stroke-dasharray', `${seg} ${DCIRC - seg}`);
+          segs[i].setAttribute('stroke-dashoffset', String(-acc));
+          $(`${legendId}-v${i}`).textContent = fmtEUR(v);
+          acc += len;
+        });
+      }
+    };
+  }
+  const gastosDonut = makeDonut('donutSegs', 'gLegend',
+    ['ITP', 'Notaría', 'Registro', 'Gestoría', 'Agencia', 'Tasación'],
+    ['#5ee7c0', '#6aa6ff', '#ffd166', '#ff8097', '#b18cff', '#7ce3ff']);
+  const loanDonut = makeDonut('loanSegs', 'loanLegend',
+    ['Principal', 'Intereses'],
+    ['#6aa6ff', '#ff8097']);
 
   function gastosValues() {
     const p = Math.max(0, model.price);
