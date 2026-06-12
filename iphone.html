@@ -431,11 +431,15 @@
   }
   .swatch.active .swatch-check { opacity: 1; transform: scale(1); }
 
-  /* ---------- menú inferior: objeto de "liquid glass" flotante ----------
-     Cristal de Apple, no blur pesado: velo casi nulo, desenfoque corto y el
-     peso visual en los brillos (borde luminoso + reflejo diagonal). Flota
-     cerca del borde con margen a los lados: un objeto independiente bajo el
-     que el contenido pasa nítido. Al hacer scroll hacia abajo se esconde. */
+  /* ---------- menú inferior: lente de "liquid glass" flotante ----------
+     El cristal se construye en capas para que lo que pasa por debajo SE
+     DEFORME como a través de una lente:
+       · .tab-warp aplica un mapa de desplazamiento SVG (refracción real,
+         en los navegadores que lo soportan en backdrop-filter);
+       · .tab-glass es el núcleo, casi nítido, solo "mojado";
+       · .tab-glass-edge es el canto: una franja pegada al borde que estira
+         y esparce el contenido al cruzarlo — la curvatura de la lente.
+     El propio .tabbar ya no desenfoca: solo aporta velo, filo y reflejo. */
   .tabbar {
     position: fixed;
     left: 50%;
@@ -446,15 +450,38 @@
     display: flex; gap: 4px;
     padding: 4px;
     border-radius: 24px;
-    background: linear-gradient(155deg, rgba(255,255,255,0.09), rgba(255,255,255,0.02));
-    -webkit-backdrop-filter: blur(7px) saturate(190%);
-    backdrop-filter: blur(7px) saturate(190%);
+    background: linear-gradient(155deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02));
     border: 1px solid rgba(255,255,255,0.28);
     box-shadow: 0 12px 32px -14px rgba(0,0,0,0.5),
                 inset 0 1px 0 rgba(255,255,255,0.38),
                 inset 0 -1px 0 rgba(255,255,255,0.08);
     transition: transform 0.4s cubic-bezier(0.32, 0.72, 0.33, 1), opacity 0.3s ease;
     touch-action: none;   /* el arrastre horizontal de la píldora lo gestionamos nosotros */
+  }
+  .tab-glass, .tab-glass-edge, .tab-warp {
+    position: absolute; inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+  /* núcleo de la lente: claridad casi total, solo saturación y un toque húmedo */
+  .tab-glass {
+    -webkit-backdrop-filter: blur(1.5px) saturate(185%);
+    backdrop-filter: blur(1.5px) saturate(185%);
+  }
+  /* canto de la lente: lo que cruza el borde se estira/esparce y gana brillo */
+  .tab-glass-edge {
+    padding: 7px;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    -webkit-backdrop-filter: blur(7px) saturate(230%) brightness(1.14);
+    backdrop-filter: blur(7px) saturate(230%) brightness(1.14);
+  }
+  /* refracción real por mapa de desplazamiento (no-op donde no se soporte) */
+  .tab-warp {
+    -webkit-backdrop-filter: url(#lensWarp);
+    backdrop-filter: url(#lensWarp);
   }
   /* reflejo diagonal del cristal */
   .tabbar::before {
@@ -500,6 +527,15 @@
 </style>
 </head>
 <body>
+
+<!-- filtro de refracción para el menú: ondula ligeramente lo que pasa
+     por detrás del cristal (solo actúa donde backdrop-filter admite url()) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="lensWarp" x="-20%" y="-20%" width="140%" height="140%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.012 0.045" numOctaves="2" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="14" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
 
 <div class="bg">
   <div class="bg-layer bg-ocean"></div>
@@ -727,6 +763,9 @@
 
   <!-- ============ menú inferior ============ -->
   <nav class="tabbar" id="tabbar">
+    <span class="tab-warp"></span>
+    <span class="tab-glass"></span>
+    <span class="tab-glass-edge"></span>
     <span class="tab-pill"></span>
     <button class="tab active" data-view="analisis" type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
