@@ -431,30 +431,54 @@
   }
   .swatch.active .swatch-check { opacity: 1; transform: scale(1); }
 
-  /* ---------- menú inferior: a ras del borde y a todo el ancho, como Revolut ---------- */
+  /* ---------- menú inferior: objeto de "liquid glass" flotante ----------
+     Cristal de Apple, no blur pesado: velo casi nulo, desenfoque corto y el
+     peso visual en los brillos (borde luminoso + reflejo diagonal). Flota
+     cerca del borde con margen a los lados: un objeto independiente bajo el
+     que el contenido pasa nítido. Al hacer scroll hacia abajo se esconde. */
   .tabbar {
     position: fixed;
-    left: 0; right: 0; bottom: 0;
+    left: 50%;
+    bottom: calc(var(--safe-bottom) + 12px);
+    transform: translateX(-50%);
+    width: calc(100% - 56px); max-width: 340px;
     z-index: 30;
     display: flex; gap: 4px;
-    padding: 6px 10px max(var(--safe-bottom), 8px);
-    /* capa de cristal MUY ligera: el contenido sigue viéndose pasar por
-       debajo (solo difuminado), como la barra de Revolut — no es una franja
-       sólida que reserve la zona */
-    background: rgba(10, 12, 20, 0.14);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-    backdrop-filter: blur(20px) saturate(160%);
-    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 4px;
+    border-radius: 24px;
+    background: linear-gradient(155deg, rgba(255,255,255,0.09), rgba(255,255,255,0.02));
+    -webkit-backdrop-filter: blur(7px) saturate(190%);
+    backdrop-filter: blur(7px) saturate(190%);
+    border: 1px solid rgba(255,255,255,0.28);
+    box-shadow: 0 12px 32px -14px rgba(0,0,0,0.5),
+                inset 0 1px 0 rgba(255,255,255,0.38),
+                inset 0 -1px 0 rgba(255,255,255,0.08);
+    transition: transform 0.4s cubic-bezier(0.32, 0.72, 0.33, 1), opacity 0.3s ease;
     touch-action: none;   /* el arrastre horizontal de la píldora lo gestionamos nosotros */
+  }
+  /* reflejo diagonal del cristal */
+  .tabbar::before {
+    content: '';
+    position: absolute; inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(115deg,
+      rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 28%,
+      rgba(255,255,255,0) 68%, rgba(255,255,255,0.12) 100%);
+    pointer-events: none;
+  }
+  /* escondido al hacer scroll hacia abajo (vuelve al subir) */
+  .tabbar.away {
+    transform: translateX(-50%) translateY(calc(100% + var(--safe-bottom) + 16px));
+    opacity: 0;
   }
   /* píldora deslizante bajo la pestaña activa, como en iOS */
   .tab-pill {
     position: absolute;
-    top: 6px; bottom: max(var(--safe-bottom), 8px); left: 10px;
-    width: calc((100% - 24px) / 2);
-    border-radius: 14px;
-    background: rgba(255,255,255,0.14);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.22);
+    top: 4px; bottom: 4px; left: 4px;
+    width: calc((100% - 12px) / 2);
+    border-radius: 20px;
+    background: rgba(255,255,255,0.16);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.25);
     transition: transform 0.38s cubic-bezier(0.3, 1.3, 0.4, 1);
     pointer-events: none;
   }
@@ -464,7 +488,7 @@
     display: flex; flex-direction: column; align-items: center; gap: 1px;
     flex: 1; padding: 5px 16px 6px;
     border: none; background: transparent; cursor: pointer;
-    border-radius: 14px;
+    border-radius: 20px;
     color: rgba(255,255,255,0.62);
     font-family: inherit; font-size: 9.5px; font-weight: 600;
     letter-spacing: 0.03em;
@@ -1121,7 +1145,7 @@
   // La píldora sigue al dedo mientras lo deslizas por el menú y, al soltar,
   // salta con muelle a la pestaña más cercana y cambia la vista.
   const pill = tabbar.querySelector('.tab-pill');
-  const maxOff = () => (tabbar.clientWidth - 24) / 2 + 4;   // recorrido total: ancho de píldora + hueco
+  const maxOff = () => (tabbar.clientWidth - 12) / 2 + 4;   // recorrido total: ancho de píldora + hueco
   let dragId = null, dragX0 = 0, dragFrom = 0, dragMoved = false;
 
   tabbar.addEventListener('pointerdown', e => {
@@ -1278,15 +1302,22 @@
   // el tema guardado ya se aplicó en el <head>; aquí solo sincronizamos los swatches
   applyTheme(THEMES.find(n => document.documentElement.classList.contains('theme-' + n)) || 'green', false);
 
-  // ---------- parallax: los blobs del fondo se desplazan más despacio
-  // que el contenido, reforzando la sensación de capas ----------
+  // ---------- parallax + auto-ocultado del menú ----------
+  // Los blobs del fondo se desplazan más despacio que el contenido; y el
+  // menú se esconde al hacer scroll hacia abajo y reaparece al subir.
   const blobs = $('blobs');
-  let parallaxTick = false;
+  let parallaxTick = false, lastScrollY = window.scrollY;
   window.addEventListener('scroll', () => {
     if (parallaxTick) return;
     parallaxTick = true;
     requestAnimationFrame(() => {
-      blobs.style.transform = `translateY(${window.scrollY * -0.08}px)`;
+      const sy = window.scrollY;
+      blobs.style.transform = `translateY(${sy * -0.08}px)`;
+      const dy = sy - lastScrollY;
+      if (sy < 60) tabbar.classList.remove('away');          // cerca del tope, siempre visible
+      else if (dy > 4) tabbar.classList.add('away');         // bajando: se esconde
+      else if (dy < -4) tabbar.classList.remove('away');     // subiendo: vuelve
+      lastScrollY = sy;
       parallaxTick = false;
     });
   }, { passive: true });
