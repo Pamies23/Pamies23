@@ -73,6 +73,16 @@
     --grad-bottom: #05071a;
     --scrim-rgb: 45, 53, 223;
   }
+  html.theme-orange {
+    --grad-top: #df7a2d;
+    --grad-bottom: #1a0d03;
+    --scrim-rgb: 223, 122, 45;
+  }
+  html.theme-pine {
+    --grad-top: #2eaf5e;
+    --grad-bottom: #05170b;
+    --scrim-rgb: 46, 175, 94;
+  }
   html.theme-forest {
     --grad-top: #8aa896;
     --grad-bottom: #141f18;
@@ -136,11 +146,16 @@
   /* calcado del degradado de la app de Revolut: cobalto vivo arriba,
      índigo profundo en el centro y azul casi negro contra el menú */
   .bg-revolut { background: linear-gradient(180deg, #2d35df 0%, #2d35df 10%, #262fc4 26%, #1b2390 44%, #111a63 62%, #0a0f38 80%, #05071a 100%); }
+  /* mismas paradas y luminosidades que el Revolut, transportadas a naranja y a verde bosque */
+  .bg-orange { background: linear-gradient(180deg, #df7a2d 0%, #df7a2d 10%, #c4661f 26%, #904a15 44%, #63310d 62%, #381d07 80%, #1a0d03 100%); }
+  .bg-pine   { background: linear-gradient(180deg, #2eaf5e 0%, #2eaf5e 10%, #279c4f 26%, #1b7038 44%, #114d26 62%, #0a2d16 80%, #05170b 100%); }
   html.theme-ocean  .bg-ocean,
   html.theme-navy   .bg-navy,
   html.theme-forest .bg-forest,
   html.theme-sand   .bg-sand,
-  html.theme-revolut .bg-revolut { opacity: 1; }
+  html.theme-revolut .bg-revolut,
+  html.theme-orange .bg-orange,
+  html.theme-pine   .bg-pine { opacity: 1; }
   .blobs {
     position: absolute;
     inset: 0;
@@ -409,6 +424,8 @@
   .prev-forest { background: linear-gradient(180deg, #8aa896, #41594b 55%, #141f18); }
   .prev-sand   { background: linear-gradient(180deg, #ab9d85, #635a47 55%, #211d16); }
   .prev-revolut { background: linear-gradient(180deg, #2d35df, #1b2390 55%, #05071a); }
+  .prev-orange  { background: linear-gradient(180deg, #df7a2d, #904a15 55%, #1a0d03); }
+  .prev-pine    { background: linear-gradient(180deg, #2eaf5e, #1b7038 55%, #05170b); }
   .swatch-label {
     display: block; text-align: center; color: #fff;
     font-size: 13px; font-weight: 600; margin-top: 10px;
@@ -429,10 +446,13 @@
     z-index: 30;
     display: flex; gap: 4px;
     padding: 6px 10px max(var(--safe-bottom), 8px);
-    background: rgba(8, 10, 18, 0.38);
-    -webkit-backdrop-filter: blur(34px) saturate(180%);
-    backdrop-filter: blur(34px) saturate(180%);
-    border-top: 1px solid rgba(255,255,255,0.10);
+    /* capa de cristal MUY ligera: el contenido sigue viéndose pasar por
+       debajo (solo difuminado), como la barra de Revolut — no es una franja
+       sólida que reserve la zona */
+    background: rgba(10, 12, 20, 0.14);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    backdrop-filter: blur(20px) saturate(160%);
+    border-top: 1px solid rgba(255,255,255,0.06);
     touch-action: none;   /* el arrastre horizontal de la píldora lo gestionamos nosotros */
   }
   /* píldora deslizante bajo la pestaña activa, como en iOS */
@@ -471,6 +491,8 @@
   <div class="bg-layer bg-forest"></div>
   <div class="bg-layer bg-sand"></div>
   <div class="bg-layer bg-revolut"></div>
+  <div class="bg-layer bg-orange"></div>
+  <div class="bg-layer bg-pine"></div>
   <div class="blobs" id="blobs">
     <div class="blob blob-1"></div>
     <div class="blob blob-2"></div>
@@ -663,6 +685,16 @@
         <button class="swatch" data-theme="revolut" type="button">
           <span class="swatch-prev prev-revolut"></span>
           <span class="swatch-label">Revolut</span>
+          <span class="swatch-check">✓</span>
+        </button>
+        <button class="swatch" data-theme="orange" type="button">
+          <span class="swatch-prev prev-orange"></span>
+          <span class="swatch-label">Naranja</span>
+          <span class="swatch-check">✓</span>
+        </button>
+        <button class="swatch" data-theme="pine" type="button">
+          <span class="swatch-prev prev-pine"></span>
+          <span class="swatch-label">Pino</span>
           <span class="swatch-check">✓</span>
         </button>
         <button class="swatch" data-theme="forest" type="button">
@@ -1248,7 +1280,7 @@
   document.addEventListener('touchcancel', endPager);
 
   // ---------- selector de tema (color de fondo) ----------
-  const THEMES = ['green', 'ocean', 'navy', 'revolut', 'forest', 'sand'];
+  const THEMES = ['green', 'ocean', 'navy', 'revolut', 'orange', 'pine', 'forest', 'sand'];
   function applyTheme(name, persist) {
     THEMES.forEach(n => document.documentElement.classList.toggle('theme-' + n, n === name && n !== 'green'));
     document.querySelectorAll('.swatch').forEach(s =>
