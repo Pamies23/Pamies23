@@ -375,27 +375,29 @@
   /* ---------- desplegables: filas con desglose ----------
      El nombre lleva un chevron "›" que apunta a la derecha cerrado y gira
      hacia abajo al abrir; el desglose se pliega/despliega con animación. */
+  /* el botón mantiene EXACTAMENTE la tipografía de .row-name (solo aporta el chevron):
+     nada de font:inherit, que pisaría el tamaño/peso de la clase */
   .fold-toggle {
-    display: inline-flex; align-items: center; gap: 8px;
+    display: inline-flex; align-items: center; gap: 7px;
     background: none; border: none; padding: 0; margin: 0;
-    font: inherit; color: inherit; cursor: pointer;
+    font-family: inherit; line-height: inherit; text-align: left;
+    cursor: pointer;
     -webkit-tap-highlight-color: transparent;
   }
   .fold-toggle .chev {
     display: inline-block;
-    font-size: 24px; line-height: 1; font-weight: 600;
-    color: rgba(255,255,255,0.55);
-    transform: translateY(-2px);
+    font-size: 20px; line-height: 1; font-weight: 500;
+    color: rgba(255,255,255,0.5);
+    transform: translateY(-1px);
     transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   }
-  .fold-toggle.open .chev { transform: translateY(-2px) rotate(90deg); }
+  .fold-toggle.open .chev { transform: translateY(-1px) rotate(90deg); }
   .fold {
     overflow: hidden;
     max-height: 0; opacity: 0;
     transition: max-height 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
   }
   .fold.open { max-height: 320px; opacity: 1; }
-  .fold .row { padding-left: 14px; }   /* leve sangría: se lee como desglose */
   input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   input[type=number] { -moz-appearance: textfield; }
 
