@@ -204,8 +204,8 @@
     position: fixed;
     top: 0; left: 0; right: 0;
     height: calc(var(--safe-top) + 64px);
-    -webkit-backdrop-filter: blur(7px) saturate(150%);
-    backdrop-filter: blur(7px) saturate(150%);
+    -webkit-backdrop-filter: blur(10px) saturate(150%);
+    backdrop-filter: blur(10px) saturate(150%);
     -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 40%, rgba(0,0,0,0.5) 72%, transparent 100%);
     mask-image: linear-gradient(180deg, #000 0%, #000 40%, rgba(0,0,0,0.5) 72%, transparent 100%);
     z-index: 9;
@@ -215,8 +215,8 @@
     position: fixed;
     top: 0; left: 0; right: 0;
     height: calc(var(--safe-top) + 54px);
-    -webkit-backdrop-filter: blur(14px) saturate(170%);
-    backdrop-filter: blur(14px) saturate(170%);
+    -webkit-backdrop-filter: blur(19px) saturate(170%);
+    backdrop-filter: blur(19px) saturate(170%);
     -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 45%, rgba(0,0,0,0.4) 78%, transparent 100%);
     mask-image: linear-gradient(180deg, #000 0%, #000 45%, rgba(0,0,0,0.4) 78%, transparent 100%);
     /* Película de color MUY tenue: solo un velo para legibilidad del reloj.
@@ -235,8 +235,8 @@
      por debajo. Esto es lo que da la continuidad total tipo Revolut. */
   html.standalone .topscrim {
     height: calc(var(--safe-top) + 46px);
-    -webkit-backdrop-filter: blur(16px) saturate(170%);
-    backdrop-filter: blur(16px) saturate(170%);
+    -webkit-backdrop-filter: blur(21px) saturate(170%);
+    backdrop-filter: blur(21px) saturate(170%);
     background: linear-gradient(180deg,
       rgba(6,22,18,0.34) 0%,
       rgba(6,22,18,0.14) 52%,
@@ -245,11 +245,12 @@
   html.standalone .topscrim-soft { height: calc(var(--safe-top) + 70px); }
 
   /* ---------- título: texto sobre el fondo continuo, sin pastilla ---------- */
-  /* el título reposa abajo, a un margen elegante del primer cristal,
-     y se va con el contenido al hacer scroll (bajo el velo difuminado) */
   .topbar {
-    padding: 48px 14px 0;
-    margin-bottom: 16px;
+    position: sticky;
+    top: calc(var(--safe-top) + 6px);
+    z-index: 20;
+    padding: 8px 14px 14px;
+    margin-bottom: 14px;
   }
   .topbar h1 {
     font-size: 21px; font-weight: 700; color: #fff;
