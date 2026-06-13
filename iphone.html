@@ -49,6 +49,7 @@
     --radius-xl: 30px;
     --radius-lg: 24px;
     --radius-md: 18px;
+    --card-blur: 30px;            /* se reduce durante el deslizamiento para que fluya */
     --shadow: 0 18px 50px -22px rgba(20, 21, 40, 0.20);
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -268,15 +269,23 @@
   .card {
     position: relative;
     background: linear-gradient(155deg, rgba(255,255,255,0.15), rgba(255,255,255,0.04));
-    -webkit-backdrop-filter: blur(30px) saturate(190%);
-    backdrop-filter: blur(30px) saturate(190%);
+    -webkit-backdrop-filter: blur(var(--card-blur)) saturate(190%);
+    backdrop-filter: blur(var(--card-blur)) saturate(190%);
     border: 1px solid rgba(255,255,255,0.24);
     border-radius: var(--radius-xl);
     box-shadow: 0 16px 40px -12px rgba(0,0,0,0.35),
                 inset 0 1px 0 rgba(255,255,255,0.32);
     padding: 22px;
     margin-bottom: 16px;
+    transition: -webkit-backdrop-filter 0.3s ease, backdrop-filter 0.3s ease;
   }
+  /* mientras se desliza entre vistas, bajamos el desenfoque de las tarjetas:
+     recalcular un blur de 30px por fotograma deja los cristales en blanco en
+     las vistas pesadas (la gráfica). Con menos blur el paso es fluido y al
+     soltar vuelve a su intensidad con una transición suave. */
+  body.paging { --card-blur: 9px; }
+  body.paging .view { will-change: transform; }
+  body.paging .card { transition: none; }
 
   /* ---------- hero ---------- */
   .hero .label {
@@ -1400,16 +1409,21 @@
     ORDER.forEach((n, i) => tabbar.classList.toggle('pos-' + i, n === name));
     $('topTitle').textContent = VIEW_TITLES[name];   // el título superior es la pestaña actual
   }
+  // cada vista recuerda su posición de scroll; al volver se restaura
+  const scrollMem = { analisis: 0, gastos: 0, ajustes: 0 };
+
   // dir: 'left' = la vista entra desde la derecha; 'right' = desde la izquierda
   function setView(name, dir) {
     if (!views[name].hidden) return;                // ya estamos en esa vista
+    const prev = ORDER[curIdx()];
+    if (prev) scrollMem[prev] = window.scrollY;     // guarda dónde estaba la vista que dejamos
     syncTabs(name);
     ORDER.forEach(n => { views[n].hidden = n !== name; });
     const v = views[name];
     v.style.animation = '';            // restaura la animación de entrada tras un swipe previo
     v.classList.remove('slide-left', 'slide-right');
     if (dir) v.classList.add(dir === 'left' ? 'slide-left' : 'slide-right');
-    window.scrollTo(0, 0);
+    window.scrollTo(0, scrollMem[name] || 0);       // vuelve donde lo dejaste
   }
   document.querySelectorAll('.tab').forEach(tab =>
     tab.addEventListener('click', () => {
@@ -1475,15 +1489,19 @@
     pgDir = dx < 0 ? -1 : 1;                    // -1: avanza hacia la página de la derecha
     const ni = ci + (pgDir < 0 ? 1 : -1);
     pgOut = views[ORDER[ci]];
+    scrollMem[ORDER[ci]] = window.scrollY;      // guarda la posición de la vista que sale
     pgInName = (ni >= 0 && ni < ORDER.length) ? ORDER[ni] : null;
     pgIn = pgInName ? views[pgInName] : null;
     pgPillBase = slotW() * ci;
     pgPillTarget = pgInName ? slotW() * ni : pgPillBase;
+    document.body.classList.add('paging');      // baja el blur para que el paso fluya
     if (pgIn) {
-      // la vista entrante se superpone a la altura del viewport actual, fuera de pantalla
+      // la vista entrante se superpone ya posicionada en SU scroll recordado, de modo
+      // que al confirmar no salta: aparece justo donde la dejaste
       pgIn.hidden = false;
+      const top = window.scrollY + pgOut.offsetTop - (scrollMem[pgInName] || 0);
       pgIn.style.cssText =
-        `position:absolute; top:${window.scrollY + pgOut.offsetTop}px; left:14px; right:14px;` +
+        `position:absolute; top:${top}px; left:14px; right:14px;` +
         `transition:none; animation:none; transform:translateX(${pgDir < 0 ? pgW : -pgW}px);`;
     }
     pgOut.style.transition = 'none';
@@ -1506,6 +1524,7 @@
 
   function finishPager(committedName) {
     pgSettling = false;
+    document.body.classList.remove('paging');     // restaura el blur de las tarjetas
     if (pgOut) pgOut.style.cssText = '';
     // animation:none evita que la vista reproduzca su animación de entrada
     // al limpiar los estilos del gesto (ya entró deslizando con el dedo)
@@ -1513,7 +1532,9 @@
     pill.style.transition = ''; pill.style.transform = '';
     if (committedName) {
       ORDER.forEach(n => { views[n].hidden = n !== committedName; });
-      window.scrollTo(0, 0);
+      // el scroll del documento salta al recordado: como la vista entrante ya se
+      // mostraba en esa misma posición, la transición es imperceptible
+      window.scrollTo(0, scrollMem[committedName] || 0);
     } else if (pgIn) {
       pgIn.hidden = true;
     }
