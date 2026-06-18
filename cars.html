@@ -51,7 +51,7 @@
 <body>
   <h1>⚡ RAYO — ¡A CORRER!</h1>
   <canvas id="game"></canvas>
-  <p class="hint">Toca o arrastra para llevar el coche · Recoge las Copas 🏆 · Flechas/A-D en el ordenador</p>
+  <p class="hint">Toca o arrastra para mover el coche · Recoge las Copas 🏆 · Flechas/A-D en el ordenador</p>
 
   <div id="rotate">
     <div class="ico">📱</div>
@@ -93,17 +93,24 @@
     window.addEventListener('orientationchange', resize);
     resize();
 
-    // --- Estado del juego ---
-    const car = { x: 400, y: VIEW_H - 80, w: 72, h: 82, wobble: 0, tilt: 0 };
-    let targetX = 400;
-    let scroll = 0, speed = 5, cups = 0, started = false, t = 0;
-    const items = [];        // {x, y, type:'cup'|'cone', r}
-    const particles = [];
-    const floats = [];       // textos "¡BIEN!" que suben
-    let spawnTimer = 0;
+    // --- Perspectiva (cámara trasera) ---
+    const HORIZON = VIEW_H * 0.34;
+    const HALF_HORIZON = 12;
+    function CX() { return VIEW_W / 2; }
+    function halfBottom() { return VIEW_W * 0.42; }
+    function fPersp(d) { return 1 / (1 + Math.max(d, 0) * 6); }
+    function projY(d) { return HORIZON + (VIEW_H - HORIZON) * fPersp(d); }
+    function halfRoad(d) { return HALF_HORIZON + (halfBottom() - HALF_HORIZON) * fPersp(d); }
+    function projX(lane, d) { return CX() + lane * halfRoad(d); }
 
-    function roadLeft()  { return VIEW_W * 0.20; }
-    function roadRight() { return VIEW_W * 0.80; }
+    // --- Estado del juego ---
+    const car = { w: 78, h: 70, lane: 0, targetLane: 0, wobble: 0, tilt: 0 };
+    let roadScroll = 0, speed = 5, cups = 0, started = false, t = 0;
+    const items = [];        // {lane, depth, type:'cup'|'cone', bob, done}
+    const particles = [];
+    const floats = [];
+    let spawnTimer = 0;
+    const clouds = Array.from({ length: 5 }, (_, i) => ({ x: i * 220, y: 40 + (i % 2) * 30 }));
 
     // --- Sonido (se activa con el primer toque) ---
     let actx = null;
@@ -129,7 +136,7 @@
     function pointerToTarget(clientX) {
       const rect = canvas.getBoundingClientRect();
       const gx = (clientX - rect.left) / rect.width * VIEW_W;
-      targetX = Math.max(roadLeft() + car.w / 2, Math.min(roadRight() - car.w / 2, gx));
+      car.targetLane = Math.max(-0.92, Math.min(0.92, (gx - CX()) / (halfBottom() * 0.8)));
     }
     function onDown(e) { started = true; ensureAudio(); pointerToTarget(e.clientX); e.preventDefault(); }
     function onMove(e) { if (e.buttons || e.pointerType === 'touch') pointerToTarget(e.clientX); }
@@ -144,57 +151,53 @@
     function spawnParticles(x, y, color, n) {
       for (let i = 0; i < n; i++) particles.push({
         x, y, vx: (Math.random() - 0.5) * 6, vy: -Math.random() * 5 - 1,
-        life: 1, color, r: 2 + Math.random() * 3, star: true
+        life: 1, color, r: 2 + Math.random() * 3
       });
     }
+    function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
 
     // ===================== LÓGICA =====================
     function update() {
       t++;
       if (started) {
-        // Teclado mueve el objetivo
-        if (keys['arrowleft'] || keys['a']) targetX -= 7;
-        if (keys['arrowright'] || keys['d']) targetX += 7;
-        targetX = Math.max(roadLeft() + car.w / 2, Math.min(roadRight() - car.w / 2, targetX));
+        if (keys['arrowleft'] || keys['a']) car.targetLane = Math.max(-0.92, car.targetLane - 0.05);
+        if (keys['arrowright'] || keys['d']) car.targetLane = Math.min(0.92, car.targetLane + 0.05);
 
-        // El coche se acerca suavemente al objetivo
-        const dx = targetX - car.x;
-        car.x += dx * 0.18;
-        car.tilt = Math.max(-0.25, Math.min(0.25, dx * 0.01));
+        const dl = car.targetLane - car.lane;
+        car.lane += dl * 0.18;
+        car.tilt = Math.max(-0.18, Math.min(0.18, dl * 0.6));
         if (car.wobble > 0) car.wobble--;
 
-        // Velocidad sube poquito a poco (suave, nunca brusca)
         speed = Math.min(9, 5 + cups * 0.05);
-        scroll += speed;
+        roadScroll += speed * 0.02;
 
-        // Generar objetos por delante
+        // Generar objetos lejos (en el horizonte)
         if (--spawnTimer <= 0) {
-          spawnTimer = Math.max(28, 70 - cups);    // aparecen un poco más seguido al avanzar
-          const lane = roadLeft() + 40 + Math.random() * (roadRight() - roadLeft() - 80);
-          const isCone = Math.random() < 0.28;     // mayoría copas
-          items.push({ x: lane, y: -40, type: isCone ? 'cone' : 'cup', r: isCone ? 18 : 17, bob: Math.random() * 6 });
+          spawnTimer = Math.max(26, 64 - cups);
+          const isCone = Math.random() < 0.28;
+          items.push({ lane: (Math.random() * 1.6 - 0.8), depth: 2.7, type: isCone ? 'cone' : 'cup', bob: Math.random() * 6, done: false });
         }
 
-        // Mover objetos y detectar recogida/choque
+        // Acercar objetos y comprobar recogida/choque
+        const dz = speed * 0.0017;
         for (let i = items.length - 1; i >= 0; i--) {
           const it = items[i];
-          it.y += speed;
-          const near = Math.abs(it.x - car.x) < (car.w / 2 + it.r - 6) &&
-                       Math.abs(it.y - (car.y + 10)) < (car.h / 2 + it.r - 10);
-          if (near) {
+          it.depth -= dz;
+          if (it.depth < -0.18) { items.splice(i, 1); continue; }
+          if (!it.done && it.depth < 0.14 && Math.abs(it.lane - car.lane) < 0.26) {
+            it.done = true;
+            const px = projX(it.lane, Math.max(it.depth, 0)), py = projY(Math.max(it.depth, 0));
             if (it.type === 'cup') {
               cups++;
-              spawnParticles(it.x, it.y, '#ffd23f', 12);
-              floats.push({ x: it.x, y: it.y, life: 1, txt: pick(['¡BIEN!', '¡GENIAL!', '¡YUJU!', '¡TOMA!']) });
+              spawnParticles(px, py, '#ffd23f', 14);
+              floats.push({ x: px, y: py, life: 1, txt: pick(['¡BIEN!', '¡GENIAL!', '¡YUJU!', '¡TOMA!', '¡KA-CHOW!']) });
               happySound();
             } else {
               car.wobble = 18; boingSound();
-              spawnParticles(it.x, it.y, '#ff7a3c', 8);
+              spawnParticles(px, py, '#ff7a3c', 10);
             }
             items.splice(i, 1);
-            continue;
           }
-          if (it.y > VIEW_H + 40) items.splice(i, 1);
         }
       }
 
@@ -209,8 +212,6 @@
       }
     }
 
-    function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
-
     // ===================== HELPERS =====================
     function roundRect(x, y, w, h, r) {
       r = Math.min(r, w / 2, h / 2);
@@ -222,6 +223,7 @@
       ctx.arcTo(x, y, x + w, y, r);
       ctx.closePath();
     }
+    function ell(cx, cy, rx, ry) { ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); }
     function star(cx, cy, r, rot) {
       ctx.beginPath();
       for (let i = 0; i < 8; i++) {
@@ -235,56 +237,41 @@
     // ===================== RENDER =====================
     function draw() {
       // Cielo
-      const sky = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-      sky.addColorStop(0, '#5ec8f0'); sky.addColorStop(1, '#bfeaff');
-      ctx.fillStyle = sky; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+      const sky = ctx.createLinearGradient(0, 0, 0, HORIZON + 30);
+      sky.addColorStop(0, '#4db8ec'); sky.addColorStop(1, '#bfeaff');
+      ctx.fillStyle = sky; ctx.fillRect(0, 0, VIEW_W, HORIZON + 30);
 
       // Sol
       ctx.fillStyle = '#fff3b0';
-      ctx.beginPath(); ctx.arc(VIEW_W - 80, 60, 30, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(VIEW_W - 90, 56, 28, 0, Math.PI * 2); ctx.fill();
 
       // Nubes
-      for (let i = 0; i < 5; i++) {
-        const cx = ((i * 260 - (scroll * 0.15)) % (VIEW_W + 200) + (VIEW_W + 200)) % (VIEW_W + 200) - 100;
-        cloud(cx, 50 + (i % 2) * 34);
+      ctx.fillStyle = 'rgba(255,255,255,0.95)';
+      for (const c of clouds) {
+        c.x -= 0.15; if (c.x < -90) c.x = VIEW_W + 60;
+        cloud(c.x, c.y);
       }
 
-      // Césped
-      ctx.fillStyle = '#6cca52';
-      ctx.fillRect(0, 120, VIEW_W, VIEW_H - 120);
-      // franja de horizonte
-      ctx.fillStyle = '#4fae3e';
-      ctx.fillRect(0, 120, VIEW_W, 6);
-
-      // Carretera
-      const rl = roadLeft(), rr = roadRight();
-      ctx.fillStyle = '#3a3f47';
-      ctx.fillRect(rl, 120, rr - rl, VIEW_H - 120);
-      // bordes
-      ctx.fillStyle = '#e8e8e8';
-      ctx.fillRect(rl - 6, 120, 6, VIEW_H - 120);
-      ctx.fillRect(rr, 120, 6, VIEW_H - 120);
-      // líneas discontinuas centrales
-      ctx.fillStyle = 'rgba(255,220,90,0.95)';
-      const mid = (rl + rr) / 2;
-      for (let y = 120 + (scroll % 60) - 60; y < VIEW_H; y += 60) {
-        roundRect(mid - 4, y, 8, 30, 4); ctx.fill();
-      }
-      // arbolitos en el césped (dentro de la zona verde)
-      for (let i = 0; i < 6; i++) {
-        const ty  = 130 + ((i * 130 + scroll) % (VIEW_H - 100));
-        const ty2 = 130 + ((i * 130 + 65 + scroll) % (VIEW_H - 100));
-        tree(rl - 34, ty);
-        tree(rr + 34, ty2);
+      // Colinas en el horizonte
+      ctx.fillStyle = '#7cc85e';
+      for (let i = -1; i < 7; i++) {
+        const hx = i * 170 - ((roadScroll * 4) % 170);
+        ctx.beginPath(); ctx.moveTo(hx, HORIZON + 2);
+        ctx.quadraticCurveTo(hx + 85, HORIZON - 34, hx + 170, HORIZON + 2); ctx.fill();
       }
 
-      // Objetos (copas y conos)
-      for (const it of items) {
-        if (it.type === 'cup') drawCup(it.x, it.y + Math.sin((t + it.bob) * 0.15) * 2);
-        else drawCone(it.x, it.y);
+      drawRoad();
+
+      // Objetos: de lejos a cerca
+      const sorted = items.slice().sort((a, b) => b.depth - a.depth);
+      for (const it of sorted) {
+        const d = Math.max(it.depth, 0);
+        const s = 0.5 + fPersp(d) * 1.1;
+        const x = projX(it.lane, d), y = projY(d);
+        if (it.type === 'cup') drawCup(x, y + Math.sin((t + it.bob) * 0.15) * 2, s);
+        else drawCone(x, y, s);
       }
 
-      // Coche
       drawCar();
 
       // Partículas
@@ -296,212 +283,208 @@
       ctx.globalAlpha = 1;
 
       // Textos flotantes
+      ctx.textAlign = 'center';
       for (const f of floats) {
         ctx.globalAlpha = Math.max(0, f.life);
-        ctx.fillStyle = '#fff';
-        ctx.strokeStyle = '#e8a000'; ctx.lineWidth = 4;
-        ctx.font = '800 26px system-ui'; ctx.textAlign = 'center';
+        ctx.fillStyle = '#fff'; ctx.strokeStyle = '#e8a000'; ctx.lineWidth = 4;
+        ctx.font = '800 26px system-ui';
         ctx.strokeText(f.txt, f.x, f.y); ctx.fillText(f.txt, f.x, f.y);
       }
       ctx.globalAlpha = 1; ctx.textAlign = 'left';
 
       drawHUD();
-
       if (!started) startSplash();
     }
 
     function cloud(x, y) {
-      ctx.fillStyle = 'rgba(255,255,255,0.95)';
       ctx.beginPath();
-      ctx.arc(x, y, 16, 0, Math.PI * 2);
-      ctx.arc(x + 20, y + 5, 22, 0, Math.PI * 2);
-      ctx.arc(x + 46, y + 2, 17, 0, Math.PI * 2);
-      ctx.arc(x + 26, y - 8, 15, 0, Math.PI * 2);
+      ctx.arc(x, y, 15, 0, Math.PI * 2);
+      ctx.arc(x + 18, y + 5, 20, 0, Math.PI * 2);
+      ctx.arc(x + 42, y + 2, 16, 0, Math.PI * 2);
+      ctx.arc(x + 24, y - 7, 14, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    function tree(x, y) {
-      ctx.fillStyle = '#7a4a1e';
-      roundRect(x - 4, y, 8, 18, 2); ctx.fill();
-      const g = ctx.createRadialGradient(x - 4, y - 12, 4, x, y - 8, 20);
-      g.addColorStop(0, '#6fd45a'); g.addColorStop(1, '#3f9e34');
-      ctx.fillStyle = g;
-      ctx.beginPath(); ctx.arc(x, y - 8, 17, 0, Math.PI * 2); ctx.fill();
+    function drawRoad() {
+      const cx = CX();
+      // Césped base
+      ctx.fillStyle = '#62c24c';
+      ctx.fillRect(0, HORIZON, VIEW_W, VIEW_H - HORIZON);
+
+      // Bandas en perspectiva (suelo + carretera) para sensación de velocidad
+      const ROWS = 22, STEP = 0.16;
+      const scrollD = roadScroll * 0.9;
+      for (let i = ROWS; i >= 0; i--) {
+        const dF = (i + 1) * STEP - (scrollD % STEP);
+        const dN = i * STEP - (scrollD % STEP);
+        const yF = projY(Math.max(dF, 0));
+        const yN = projY(Math.max(dN, 0));
+        if (yN <= yF) continue;
+        const parity = (i + Math.floor(scrollD / STEP)) % 2;
+        const hF = halfRoad(Math.max(dF, 0)), hN = halfRoad(Math.max(dN, 0));
+
+        // césped (dos verdes alternos)
+        ctx.fillStyle = parity ? '#5cbb44' : '#67c952';
+        ctx.fillRect(0, yF, VIEW_W, yN - yF + 1);
+
+        // rumble (bordes rojo/blanco)
+        ctx.fillStyle = parity ? '#e23b2b' : '#f4f4f4';
+        band(cx - hF * 1.16, cx - hF, yF, cx - hN * 1.16, cx - hN, yN);
+        band(cx + hF, cx + hF * 1.16, yF, cx + hN, cx + hN * 1.16, yN);
+
+        // asfalto
+        ctx.fillStyle = parity ? '#3b4048' : '#434851';
+        band(cx - hF, cx + hF, yF, cx - hN, cx + hN, yN);
+
+        // línea discontinua central (en bandas claras)
+        if (!parity) {
+          ctx.fillStyle = 'rgba(255,220,90,0.95)';
+          band(cx - hF * 0.04, cx + hF * 0.04, yF, cx - hN * 0.04, cx + hN * 0.04, yN);
+        }
+      }
+    }
+    // Cuadrilátero (trapecio) entre dos líneas horizontales
+    function band(xLF, xRF, yF, xLN, xRN, yN) {
+      ctx.beginPath();
+      ctx.moveTo(xLF, yF); ctx.lineTo(xRF, yF); ctx.lineTo(xRN, yN); ctx.lineTo(xLN, yN);
+      ctx.closePath(); ctx.fill();
     }
 
     // Copa Pistón
-    function drawCup(x, y) {
-      ctx.save();
-      // brillo
+    function drawCup(x, y, sc) {
+      ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
       const tw = 0.5 + Math.sin(t * 0.1 + x) * 0.5;
       ctx.fillStyle = 'rgba(255,240,160,' + (0.3 * tw) + ')';
-      ctx.beginPath(); ctx.arc(x, y, 22, 0, Math.PI * 2); ctx.fill();
-      const g = ctx.createLinearGradient(x - 12, y - 12, x + 12, y + 12);
+      ell(0, 0, 20, 20);
+      const g = ctx.createLinearGradient(-12, -12, 12, 12);
       g.addColorStop(0, '#ffe98a'); g.addColorStop(0.5, '#ffd23f'); g.addColorStop(1, '#e0a000');
       ctx.fillStyle = g;
-      // copa
       ctx.beginPath();
-      ctx.moveTo(x - 11, y - 12);
-      ctx.quadraticCurveTo(x - 13, y + 4, x, y + 8);
-      ctx.quadraticCurveTo(x + 13, y + 4, x + 11, y - 12);
+      ctx.moveTo(-11, -12); ctx.quadraticCurveTo(-13, 4, 0, 8); ctx.quadraticCurveTo(13, 4, 11, -12);
       ctx.closePath(); ctx.fill();
-      // asas
       ctx.strokeStyle = '#e0a000'; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(x - 11, y - 7, 5, Math.PI * 0.4, Math.PI * 1.6); ctx.stroke();
-      ctx.beginPath(); ctx.arc(x + 11, y - 7, 5, -Math.PI * 0.6, Math.PI * 0.6); ctx.stroke();
-      // pie
+      ctx.beginPath(); ctx.arc(-11, -7, 5, Math.PI * 0.4, Math.PI * 1.6); ctx.stroke();
+      ctx.beginPath(); ctx.arc(11, -7, 5, -Math.PI * 0.6, Math.PI * 0.6); ctx.stroke();
       ctx.fillStyle = '#e0a000';
-      roundRect(x - 3, y + 8, 6, 6, 1); ctx.fill();
-      roundRect(x - 9, y + 13, 18, 5, 2); ctx.fill();
-      // destello
+      roundRect(-3, 8, 6, 6, 1); ctx.fill();
+      roundRect(-9, 13, 18, 5, 2); ctx.fill();
       ctx.fillStyle = 'rgba(255,255,255,' + tw + ')';
-      star(x + 6, y - 8, 3, t * 0.1);
+      star(6, -8, 3, t * 0.1);
       ctx.restore();
     }
 
-    function drawCone(x, y) {
-      ctx.save();
+    function drawCone(x, y, sc) {
+      ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
       ctx.fillStyle = 'rgba(0,0,0,0.18)';
-      ctx.beginPath(); ctx.ellipse(x, y + 16, 16, 5, 0, 0, Math.PI * 2); ctx.fill();
-      const g = ctx.createLinearGradient(x, y - 18, x, y + 16);
+      ell(0, 16, 16, 5);
+      const g = ctx.createLinearGradient(0, -18, 0, 16);
       g.addColorStop(0, '#ff8a3c'); g.addColorStop(1, '#ef5f1f');
       ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.moveTo(x, y - 18); ctx.lineTo(x + 14, y + 14); ctx.lineTo(x - 14, y + 14);
-      ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(0, -18); ctx.lineTo(14, 14); ctx.lineTo(-14, 14); ctx.closePath(); ctx.fill();
       ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.moveTo(x - 8, y + 1); ctx.lineTo(x + 8, y + 1); ctx.lineTo(x + 10, y + 7); ctx.lineTo(x - 10, y + 7); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-8, 1); ctx.lineTo(8, 1); ctx.lineTo(10, 7); ctx.lineTo(-10, 7); ctx.closePath(); ctx.fill();
       ctx.fillStyle = '#d84e16';
-      roundRect(x - 16, y + 14, 32, 5, 2); ctx.fill();
+      roundRect(-16, 14, 32, 5, 2); ctx.fill();
       ctx.restore();
     }
 
-    // Coche estilo Rayo McQueen (vista cenital, mirando hacia arriba)
-    function ell(cx, cy, rx, ry) { ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); }
-
-    // Coche de carreras rojo y simpático, vista frontal (cara bien visible)
+    // Coche estilo carrera (vista TRASERA / cámara de persecución)
     function drawCar() {
       const wob = car.wobble > 0 ? Math.sin(t * 0.8) * 3 : 0;
-      const bounce = Math.sin(t * 0.25) * 1.2;                 // vibración del motor
-      const cx = car.x + wob, cy = car.y + bounce;
+      const bounce = Math.sin(t * 0.25) * 1.0;
+      const x = CX() + car.lane * halfBottom() * 0.8 + wob;
+      const y = VIEW_H - 58 + bounce;
       const w = car.w, h = car.h;
       ctx.save();
-      ctx.translate(cx, cy);
+      ctx.translate(x, y);
       ctx.rotate(car.tilt);
 
       // sombra
-      ctx.fillStyle = 'rgba(0,0,0,0.25)';
-      ell(0, h / 2 + 2, w / 2 + 6, 11);
+      ctx.fillStyle = 'rgba(0,0,0,0.28)';
+      ell(0, h / 2 + 6, w / 2 + 8, 12);
 
-      // ruedas delanteras (abajo, sobresalen)
+      // ruedas traseras (grandes, cerca)
       for (const s of [-1, 1]) {
         ctx.fillStyle = '#15171a';
-        roundRect(s * (w / 2 - 6) - 9, h / 2 - 26, 18, 28, 8); ctx.fill();
-        ctx.fillStyle = '#cdd3da';                              // llanta
-        ell(s * (w / 2 - 6), h / 2 - 12, 5.5, 5.5);
-        ctx.fillStyle = '#9aa1ab';
-        ell(s * (w / 2 - 6), h / 2 - 12, 2.4, 2.4);
+        roundRect(s * (w / 2 - 5) - 9, h / 2 - 20, 18, 26, 7); ctx.fill();
+        ctx.fillStyle = '#3a3d42';
+        roundRect(s * (w / 2 - 5) - 6, h / 2 - 16, 12, 16, 4); ctx.fill();
       }
 
-      // ---- Carrocería (3 bandas: techo, capó, parachoques) ----
+      // carrocería (trapecio: más ancho atrás/abajo)
       const body = ctx.createLinearGradient(-w / 2, 0, w / 2, 0);
       body.addColorStop(0, '#b41a0c'); body.addColorStop(0.5, '#f0331f'); body.addColorStop(1, '#b41a0c');
-
-      // cuerpo principal
       ctx.fillStyle = body;
-      roundRect(-w / 2, -h / 2 + 8, w, h - 10, 20); ctx.fill();
-      // techo más estrecho arriba
-      ctx.fillStyle = '#e22a18';
-      roundRect(-w * 0.30, -h / 2, w * 0.60, 22, 11); ctx.fill();
-      // guardabarros (bultos laterales)
-      ctx.fillStyle = '#c81f0f';
-      ell(-w / 2 + 4, 6, 9, 16);
-      ell(w / 2 - 4, 6, 9, 16);
-
-      // brillo superior de la chapa
-      ctx.fillStyle = 'rgba(255,255,255,0.18)';
-      roundRect(-w * 0.26, -h / 2 + 12, w * 0.30, 10, 6); ctx.fill();
-
-      // ---- Parabrisas con OJOS ----
-      const ws = ctx.createLinearGradient(0, -h / 2 + 6, 0, -h / 2 + 34);
-      ws.addColorStop(0, '#d6f1ff'); ws.addColorStop(1, '#86c9ef');
-      ctx.fillStyle = ws;
-      // trapecio del parabrisas (más ancho abajo)
       ctx.beginPath();
-      ctx.moveTo(-w * 0.27, -h / 2 + 6);
-      ctx.lineTo(w * 0.27, -h / 2 + 6);
-      ctx.lineTo(w * 0.34, -h / 2 + 34);
-      ctx.lineTo(-w * 0.34, -h / 2 + 34);
+      ctx.moveTo(-w * 0.32, -h / 2 + 6); ctx.lineTo(w * 0.32, -h / 2 + 6);
+      ctx.lineTo(w * 0.5, h / 2 - 4); ctx.lineTo(-w * 0.5, h / 2 - 4);
+      ctx.closePath(); ctx.fill();
+      roundRect(-w / 2, h / 2 - 18, w, 16, 9); ctx.fill();
+
+      // techo (delante, lejos) más estrecho
+      ctx.fillStyle = '#e22a18';
+      roundRect(-w * 0.26, -h / 2, w * 0.52, 15, 8); ctx.fill();
+      // brillo
+      ctx.fillStyle = 'rgba(255,255,255,0.16)';
+      roundRect(-w * 0.22, -h / 2 + 3, w * 0.44, 5, 3); ctx.fill();
+
+      // parabrisas + OJOS asomando por delante (Rayo reconocible)
+      const ws = ctx.createLinearGradient(0, -h / 2 + 4, 0, -h / 2 + 20);
+      ws.addColorStop(0, '#d6f1ff'); ws.addColorStop(1, '#8ccbef');
+      ctx.fillStyle = ws;
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.22, -h / 2 + 6); ctx.lineTo(w * 0.22, -h / 2 + 6);
+      ctx.lineTo(w * 0.17, -h / 2 + 19); ctx.lineTo(-w * 0.17, -h / 2 + 19);
+      ctx.closePath(); ctx.fill();
+      const blink = (t % 220) < 8;
+      for (const s of [-1, 1]) {
+        const ex = s * 9, ey = -h / 2 + 12;
+        ctx.fillStyle = '#fff'; ell(ex, ey, 5.5, 6);
+        if (!blink) {
+          ctx.fillStyle = '#2aa3e0'; ell(ex, ey + 1, 3, 3.4);
+          ctx.fillStyle = '#10243a'; ell(ex, ey + 1.5, 1.5, 1.8);
+          ctx.fillStyle = '#fff'; ell(ex + 1, ey, 0.8, 0.9);
+        } else {
+          ctx.strokeStyle = '#2b4a5c'; ctx.lineWidth = 1.6;
+          ctx.beginPath(); ctx.moveTo(ex - 4, ey); ctx.lineTo(ex + 4, ey); ctx.stroke();
+        }
+      }
+
+      // luneta trasera oscura
+      ctx.fillStyle = '#2a2f36';
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.22, -h / 2 + 16); ctx.lineTo(w * 0.22, -h / 2 + 16);
+      ctx.lineTo(w * 0.28, -h / 2 + 30); ctx.lineTo(-w * 0.28, -h / 2 + 30);
       ctx.closePath(); ctx.fill();
 
-      const blink = (t % 220) < 8;
-      const ey = -h / 2 + 22;
-      for (const s of [-1, 1]) {
-        const ex = s * 14;
-        // globo ocular
-        ctx.fillStyle = '#fff'; ell(ex, ey, 11, 13);
-        if (blink) {
-          ctx.strokeStyle = '#2b4a5c'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
-          ctx.beginPath(); ctx.moveTo(ex - 7, ey); ctx.lineTo(ex + 7, ey); ctx.stroke();
-        } else {
-          // mira ligeramente hacia el centro/arriba
-          const lookX = ex * 0.06, lookY = -1.5;
-          ctx.fillStyle = '#2aa3e0'; ell(ex + lookX, ey + 2 + lookY, 6.5, 7.5);   // iris
-          ctx.fillStyle = '#10243a'; ell(ex + lookX, ey + 3 + lookY, 3.4, 4);     // pupila
-          ctx.fillStyle = '#fff'; ell(ex + lookX + 2, ey + lookY, 1.6, 1.8);      // brillo
-        }
-        // párpado superior (rojo, da expresión amable)
-        ctx.fillStyle = '#d11f0f';
-        ctx.beginPath(); ctx.ellipse(ex, ey - 6, 12, 9, 0, Math.PI, 0); ctx.fill();
-        ctx.fillStyle = 'rgba(0,0,0,0.12)';                                       // pestaña/sombra
-        ctx.fillRect(ex - 11, ey - 4, 22, 1.5);
-      }
-      // marco del parabrisas
-      ctx.strokeStyle = 'rgba(120,40,30,0.5)'; ctx.lineWidth = 2;
+      // rayo amarillo + 95
+      ctx.fillStyle = '#ffd23f'; ctx.strokeStyle = '#e8a000'; ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.moveTo(-w * 0.27, -h / 2 + 6); ctx.lineTo(w * 0.27, -h / 2 + 6);
-      ctx.lineTo(w * 0.34, -h / 2 + 34); ctx.lineTo(-w * 0.34, -h / 2 + 34);
-      ctx.closePath(); ctx.stroke();
+      ctx.moveTo(-9, -h / 2 + 34); ctx.lineTo(6, -h / 2 + 34); ctx.lineTo(-1, -h / 2 + 42);
+      ctx.lineTo(9, -h / 2 + 42); ctx.lineTo(-7, h / 2 - 20); ctx.lineTo(0, -h / 2 + 46);
+      ctx.lineTo(-10, -h / 2 + 46); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#fff'; ell(0, h / 2 - 22, 12, 12);
+      ctx.fillStyle = '#111'; ctx.font = '900 14px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('95', 0, h / 2 - 21); ctx.textBaseline = 'alphabetic';
 
-      // ---- Capó: rayo + número 95 ----
-      // rayo amarillo
-      ctx.fillStyle = '#ffd23f';
-      ctx.strokeStyle = '#e8a000'; ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(-10, -h / 2 + 38); ctx.lineTo(6, -h / 2 + 38); ctx.lineTo(-2, -h / 2 + 48);
-      ctx.lineTo(10, -h / 2 + 48); ctx.lineTo(-8, h / 2 - 30); ctx.lineTo(-1, -h / 2 + 52);
-      ctx.lineTo(-11, -h / 2 + 52); ctx.closePath(); ctx.fill(); ctx.stroke();
-      // roundel del 95
-      ctx.fillStyle = '#fff'; ell(0, h / 2 - 34, 13, 13);
-      ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(0, h / 2 - 34, 13, 0, Math.PI * 2); ctx.stroke();
-      ctx.fillStyle = '#111'; ctx.font = '900 15px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('95', 0, h / 2 - 33);
-      ctx.textBaseline = 'alphabetic';
-
-      // ---- Parachoques / parrilla con BOCA sonriente ----
-      const bump = ctx.createLinearGradient(0, h / 2 - 22, 0, h / 2 + 2);
-      bump.addColorStop(0, '#e22a18'); bump.addColorStop(1, '#a81708');
-      ctx.fillStyle = bump;
-      roundRect(-w / 2 + 4, h / 2 - 22, w - 8, 22, 11); ctx.fill();
-      // faros (pegatinas tipo guiño)
-      for (const s of [-1, 1]) {
-        ctx.fillStyle = '#ffe9a8'; ell(s * (w / 2 - 16), h / 2 - 14, 6, 5);
-        ctx.fillStyle = '#fff'; ell(s * (w / 2 - 16) - 1.5, h / 2 - 15, 1.8, 1.5);
-      }
-      // boca: parrilla oscura + sonrisa
-      ctx.fillStyle = '#3a1410';
-      roundRect(-15, h / 2 - 14, 30, 12, 6); ctx.fill();
-      ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.arc(0, h / 2 - 13, 9, 0.12 * Math.PI, 0.88 * Math.PI); ctx.stroke();
-      // dientes
-      ctx.fillStyle = '#fff';
-      roundRect(-7, h / 2 - 9, 5, 5, 1); ctx.fill();
-      roundRect(2, h / 2 - 9, 5, 5, 1); ctx.fill();
-
-      // retrovisores
+      // alerón trasero
+      ctx.fillStyle = '#7a0f06';
+      roundRect(-w * 0.42, h / 2 - 12, w * 0.84, 6, 3); ctx.fill();
       ctx.fillStyle = '#c81f0f';
-      ell(-w / 2 + 2, -h / 2 + 26, 4, 3);
-      ell(w / 2 - 2, -h / 2 + 26, 4, 3);
+      roundRect(-w * 0.30, h / 2 - 11, 6, 9, 2); ctx.fill();
+      roundRect(w * 0.30 - 6, h / 2 - 11, 6, 9, 2); ctx.fill();
+
+      // pilotos traseros
+      ctx.fillStyle = '#ff5a4a';
+      roundRect(-w * 0.46, h / 2 - 6, 12, 5, 2); ctx.fill();
+      roundRect(w * 0.46 - 12, h / 2 - 6, 12, 5, 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,200,150,0.95)';
+      roundRect(-w * 0.44, h / 2 - 5, 5, 3, 1); ctx.fill();
+      roundRect(w * 0.44 - 5, h / 2 - 5, 5, 3, 1); ctx.fill();
+
+      // escapes
+      ctx.fillStyle = '#cdd3da';
+      ell(-7, h / 2 - 1, 2.5, 2); ell(7, h / 2 - 1, 2.5, 2);
 
       ctx.restore();
       ctx.textAlign = 'left';
@@ -513,7 +496,7 @@
       roundRect(12, 12, 132, 44, 14); ctx.fill();
       ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1.5;
       roundRect(12, 12, 132, 44, 14); ctx.stroke();
-      drawCup(34, 34);
+      drawCup(34, 34, 1);
       ctx.fillStyle = '#fff'; ctx.font = '800 24px system-ui';
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       ctx.fillText('×' + cups, 56, 35);
@@ -525,23 +508,15 @@
       ctx.fillStyle = 'rgba(10,20,40,0.55)';
       ctx.fillRect(0, 0, VIEW_W, VIEW_H);
       ctx.textAlign = 'center';
-      ctx.fillStyle = '#ffd23f';
-      ctx.font = '800 40px system-ui';
+      ctx.fillStyle = '#ffd23f'; ctx.font = '800 40px system-ui';
       ctx.fillText('⚡ ¡A CORRER!', VIEW_W / 2, VIEW_H / 2 - 14);
-      ctx.fillStyle = '#fff';
-      ctx.font = '700 20px system-ui';
-      const pulse = 0.6 + Math.sin(t * 0.08) * 0.4;
-      ctx.globalAlpha = pulse;
+      ctx.fillStyle = '#fff'; ctx.font = '700 20px system-ui';
+      ctx.globalAlpha = 0.6 + Math.sin(t * 0.08) * 0.4;
       ctx.fillText('Toca la pantalla para empezar', VIEW_W / 2, VIEW_H / 2 + 22);
-      ctx.globalAlpha = 1;
-      ctx.textAlign = 'left';
+      ctx.globalAlpha = 1; ctx.textAlign = 'left';
     }
 
-    function loop() {
-      update();
-      draw();
-      requestAnimationFrame(loop);
-    }
+    function loop() { update(); draw(); requestAnimationFrame(loop); }
     loop();
   </script>
 </body>
