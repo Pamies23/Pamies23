@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#1a2a52">
+  <meta name="theme-color" content="#3a1f14">
   <title>Rayo - Carreras</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
     body {
-      background: radial-gradient(circle at 50% 0%, #2a4a8b, #14213e 70%);
+      background: radial-gradient(circle at 50% 0%, #6b3a22, #2a160d 70%);
       font-family: system-ui, -apple-system, sans-serif;
       min-height: 100vh;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -20,7 +20,7 @@
     }
     h1 {
       font-size: 1.6rem; letter-spacing: 1px; font-weight: 800;
-      background: linear-gradient(#fff3b0, #ffcf3f);
+      background: linear-gradient(#ffe6a0, #ff9f3f);
       -webkit-background-clip: text; background-clip: text; color: transparent;
       text-shadow: 0 3px 10px rgba(0,0,0,0.4);
     }
@@ -31,7 +31,6 @@
     }
     .hint { font-size: 0.85rem; opacity: 0.85; text-shadow: 0 1px 3px rgba(0,0,0,0.5); text-align: center; }
 
-    /* ---- Flechas táctiles (una a cada lado) ---- */
     #touch { position: fixed; inset: 0; pointer-events: none; display: none; z-index: 20; }
     .arrow {
       position: absolute;
@@ -52,7 +51,7 @@
     #rotate {
       position: fixed; inset: 0; z-index: 50; display: none;
       align-items: center; justify-content: center; flex-direction: column; gap: 14px;
-      background: #14213e; color: #fff; text-align: center; padding: 24px;
+      background: #2a160d; color: #fff; text-align: center; padding: 24px;
     }
     #rotate .ico { font-size: 56px; animation: spin 2s ease-in-out infinite; }
     @keyframes spin { 0%,100%{transform:rotate(-12deg)} 50%{transform:rotate(78deg)} }
@@ -69,9 +68,9 @@
   </style>
 </head>
 <body>
-  <h1>⚡ RAYO — ¡A CORRER!</h1>
+  <h1>⚡ RAYO — RUTA DEL DESIERTO</h1>
   <canvas id="game"></canvas>
-  <p class="hint">Usa las flechas de los lados para mover a Rayo · Recoge las Copas 🏆</p>
+  <p class="hint">Usa las flechas de los lados para mover a Rayo · Recoge Copas 🏆 · Esquiva coches y conos</p>
 
   <div id="touch">
     <div class="arrow left"  id="btnLeft"  aria-label="Izquierda">‹</div>
@@ -118,27 +117,31 @@
     window.addEventListener('orientationchange', resize);
     resize();
 
-    // --- Perspectiva (cámara trasera) ---
-    const HORIZON = VIEW_H * 0.36;
+    // --- Perspectiva + curvas ---
+    const HORIZON = VIEW_H * 0.38;
     const HALF_HORIZON = 10;
+    let curveNow = 0;                       // curvatura actual (-1..1)
     function CX() { return VIEW_W / 2; }
     function halfBottom() { return VIEW_W * 0.42; }
     function fPersp(d) { return 1 / (1 + Math.max(d, 0) * 6); }
     function projY(d) { return HORIZON + (VIEW_H - HORIZON) * fPersp(d); }
     function halfRoad(d) { return HALF_HORIZON + (halfBottom() - HALF_HORIZON) * fPersp(d); }
-    function projX(lane, d) { return CX() + lane * halfRoad(d); }
+    function curveAt(d) { return curveNow * Math.pow(1 - fPersp(d), 2) * VIEW_W * 0.36; }
+    function projX(lane, d) { return CX() + curveAt(d) + lane * halfRoad(d); }
 
     // --- Estado ---
-    const car = { w: 86, h: 78, lane: 0, targetLane: 0, wobble: 0, tilt: 0 };
-    let roadScroll = 0, speed = 3, cups = 0, started = false, t = 0;
-    const items = [];        // {lane, depth, type, bob, done}
-    const props = [];        // árboles decorativos a los lados
+    const car = { w: 86, h: 78, lane: 0, targetLane: 0, wobble: 0, tilt: 0, crash: 0, crashDur: 1, spins: 0 };
+    let roadScroll = 0, speed = 3, cups = 0, started = false, t = 0, shake = 0;
+    const items = [];        // copas/conos
+    const traffic = [];      // coches a esquivar
+    const props = [];        // cactus/rocas
     const particles = [];
     const floats = [];
-    let spawnTimer = 0, propTimer = 0;
-    const clouds = Array.from({ length: 5 }, (_, i) => ({ x: i * 220, y: 38 + (i % 2) * 26 }));
+    let spawnTimer = 0, propTimer = 0, trafficTimer = 90;
+    const clouds = Array.from({ length: 4 }, (_, i) => ({ x: i * 240, y: 34 + (i % 2) * 22 }));
+    const TRAFFIC_COLORS = ['#3a7bd5', '#37b24d', '#f4a020', '#8e44ad', '#16a3b0', '#d94f86'];
 
-    // --- Sonido (se activa con el primer toque) ---
+    // --- Sonido ---
     let actx = null;
     function ensureAudio() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } }
     function beep(freq, dur, type, vol) {
@@ -154,9 +157,9 @@
       } catch (e) {}
     }
     function happySound() { beep(660, 0.12, 'triangle', 0.09); setTimeout(() => beep(990, 0.14, 'triangle', 0.09), 90); }
-    function boingSound() { beep(180, 0.18, 'sawtooth', 0.06); }
+    function crashSound() { beep(240, 0.12, 'square', 0.07); setTimeout(() => beep(150, 0.16, 'sawtooth', 0.07), 80); }
 
-    // --- Entrada: flechas a los lados (+ teclado en ordenador) ---
+    // --- Entrada ---
     const keys = {};
     function holdButton(id, key) {
       const el = document.getElementById(id); if (!el) return;
@@ -177,44 +180,53 @@
     });
     document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 
-    function spawnParticles(x, y, color, n) {
+    function spawnParticles(x, y, color, n, sp) {
       for (let i = 0; i < n; i++) particles.push({
-        x, y, vx: (Math.random() - 0.5) * 6, vy: -Math.random() * 5 - 1,
-        life: 1, color, r: 2 + Math.random() * 3
+        x, y, vx: (Math.random() - 0.5) * (sp || 6), vy: -Math.random() * 5 - 1,
+        life: 1, color, r: 2 + Math.random() * 3, star: Math.random() < 0.4
       });
     }
     function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+
+    function crashCar(px, py, intensity) {
+      if (car.crash > 0) return;
+      car.crashDur = 30 + 26 * intensity;
+      car.crash = car.crashDur;
+      car.spins = intensity >= 1 ? 2 : 1;
+      shake = 7 + 7 * intensity;
+      spawnParticles(px, py, '#ffd23f', 10 + (intensity * 8 | 0), 8);
+      spawnParticles(px, py, '#fff', 6, 7);
+      floats.push({ x: px, y: py, life: 1, txt: intensity >= 1 ? '¡CRASH!' : '¡UPS!' });
+      crashSound();
+    }
 
     // ===================== LÓGICA =====================
     function update() {
       t++;
       if (started) {
-        if (keys['arrowleft'] || keys['a']) car.targetLane = Math.max(-0.9, car.targetLane - 0.035);
-        if (keys['arrowright'] || keys['d']) car.targetLane = Math.min(0.9, car.targetLane + 0.035);
-
+        const crashing = car.crash > 0;
+        if (!crashing) {
+          if (keys['arrowleft'] || keys['a']) car.targetLane = Math.max(-0.9, car.targetLane - 0.035);
+          if (keys['arrowright'] || keys['d']) car.targetLane = Math.min(0.9, car.targetLane + 0.035);
+        }
         const dl = car.targetLane - car.lane;
         car.lane += dl * 0.15;
         car.tilt = Math.max(-0.16, Math.min(0.16, dl * 0.5));
         if (car.wobble > 0) car.wobble--;
+        if (car.crash > 0) car.crash--;
 
-        // Velocidad tranquila (sube muy poquito)
         speed = Math.min(5, 3 + cups * 0.03);
         roadScroll += speed * 0.016;
+        curveNow = Math.sin(roadScroll * 0.5) * 0.8 + Math.sin(roadScroll * 0.21) * 0.2;
+
+        const dz = speed * 0.0042;
 
         // Copas y conos
         if (--spawnTimer <= 0) {
           spawnTimer = Math.max(46, 78 - cups);
-          const isCone = Math.random() < 0.26;
+          const isCone = Math.random() < 0.24;
           items.push({ lane: (Math.random() * 1.6 - 0.8), depth: 2.7, type: isCone ? 'cone' : 'cup', bob: Math.random() * 6, done: false });
         }
-        // Árboles a los lados
-        if (--propTimer <= 0) {
-          propTimer = 40 + Math.floor(Math.random() * 30);
-          const side = Math.random() < 0.5 ? -1 : 1;
-          props.push({ lane: side * (1.25 + Math.random() * 0.4), depth: 2.7, kind: Math.random() < 0.5 ? 0 : 1 });
-        }
-
-        const dz = speed * 0.0042;
         for (let i = items.length - 1; i >= 0; i--) {
           const it = items[i];
           it.depth -= dz;
@@ -227,28 +239,52 @@
               spawnParticles(px, py, '#ffd23f', 14);
               floats.push({ x: px, y: py, life: 1, txt: pick(['¡BIEN!', '¡GENIAL!', '¡YUJU!', '¡TOMA!', '¡KA-CHOW!']) });
               happySound();
-            } else {
-              car.wobble = 18; boingSound();
-              spawnParticles(px, py, '#ff7a3c', 10);
+            } else if (car.crash <= 0) {
+              crashCar(px, py, 0.55);
             }
             items.splice(i, 1);
           }
         }
+
+        // Tráfico
+        if (--trafficTimer <= 0) {
+          trafficTimer = 80 + Math.floor(Math.random() * 70);
+          traffic.push({ lane: (Math.random() * 1.4 - 0.7), depth: 2.7, color: pick(TRAFFIC_COLORS) });
+        }
+        for (let i = traffic.length - 1; i >= 0; i--) {
+          const c = traffic[i];
+          c.depth -= dz * 0.72;                       // van hacia delante: se acercan más despacio
+          if (c.depth < -0.25) { traffic.splice(i, 1); continue; }
+          if (car.crash <= 0 && c.depth < 0.16 && c.depth > -0.08 && Math.abs(c.lane - car.lane) < 0.3) {
+            const px = projX(c.lane, Math.max(c.depth, 0)), py = projY(Math.max(c.depth, 0));
+            crashCar(px, py, 1);
+            spawnParticles(px, py, c.color, 10, 8);
+            traffic.splice(i, 1);
+          }
+        }
+
+        // Cactus / rocas
+        if (--propTimer <= 0) {
+          propTimer = 34 + Math.floor(Math.random() * 26);
+          const side = Math.random() < 0.5 ? -1 : 1;
+          props.push({ lane: side * (1.22 + Math.random() * 0.5), depth: 2.7, kind: Math.floor(Math.random() * 3) });
+        }
         for (let i = props.length - 1; i >= 0; i--) {
           props[i].depth -= dz;
-          if (props[i].depth < -0.2) props.splice(i, 1);
+          if (props[i].depth < -0.25) props.splice(i, 1);
         }
       }
 
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
-        p.x += p.vx; p.y += p.vy; p.vy += 0.25; p.life -= 0.025;
+        p.x += p.vx; p.y += p.vy; p.vy += 0.25; p.life -= 0.022;
         if (p.life <= 0) particles.splice(i, 1);
       }
       for (let i = floats.length - 1; i >= 0; i--) {
         floats[i].y -= 1.1; floats[i].life -= 0.02;
         if (floats[i].life <= 0) floats.splice(i, 1);
       }
+      if (shake > 0) { shake *= 0.88; if (shake < 0.3) shake = 0; }
     }
 
     // ===================== HELPERS =====================
@@ -280,38 +316,25 @@
 
     // ===================== RENDER =====================
     function draw() {
-      // Cielo suave
-      const sky = ctx.createLinearGradient(0, 0, 0, HORIZON + 40);
-      sky.addColorStop(0, '#7ed0f2'); sky.addColorStop(1, '#d6f0ff');
-      ctx.fillStyle = sky; ctx.fillRect(0, 0, VIEW_W, HORIZON + 40);
+      ctx.save();
+      if (shake > 0) ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
 
-      // Sol con halo
-      const sx = VIEW_W - 95, sy = 54;
-      const halo = ctx.createRadialGradient(sx, sy, 6, sx, sy, 70);
-      halo.addColorStop(0, 'rgba(255,248,210,0.9)'); halo.addColorStop(1, 'rgba(255,248,210,0)');
-      ctx.fillStyle = halo; ctx.fillRect(sx - 80, sy - 80, 160, 160);
-      ctx.fillStyle = '#fff4cf'; ctx.beginPath(); ctx.arc(sx, sy, 26, 0, Math.PI * 2); ctx.fill();
-
-      // Nubes
-      ctx.fillStyle = 'rgba(255,255,255,0.96)';
-      for (const c of clouds) { c.x -= 0.12; if (c.x < -90) c.x = VIEW_W + 60; cloud(c.x, c.y); }
-
-      // Colinas (dos capas suaves)
-      hills(0.30, '#9bd97e', 40);
-      hills(0.55, '#7cc85e', 18);
-
+      drawSky();
+      drawMesas();
       drawRoad();
 
-      // Árboles laterales + objetos, ordenados de lejos a cerca
+      // Escena (cactus + tráfico + objetos) de lejos a cerca
       const scene = [];
-      for (const p of props) scene.push({ d: p.depth, kind: 'tree', ref: p });
+      for (const p of props) scene.push({ d: p.depth, kind: 'prop', ref: p });
+      for (const c of traffic) scene.push({ d: c.depth, kind: 'traffic', ref: c });
       for (const it of items) scene.push({ d: it.depth, kind: 'item', ref: it });
       scene.sort((a, b) => b.d - a.d);
       for (const o of scene) {
         const d = Math.max(o.d, 0);
         const s = 0.45 + fPersp(d) * 1.15;
         const x = projX(o.ref.lane, d), y = projY(d);
-        if (o.kind === 'tree') drawTree(x, y, s, o.ref.kind);
+        if (o.kind === 'prop') drawProp(x, y, s, o.ref.kind);
+        else if (o.kind === 'traffic') drawTrafficCar(x, y, s, o.ref.color);
         else if (o.ref.type === 'cup') drawCup(x, y + Math.sin((t + o.ref.bob) * 0.15) * 2, s);
         else drawCone(x, y, s);
       }
@@ -320,14 +343,16 @@
 
       for (const p of particles) {
         ctx.globalAlpha = Math.max(0, p.life);
-        ctx.fillStyle = p.color; star(p.x, p.y, p.r + 1.5, p.life * 6);
+        ctx.fillStyle = p.color;
+        if (p.star) star(p.x, p.y, p.r + 1.5, p.life * 6);
+        else { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill(); }
       }
       ctx.globalAlpha = 1;
 
       ctx.textAlign = 'center';
       for (const f of floats) {
         ctx.globalAlpha = Math.max(0, f.life);
-        ctx.fillStyle = '#fff'; ctx.strokeStyle = '#e8a000'; ctx.lineWidth = 4;
+        ctx.fillStyle = '#fff'; ctx.strokeStyle = '#c0480f'; ctx.lineWidth = 4;
         ctx.font = '800 26px system-ui';
         ctx.strokeText(f.txt, f.x, f.y); ctx.fillText(f.txt, f.x, f.y);
       }
@@ -335,35 +360,76 @@
 
       drawHUD();
       if (!started) startSplash();
+      ctx.restore();
+    }
+
+    function drawSky() {
+      const sky = ctx.createLinearGradient(0, 0, 0, HORIZON + 40);
+      sky.addColorStop(0, '#7ec3e8'); sky.addColorStop(0.6, '#cfe3e0'); sky.addColorStop(1, '#ffe1ad');
+      ctx.fillStyle = sky; ctx.fillRect(0, 0, VIEW_W, HORIZON + 40);
+      // Sol cálido
+      const sx = VIEW_W * 0.5, sy = 50;
+      const halo = ctx.createRadialGradient(sx, sy, 8, sx, sy, 90);
+      halo.addColorStop(0, 'rgba(255,236,180,0.9)'); halo.addColorStop(1, 'rgba(255,236,180,0)');
+      ctx.fillStyle = halo; ctx.fillRect(sx - 100, sy - 100, 200, 200);
+      ctx.fillStyle = '#fff0c8'; ctx.beginPath(); ctx.arc(sx, sy, 26, 0, Math.PI * 2); ctx.fill();
+      // Nubes finas
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      for (const c of clouds) { c.x -= 0.1; if (c.x < -90) c.x = VIEW_W + 60; cloud(c.x, c.y); }
     }
 
     function cloud(x, y) {
       ctx.beginPath();
-      ctx.arc(x, y, 15, 0, Math.PI * 2);
-      ctx.arc(x + 18, y + 5, 20, 0, Math.PI * 2);
-      ctx.arc(x + 42, y + 2, 16, 0, Math.PI * 2);
-      ctx.arc(x + 24, y - 7, 14, 0, Math.PI * 2);
+      ctx.arc(x, y, 12, 0, Math.PI * 2);
+      ctx.arc(x + 16, y + 4, 16, 0, Math.PI * 2);
+      ctx.arc(x + 36, y + 2, 13, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    function hills(par, color, h) {
-      ctx.fillStyle = color;
-      const off = (roadScroll * 6 * par) % 200;
-      for (let i = -1; i < 8; i++) {
-        const hx = i * 200 - off;
+    // Mesas / buttes del desierto en capas (parallax)
+    function drawMesas() {
+      mesaRow(0.18, 200, ['#caa07e', '#b98b6a'], 56, 96, -0.5);
+      mesaRow(0.34, 150, ['#c2724a', '#a85a37'], 40, 80, 0.3);
+    }
+    function mesaRow(par, spacing, cols, minH, maxH, seedShift) {
+      const off = (roadScroll * 7 * par) % spacing;
+      for (let i = -1; i < Math.ceil(VIEW_W / spacing) + 2; i++) {
+        const bx = i * spacing - off;
+        const r = Math.abs(Math.sin((i + seedShift) * 12.9898) * 43758.5);
+        const hh = minH + (r % 1) * (maxH - minH);
+        const wTop = spacing * (0.34 + (r * 1.7 % 1) * 0.18);
+        const wBot = wTop + 22;
+        const topY = HORIZON - hh, botY = HORIZON + 2;
+        const g = ctx.createLinearGradient(0, topY, 0, botY);
+        g.addColorStop(0, cols[0]); g.addColorStop(1, cols[1]);
+        ctx.fillStyle = g;
         ctx.beginPath();
-        ctx.moveTo(hx, HORIZON + 2);
-        ctx.quadraticCurveTo(hx + 100, HORIZON - h, hx + 200, HORIZON + 2);
-        ctx.fill();
+        ctx.moveTo(bx - wBot / 2, botY);
+        ctx.lineTo(bx - wTop / 2, topY + 6);
+        ctx.quadraticCurveTo(bx - wTop / 2, topY, bx - wTop / 2 + 6, topY);
+        ctx.lineTo(bx + wTop / 2 - 6, topY);
+        ctx.quadraticCurveTo(bx + wTop / 2, topY, bx + wTop / 2, topY + 6);
+        ctx.lineTo(bx + wBot / 2, botY);
+        ctx.closePath(); ctx.fill();
+        // estratos (líneas horizontales)
+        ctx.fillStyle = 'rgba(0,0,0,0.08)';
+        ctx.fillRect(bx - wTop / 2 + 4, topY + hh * 0.42, wTop - 8, 3);
+        ctx.fillRect(bx - wBot / 2 + 8, topY + hh * 0.68, wBot - 16, 3);
+        // luz cálida en la cara izquierda
+        ctx.fillStyle = 'rgba(255,220,150,0.16)';
+        ctx.fillRect(bx - wTop / 2 + 2, topY + 2, 5, hh - 4);
       }
     }
 
     function drawRoad() {
       const cx = CX();
-      ctx.fillStyle = '#66bf48';
+      // Arena del desierto
+      const sand = ctx.createLinearGradient(0, HORIZON, 0, VIEW_H);
+      sand.addColorStop(0, '#e7c489'); sand.addColorStop(1, '#d3a866');
+      ctx.fillStyle = sand;
       ctx.fillRect(0, HORIZON, VIEW_W, VIEW_H - HORIZON);
 
-      // Bandas en perspectiva — colores MUY suaves (sin parpadeo)
+      // Bandas en perspectiva (tonos suaves, sin parpadeo)
       const ROWS = 18, STEP = 0.2;
       const scrollD = roadScroll * 0.5;
       for (let i = ROWS; i >= 0; i--) {
@@ -374,44 +440,57 @@
         if (yN <= yF) continue;
         const parity = (i + Math.floor(scrollD / STEP)) % 2;
         const hF = halfRoad(Math.max(dF, 0)), hN = halfRoad(Math.max(dN, 0));
+        const cF = cx + curveAt(Math.max(dF, 0)), cN = cx + curveAt(Math.max(dN, 0));
 
-        // césped: dos verdes casi idénticos (textura sutil)
-        ctx.fillStyle = parity ? '#69bf47' : '#65bb44';
+        // arena (dos tonos casi iguales)
+        ctx.fillStyle = parity ? '#e3bf82' : '#dfba7c';
         ctx.fillRect(0, yF, VIEW_W, yN - yF + 1);
 
-        // rumble lateral: rojo apagado / crema (poco contraste)
-        ctx.fillStyle = parity ? '#cf6b59' : '#ece4d6';
-        band(cx - hF * 1.14, cx - hF, yF, cx - hN * 1.14, cx - hN, yN);
-        band(cx + hF, cx + hF * 1.14, yF, cx + hN, cx + hN * 1.14, yN);
+        // rumble lateral (rojo arena / crema)
+        ctx.fillStyle = parity ? '#c96b4f' : '#efe2cb';
+        band(cF - hF * 1.14, cF - hF, yF, cN - hN * 1.14, cN - hN, yN);
+        band(cF + hF, cF + hF * 1.14, yF, cN + hN, cN + hN * 1.14, yN);
 
-        // asfalto: tono único (sin parpadeo)
-        ctx.fillStyle = '#474d57';
-        band(cx - hF, cx + hF, yF, cx - hN, cx + hN, yN);
+        // asfalto (tono único)
+        ctx.fillStyle = '#5b554f';
+        band(cF - hF, cF + hF, yF, cN - hN, cN + hN, yN);
 
-        // línea central discontinua (suave)
+        // línea central discontinua
         if (parity) {
-          ctx.fillStyle = 'rgba(245,225,140,0.8)';
-          band(cx - hF * 0.035, cx + hF * 0.035, yF, cx - hN * 0.035, cx + hN * 0.035, yN);
+          ctx.fillStyle = 'rgba(245,225,150,0.8)';
+          band(cF - hF * 0.035, cF + hF * 0.035, yF, cN - hN * 0.035, cN + hN * 0.035, yN);
         }
       }
     }
 
-    function drawTree(x, y, sc, kind) {
+    // Cactus saguaro / roca del desierto
+    function drawProp(x, y, sc, kind) {
       ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
-      ctx.fillStyle = 'rgba(0,0,0,0.16)'; ell(0, 2, 14, 4);
-      ctx.fillStyle = '#7a4a1e'; roundRect(-4, -22, 8, 24, 3); ctx.fill();
-      if (kind === 0) {
-        const g = ctx.createRadialGradient(-5, -42, 4, 0, -38, 24);
-        g.addColorStop(0, '#7ad95f'); g.addColorStop(1, '#3f9e34');
+      ctx.fillStyle = 'rgba(0,0,0,0.16)'; ell(0, 2, 15, 4);
+      if (kind === 0 || kind === 1) {
+        // saguaro
+        const g = ctx.createLinearGradient(-8, 0, 8, 0);
+        g.addColorStop(0, '#3f8f3a'); g.addColorStop(0.5, '#5fbf4a'); g.addColorStop(1, '#3f8f3a');
         ctx.fillStyle = g;
-        ell(0, -38, 20, 22);
-        ctx.fillStyle = 'rgba(255,255,255,0.12)'; ell(-7, -46, 6, 6);
+        roundRect(-6, -52, 12, 54, 6); ctx.fill();
+        roundRect(-22, -34, 9, 22, 5); ctx.fill();   // brazo izq
+        roundRect(-22, -34, 9, 9, 5); ctx.fill();
+        ctx.fillStyle = g; roundRect(-21, -50, 9, 18, 5); ctx.fill();
+        roundRect(13, -42, 9, 24, 5); ctx.fill();     // brazo der
+        roundRect(13, -56, 9, 18, 5); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.12)'; roundRect(-4, -50, 3, 48, 2); ctx.fill();
+        // florecita
+        ctx.fillStyle = '#ffd23f'; ell(0, -54, 3, 3);
       } else {
-        const g = ctx.createLinearGradient(0, -54, 0, -20);
-        g.addColorStop(0, '#7ad95f'); g.addColorStop(1, '#3f9e34');
+        // roca rojiza
+        const g = ctx.createLinearGradient(0, -26, 0, 2);
+        g.addColorStop(0, '#c8704a'); g.addColorStop(1, '#9a5230');
         ctx.fillStyle = g;
-        ctx.beginPath(); ctx.moveTo(0, -56); ctx.lineTo(15, -22); ctx.lineTo(-15, -22); ctx.closePath(); ctx.fill();
-        ctx.beginPath(); ctx.moveTo(0, -44); ctx.lineTo(17, -8); ctx.lineTo(-17, -8); ctx.closePath(); ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(-18, 2); ctx.lineTo(-12, -18); ctx.lineTo(2, -24);
+        ctx.lineTo(16, -14); ctx.lineTo(18, 2); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = 'rgba(255,220,170,0.18)';
+        ctx.beginPath(); ctx.moveTo(2, -24); ctx.lineTo(16, -14); ctx.lineTo(6, -12); ctx.closePath(); ctx.fill();
       }
       ctx.restore();
     }
@@ -445,30 +524,60 @@
       ctx.restore();
     }
 
-    // Coche de carreras visto por DETRÁS (sin ojos), diseño limpio
+    // Coche de tráfico (genérico, visto por detrás)
+    function drawTrafficCar(x, y, sc, color) {
+      ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
+      const w = 60, h = 56;
+      ctx.fillStyle = 'rgba(0,0,0,0.26)'; ell(0, h / 2 + 5, w / 2 + 7, 9);
+      for (const s of [-1, 1]) { ctx.fillStyle = '#15171a'; roundRect(s * (w / 2 - 3) - 8, h / 2 - 16, 16, 20, 6); ctx.fill(); }
+      const body = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
+      body.addColorStop(0, shade(color, 1.25)); body.addColorStop(0.55, color); body.addColorStop(1, shade(color, 0.7));
+      ctx.fillStyle = body;
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.32, -h / 2 + 6); ctx.lineTo(w * 0.32, -h / 2 + 6);
+      ctx.lineTo(w * 0.5, h / 2 - 4); ctx.lineTo(-w * 0.5, h / 2 - 4); ctx.closePath(); ctx.fill();
+      roundRect(-w / 2, h / 2 - 16, w, 14, 8); ctx.fill();
+      ctx.fillStyle = shade(color, 1.12); roundRect(-w * 0.24, -h / 2, w * 0.48, 14, 8); ctx.fill();
+      // luneta
+      ctx.fillStyle = '#2b313a';
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.2, -h / 2 + 12); ctx.lineTo(w * 0.2, -h / 2 + 12);
+      ctx.lineTo(w * 0.26, -h / 2 + 28); ctx.lineTo(-w * 0.26, -h / 2 + 28); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.10)'; roundRect(-w * 0.18, -h / 2 + 13, w * 0.16, 13, 2); ctx.fill();
+      // pilotos
+      ctx.fillStyle = '#ff5a4a'; roundRect(-w * 0.46, h / 2 - 6, 13, 5, 2); ctx.fill(); roundRect(w * 0.46 - 13, h / 2 - 6, 13, 5, 2); ctx.fill();
+      ctx.restore();
+    }
+    function shade(hex, f) {
+      const n = parseInt(hex.slice(1), 16);
+      let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+      r = Math.min(255, r * f) | 0; g = Math.min(255, g * f) | 0; b = Math.min(255, b * f) | 0;
+      return 'rgb(' + r + ',' + g + ',' + b + ')';
+    }
+
+    // Coche de Rayo (vista trasera). Da trompos al chocar.
     function drawCar() {
       const wob = car.wobble > 0 ? Math.sin(t * 0.8) * 2.5 : 0;
       const bounce = Math.sin(t * 0.22) * 0.8;
       const x = CX() + car.lane * halfBottom() * 0.8 + wob;
-      const y = VIEH(), w = car.w, h = car.h;
+      const y = VIEW_H - 54 + bounce;
+      const w = car.w, h = car.h;
+      // ángulo de trompo durante el choque
+      const spinA = car.crash > 0 ? (1 - car.crash / car.crashDur) * Math.PI * 2 * car.spins : 0;
       ctx.save();
-      ctx.translate(x, y + bounce);
-      ctx.rotate(car.tilt);
+      ctx.translate(x, y);
+      ctx.rotate(car.tilt + spinA);
 
-      // sombra
       ctx.fillStyle = 'rgba(0,0,0,0.30)'; ell(0, h / 2 + 7, w / 2 + 10, 13);
 
-      // ruedas traseras con llanta
       for (const s of [-1, 1]) {
         ctx.fillStyle = '#16181b';
         roundRect(s * (w / 2 - 4) - 10, h / 2 - 22, 20, 28, 8); ctx.fill();
         ctx.fillStyle = '#2c2f34';
         roundRect(s * (w / 2 - 4) - 7, h / 2 - 18, 14, 18, 5); ctx.fill();
-        ctx.fillStyle = '#c9ced6';
-        ell(s * (w / 2 - 4), h / 2 - 9, 4, 5);
+        ctx.fillStyle = '#c9ced6'; ell(s * (w / 2 - 4), h / 2 - 9, 4, 5);
       }
 
-      // carrocería (trapecio: más ancho abajo/atrás) con degradado vertical
       const body = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
       body.addColorStop(0, '#ff4630'); body.addColorStop(0.55, '#e22a18'); body.addColorStop(1, '#a81708');
       ctx.fillStyle = body;
@@ -480,33 +589,26 @@
       ctx.closePath(); ctx.fill();
       roundRect(-w / 2, h / 2 - 20, w, 16, 10); ctx.fill();
 
-      // sombreado lateral para dar volumen
       ctx.fillStyle = 'rgba(0,0,0,0.16)';
       roundRect(-w / 2, h / 2 - 22, 9, 18, 5); ctx.fill();
       roundRect(w / 2 - 9, h / 2 - 22, 9, 18, 5); ctx.fill();
-      // brillo central superior
       ctx.fillStyle = 'rgba(255,255,255,0.20)';
       roundRect(-w * 0.22, -h / 2 + 10, w * 0.44, 7, 4); ctx.fill();
 
-      // techo/capó (parte de delante, más estrecho y lejano)
       ctx.fillStyle = '#cf2314';
       roundRect(-w * 0.24, -h / 2, w * 0.48, 16, 9); ctx.fill();
 
-      // luneta trasera (cristal oscuro con reflejo) — sin ojos
       const gl = ctx.createLinearGradient(0, -h / 2 + 14, 0, -h / 2 + 34);
       gl.addColorStop(0, '#3a4350'); gl.addColorStop(1, '#222831');
       ctx.fillStyle = gl;
       ctx.beginPath();
       ctx.moveTo(-w * 0.22, -h / 2 + 14); ctx.lineTo(w * 0.22, -h / 2 + 14);
-      ctx.lineTo(w * 0.28, -h / 2 + 34); ctx.lineTo(-w * 0.28, -h / 2 + 34);
-      ctx.closePath(); ctx.fill();
+      ctx.lineTo(w * 0.28, -h / 2 + 34); ctx.lineTo(-w * 0.28, -h / 2 + 34); ctx.closePath(); ctx.fill();
       ctx.fillStyle = 'rgba(255,255,255,0.12)';
       ctx.beginPath();
       ctx.moveTo(-w * 0.18, -h / 2 + 16); ctx.lineTo(-w * 0.02, -h / 2 + 16);
-      ctx.lineTo(-w * 0.10, -h / 2 + 33); ctx.lineTo(-w * 0.24, -h / 2 + 33);
-      ctx.closePath(); ctx.fill();
+      ctx.lineTo(-w * 0.10, -h / 2 + 33); ctx.lineTo(-w * 0.24, -h / 2 + 33); ctx.closePath(); ctx.fill();
 
-      // rayo amarillo + número 95
       ctx.fillStyle = '#ffd23f'; ctx.strokeStyle = '#e8a000'; ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(-9, -h / 2 + 38); ctx.lineTo(7, -h / 2 + 38); ctx.lineTo(-1, -h / 2 + 47);
@@ -518,7 +620,6 @@
       ctx.fillStyle = '#111'; ctx.font = '900 15px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText('95', 0, h / 2 - 23); ctx.textBaseline = 'alphabetic';
 
-      // alerón trasero con placas laterales
       ctx.fillStyle = '#8a1107';
       roundRect(-w * 0.44, h / 2 - 14, w * 0.88, 7, 3); ctx.fill();
       ctx.fillStyle = '#c81f0f';
@@ -527,26 +628,29 @@
       roundRect(-w * 0.46, h / 2 - 17, 5, 13, 2); ctx.fill();
       roundRect(w * 0.46 - 5, h / 2 - 17, 5, 13, 2); ctx.fill();
 
-      // pilotos traseros (brillan)
       for (const s of [-1, 1]) {
-        ctx.fillStyle = '#7a0f06'; roundRect(s * w * 0.30 - 13, h / 2 - 6, 26 * 0 + 16, 6, 3); ctx.fill();
-        ctx.fillStyle = '#ff5a4a'; roundRect(s * w * 0.30 - 12, h / 2 - 5, 14, 4, 2); ctx.fill();
-        ctx.fillStyle = 'rgba(255,210,170,0.95)'; roundRect(s * w * 0.30 - 10, h / 2 - 4.5, 5, 2.5, 1); ctx.fill();
+        ctx.fillStyle = '#7a0f06'; roundRect(s * w * 0.30 - 8, h / 2 - 6, 16, 6, 3); ctx.fill();
+        ctx.fillStyle = '#ff5a4a'; roundRect(s * w * 0.30 - 7, h / 2 - 5, 14, 4, 2); ctx.fill();
       }
-      // difusor + escapes
       ctx.fillStyle = '#23262b'; roundRect(-12, h / 2 - 6, 24, 6, 2); ctx.fill();
-      ctx.fillStyle = '#3a3f47';
-      for (let k = -2; k <= 2; k++) { roundRect(k * 4 - 1, h / 2 - 6, 2, 6, 1); ctx.fill(); }
       ctx.fillStyle = '#cdd3da'; ell(-8, h / 2 - 1, 2.6, 2); ell(8, h / 2 - 1, 2.6, 2);
 
       ctx.restore();
+
+      // Estrellitas de mareo girando sobre el coche tras el trompo
+      if (car.crash > 0) {
+        for (let k = 0; k < 3; k++) {
+          const a = t * 0.2 + k * Math.PI * 2 / 3;
+          ctx.fillStyle = '#ffe27a';
+          star(x + Math.cos(a) * 16, y - h / 2 - 6 + Math.sin(a) * 5, 4, t * 0.2);
+        }
+      }
       ctx.textAlign = 'left';
     }
-    function VIEH() { return VIEW_H - 54; }
 
     function drawHUD() {
       ctx.save();
-      ctx.fillStyle = 'rgba(20,14,8,0.42)';
+      ctx.fillStyle = 'rgba(40,20,8,0.45)';
       roundRect(14, 14, 132, 44, 14); ctx.fill();
       ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1.5;
       roundRect(14, 14, 132, 44, 14); ctx.stroke();
@@ -559,7 +663,7 @@
     }
 
     function startSplash() {
-      ctx.fillStyle = 'rgba(10,20,40,0.55)';
+      ctx.fillStyle = 'rgba(30,16,8,0.55)';
       ctx.fillRect(0, 0, VIEW_W, VIEW_H);
       ctx.textAlign = 'center';
       ctx.fillStyle = '#ffd23f'; ctx.font = '800 40px system-ui';
