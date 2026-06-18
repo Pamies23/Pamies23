@@ -60,49 +60,60 @@
     const GROUND_Y = 360;
     const LEVEL_WIDTH = 3000;
 
-    // --- Plataformas (suelo + flotantes) ---
+    // --- Plataformas (suelo + escaleras suaves y alcanzables) ---
     const platforms = [
-      { x: 0,    y: GROUND_Y, w: 700,  h: 40 },
-      { x: 760,  y: GROUND_Y, w: 900,  h: 40 },
-      { x: 1720, y: GROUND_Y, w: 1280, h: 40 },
-      { x: 250,  y: 280, w: 120, h: 20 },
-      { x: 450,  y: 220, w: 120, h: 20 },
-      { x: 640,  y: 170, w: 100, h: 20 },
-      { x: 950,  y: 250, w: 140, h: 20 },
-      { x: 1200, y: 200, w: 120, h: 20 },
-      { x: 1450, y: 260, w: 120, h: 20 },
-      { x: 1900, y: 230, w: 140, h: 20 },
-      { x: 2200, y: 190, w: 120, h: 20 }
+      { x: 0,    y: 360, w: 700,  h: 40 },
+      { x: 760,  y: 360, w: 900,  h: 40 },
+      { x: 1720, y: 360, w: 1280, h: 40 },
+      // Sección 1: escalera ascendente
+      { x: 250,  y: 285, w: 110, h: 20 },
+      { x: 430,  y: 240, w: 110, h: 20 },
+      { x: 600,  y: 200, w: 100, h: 20 },
+      // Sección 2: sube y baja
+      { x: 880,  y: 270, w: 120, h: 20 },
+      { x: 1080, y: 230, w: 120, h: 20 },
+      { x: 1300, y: 255, w: 120, h: 20 },
+      { x: 1500, y: 215, w: 120, h: 20 },
+      // Sección 3: tramo final
+      { x: 1850, y: 265, w: 130, h: 20 },
+      { x: 2080, y: 220, w: 120, h: 20 },
+      { x: 2320, y: 255, w: 120, h: 20 },
+      { x: 2560, y: 215, w: 120, h: 20 }
     ];
 
-    // --- Rocas "?" (sueltan puntos al golpearlas desde abajo) ---
+    // --- Rocas "?" flotando POR ENCIMA de la cabeza (se golpean saltando desde el suelo) ---
     const blocksData = [
-      { x: 480, y: 150, w: 32, h: 32, used: false },
-      { x: 1000, y: 180, w: 32, h: 32, used: false },
-      { x: 1230, y: 130, w: 32, h: 32, used: false },
-      { x: 1950, y: 160, w: 32, h: 32, used: false }
+      { x: 150,  y: 250, w: 32, h: 32, used: false },
+      { x: 1030, y: 250, w: 32, h: 32, used: false },
+      { x: 1240, y: 250, w: 32, h: 32, used: false },
+      { x: 2000, y: 250, w: 32, h: 32, used: false },
+      { x: 2730, y: 250, w: 32, h: 32, used: false }
     ];
 
-    // --- Huesos {x, y, w, h, taken} ---
+    // --- Huesos: rastro que guía el recorrido (arcos y sobre plataformas) ---
     const coinsData = [
-      { x: 290, y: 240, taken: false },
-      { x: 500, y: 180, taken: false },
-      { x: 680, y: 130, taken: false },
-      { x: 990, y: 210, taken: false },
-      { x: 1240, y: 160, taken: false },
-      { x: 1490, y: 220, taken: false },
-      { x: 1620, y: 320, taken: false },
-      { x: 1940, y: 190, taken: false },
-      { x: 2240, y: 150, taken: false },
-      { x: 2500, y: 320, taken: false }
-    ].map(c => ({ ...c, w: 18, h: 18 }));
+      // pista sobre cada roca "?"
+      { x: 156, y: 205 }, { x: 1036, y: 205 }, { x: 1246, y: 205 },
+      { x: 2006, y: 205 }, { x: 2736, y: 205 },
+      // escalera de la sección 1
+      { x: 295, y: 250 }, { x: 470, y: 205 }, { x: 635, y: 165 },
+      // arco sobre el primer hueco
+      { x: 705, y: 300 }, { x: 730, y: 285 },
+      // sección 2 sobre las plataformas
+      { x: 935, y: 235 }, { x: 1135, y: 195 }, { x: 1355, y: 220 }, { x: 1555, y: 180 },
+      // arco sobre el segundo hueco
+      { x: 1672, y: 300 }, { x: 1697, y: 285 },
+      // sección 3
+      { x: 1910, y: 230 }, { x: 2135, y: 185 }, { x: 2375, y: 220 }, { x: 2615, y: 180 }
+    ].map(c => ({ ...c, w: 18, h: 18, taken: false }));
 
-    // --- Dinos (enemigos que patrullan) ---
+    // --- Dinos: patrullan tramos llanos con rangos razonables ---
     const goombasData = [
-      { x: 850,  y: GROUND_Y - 28, dir: -1, minX: 770,  maxX: 1100 },
-      { x: 1300, y: GROUND_Y - 28, dir: 1,  minX: 1180, maxX: 1500 },
-      { x: 1850, y: GROUND_Y - 28, dir: -1, minX: 1740, maxX: 2050 },
-      { x: 2400, y: GROUND_Y - 28, dir: 1,  minX: 2250, maxX: 2700 }
+      { x: 470,  y: GROUND_Y - 28, dir: 1,  minX: 380,  maxX: 660 },
+      { x: 900,  y: GROUND_Y - 28, dir: -1, minX: 800,  maxX: 1060 },
+      { x: 1380, y: GROUND_Y - 28, dir: 1,  minX: 1260, maxX: 1600 },
+      { x: 1840, y: GROUND_Y - 28, dir: -1, minX: 1760, maxX: 2040 },
+      { x: 2400, y: GROUND_Y - 28, dir: 1,  minX: 2250, maxX: 2600 }
     ];
 
     // Meta (tótem)
@@ -121,6 +132,10 @@
     const spores = Array.from({ length: 26 }, () => ({
       x: Math.random() * VIEW_W, y: Math.random() * VIEW_H,
       r: 1 + Math.random() * 2.5, sp: 0.2 + Math.random() * 0.5, ph: Math.random() * 6.3
+    }));
+    const birds = Array.from({ length: 5 }, () => ({
+      x: Math.random() * VIEW_W, y: 40 + Math.random() * 90,
+      sp: 0.3 + Math.random() * 0.45, ph: Math.random() * 6.3, s: 0.8 + Math.random() * 0.7
     }));
 
     function spawnParticles(x, y, color, n, spread, opts = {}) {
@@ -301,7 +316,9 @@
     // ===================== RENDER =====================
     function draw() {
       drawSky();
+      drawBirds();
       drawFarLayer();
+      drawCanopy();
       drawMidLayer();
 
       // Nubes y esporas en espacio de pantalla (parallax suave)
@@ -366,15 +383,16 @@
 
     function drawSky() {
       const sky = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-      sky.addColorStop(0,   '#2fa9e6');
-      sky.addColorStop(0.4, '#69cfe6');
-      sky.addColorStop(0.7, '#bdeccb');
+      sky.addColorStop(0,   '#1f93d8');
+      sky.addColorStop(0.35,'#56c2e6');
+      sky.addColorStop(0.62,'#9fe2d4');
+      sky.addColorStop(0.8, '#d9f0c2');
       sky.addColorStop(1,   '#ffe6a8');
       ctx.fillStyle = sky;
       ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
       // Resplandor cálido del horizonte
-      const glow = ctx.createRadialGradient(VIEW_W * 0.5, VIEW_H * 0.95, 40, VIEW_W * 0.5, VIEW_H * 0.95, 360);
+      const glow = ctx.createRadialGradient(VIEW_W * 0.5, VIEW_H * 0.95, 40, VIEW_W * 0.5, VIEW_H * 0.95, 380);
       glow.addColorStop(0, 'rgba(255,228,150,0.55)');
       glow.addColorStop(1, 'rgba(255,228,150,0)');
       ctx.fillStyle = glow;
@@ -382,57 +400,141 @@
 
       // Sol con halo
       const sx = 150, sy = 80;
-      const halo = ctx.createRadialGradient(sx, sy, 10, sx, sy, 110);
+      const halo = ctx.createRadialGradient(sx, sy, 10, sx, sy, 120);
       halo.addColorStop(0, 'rgba(255,250,224,0.95)');
       halo.addColorStop(1, 'rgba(255,250,224,0)');
       ctx.fillStyle = halo;
-      ctx.fillRect(sx - 120, sy - 120, 240, 240);
+      ctx.fillRect(sx - 130, sy - 130, 260, 260);
+
+      // Rayos de sol (god rays)
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.translate(sx, sy);
+      ctx.rotate(t * 0.0015);
+      for (let i = 0; i < 7; i++) {
+        ctx.rotate(Math.PI * 2 / 7);
+        const rg = ctx.createLinearGradient(0, 0, 300, 0);
+        rg.addColorStop(0, 'rgba(255,246,205,0.10)');
+        rg.addColorStop(1, 'rgba(255,246,205,0)');
+        ctx.fillStyle = rg;
+        ctx.beginPath();
+        ctx.moveTo(0, -10); ctx.lineTo(300, -34); ctx.lineTo(300, 34); ctx.lineTo(0, 10);
+        ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+
       ctx.fillStyle = '#fff6d8';
-      ctx.beginPath(); ctx.arc(sx, sy, 30, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(sx, sy, 31, 0, Math.PI * 2); ctx.fill();
+    }
+
+    function drawBirds() {
+      ctx.strokeStyle = 'rgba(45,60,75,0.5)';
+      ctx.lineWidth = 2; ctx.lineCap = 'round';
+      for (const b of birds) {
+        b.x -= b.sp;
+        if (b.x < -24) { b.x = VIEW_W + 24; b.y = 40 + Math.random() * 90; }
+        const flap = 4 + Math.sin(t * 0.16 + b.ph) * 5;
+        ctx.save();
+        ctx.translate(b.x, b.y); ctx.scale(b.s, b.s);
+        // pterodáctilo: alas puntiagudas + cresta
+        ctx.beginPath();
+        ctx.moveTo(-11, 0);
+        ctx.quadraticCurveTo(-5, -flap, 0, -2);
+        ctx.quadraticCurveTo(5, -flap, 11, 0);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, -2); ctx.lineTo(3, 3);          // cuerpo
+        ctx.moveTo(3, 3); ctx.lineTo(6, 1);            // pico
+        ctx.stroke();
+        ctx.restore();
+      }
     }
 
     function drawFarLayer() {
-      // Montañas brumosas lejanas
-      const off = cameraX * 0.1;
-      const grd = ctx.createLinearGradient(0, 150, 0, 320);
-      grd.addColorStop(0, '#9fcfc0');
-      grd.addColorStop(1, '#bfe0cf');
+      // Montañas brumosas lejanas (capa más lejana, azulada)
+      let off = cameraX * 0.07;
+      let grd = ctx.createLinearGradient(0, 150, 0, 320);
+      grd.addColorStop(0, '#8fb6c8'); grd.addColorStop(1, '#b7d4d6');
       ctx.fillStyle = grd;
-      for (let i = -1; i < 7; i++) {
-        const mx = i * 360 - (off % 360);
+      for (let i = -1; i < 8; i++) {
+        const mx = i * 420 - (off % 420);
         ctx.beginPath();
         ctx.moveTo(mx, 330);
-        ctx.quadraticCurveTo(mx + 180, 150, mx + 360, 330);
+        ctx.quadraticCurveTo(mx + 210, 130, mx + 420, 330);
         ctx.fill();
       }
+
       // Volcán lejano humeante
-      const vx = 560 - ((cameraX * 0.1) % 1400);
+      const vx = 560 - ((cameraX * 0.07) % 1600);
       const vg = ctx.createLinearGradient(0, 120, 0, 330);
-      vg.addColorStop(0, '#7f9aa0'); vg.addColorStop(1, '#9fbcae');
+      vg.addColorStop(0, '#6f8f96'); vg.addColorStop(1, '#9fbcae');
       ctx.fillStyle = vg;
       ctx.beginPath();
       ctx.moveTo(vx - 10, 330); ctx.lineTo(vx + 80, 120);
       ctx.lineTo(vx + 120, 120); ctx.lineTo(vx + 210, 330); ctx.fill();
+      // capa de nieve/roca clara en la cima
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.beginPath();
+      ctx.moveTo(vx + 70, 145); ctx.lineTo(vx + 90, 118);
+      ctx.lineTo(vx + 110, 118); ctx.lineTo(vx + 130, 145);
+      ctx.quadraticCurveTo(vx + 100, 132, vx + 70, 145); ctx.fill();
       const lava = ctx.createLinearGradient(0, 116, 0, 150);
       lava.addColorStop(0, '#ffd34d'); lava.addColorStop(1, '#ff6a2b');
       ctx.fillStyle = lava;
-      roundRect(vx + 78, 116, 44, 14, 5); ctx.fill();
+      roundRect(vx + 82, 116, 38, 12, 5); ctx.fill();
       for (let i = 0; i < 3; i++) {
         const p = (t * 0.35 + i * 45) % 130;
-        ctx.fillStyle = 'rgba(200,200,200,' + (0.3 - p / 460) + ')';
+        ctx.fillStyle = 'rgba(210,210,210,' + (0.3 - p / 460) + ')';
         ctx.beginPath();
         ctx.arc(vx + 100 + Math.sin(p * 0.05) * 14, 112 - p, 10 + p * 0.14, 0, Math.PI * 2);
         ctx.fill();
       }
-      // Niebla
-      ctx.fillStyle = 'rgba(220,240,225,0.45)';
-      ctx.fillRect(0, 290, VIEW_W, 50);
+
+      // Segunda cordillera (más cerca, verdosa)
+      off = cameraX * 0.12;
+      grd = ctx.createLinearGradient(0, 200, 0, 340);
+      grd.addColorStop(0, '#7fb88f'); grd.addColorStop(1, '#a3d2a6');
+      ctx.fillStyle = grd;
+      for (let i = -1; i < 8; i++) {
+        const mx = i * 340 - (off % 340) + 120;
+        ctx.beginPath();
+        ctx.moveTo(mx, 340);
+        ctx.quadraticCurveTo(mx + 170, 198, mx + 340, 340);
+        ctx.fill();
+      }
+
+      // Niebla atmosférica entre capas
+      const fog = ctx.createLinearGradient(0, 280, 0, 345);
+      fog.addColorStop(0, 'rgba(223,242,228,0)');
+      fog.addColorStop(1, 'rgba(223,242,228,0.55)');
+      ctx.fillStyle = fog;
+      ctx.fillRect(0, 280, VIEW_W, 65);
 
       // Helechos arbóreos lejanos (silueta clara)
       ctx.save();
-      ctx.translate(-cameraX * 0.45, 0);
-      for (const x of farFerns) drawTreeFern(x, GROUND_Y - 6, 'rgba(120,170,110,0.5)', 0.85);
+      ctx.translate(-cameraX * 0.4, 0);
+      for (const x of farFerns) drawTreeFern(x, GROUND_Y - 6, 'rgba(110,160,105,0.45)', 0.85);
       ctx.restore();
+    }
+
+    // Copas de la jungla (capa intermedia entre montañas y colinas)
+    function drawCanopy() {
+      const off = cameraX * 0.18;
+      const grd = ctx.createLinearGradient(0, 250, 0, 360);
+      grd.addColorStop(0, '#4fa23f'); grd.addColorStop(1, '#357f2c');
+      for (let i = -1; i < 12; i++) {
+        const x = i * 130 - (off % 130);
+        const r = 40 + (i % 3) * 10;
+        const y = 322 - (i % 2) * 8;
+        ctx.fillStyle = grd;
+        ctx.beginPath(); ctx.arc(x + 50, y, r, Math.PI, 0); ctx.fill();
+        // toque de luz superior
+        ctx.fillStyle = 'rgba(255,255,255,0.07)';
+        ctx.beginPath(); ctx.arc(x + 40, y - r * 0.5, r * 0.35, 0, Math.PI * 2); ctx.fill();
+      }
+      // bruma sobre la copa
+      ctx.fillStyle = 'rgba(210,238,200,0.30)';
+      ctx.fillRect(0, 320, VIEW_W, 30);
     }
 
     function drawMidLayer() {
