@@ -137,9 +137,11 @@
     const props = [];        // cactus/rocas
     const particles = [];
     const floats = [];
-    let spawnTimer = 0, propTimer = 0, trafficTimer = 90;
+    let spawnTimer = 0, propTimer = 0, trafficTimer = 150;
     const clouds = Array.from({ length: 4 }, (_, i) => ({ x: i * 240, y: 34 + (i % 2) * 22 }));
     const TRAFFIC_COLORS = ['#3a7bd5', '#37b24d', '#f4a020', '#8e44ad', '#16a3b0', '#d94f86'];
+    // Rival que compite contra Rayo (coche verde). Chocar con él NO es trompo, solo un empujón.
+    const rival = { lane: 0, depth: 1.0, bumpCd: 0 };
 
     // --- Sonido ---
     let actx = null;
@@ -196,7 +198,6 @@
       shake = 7 + 7 * intensity;
       spawnParticles(px, py, '#ffd23f', 10 + (intensity * 8 | 0), 8);
       spawnParticles(px, py, '#fff', 6, 7);
-      floats.push({ x: px, y: py, life: 1, txt: intensity >= 1 ? '¡CRASH!' : '¡UPS!' });
       crashSound();
     }
 
@@ -217,7 +218,9 @@
 
         speed = Math.min(5, 3 + cups * 0.03);
         roadScroll += speed * 0.016;
-        curveNow = Math.sin(roadScroll * 0.5) * 0.8 + Math.sin(roadScroll * 0.21) * 0.2;
+        // Curvas ocasionales: mayormente recto, con alguna curva de vez en cuando
+        const raw = Math.sin(roadScroll * 0.16);
+        curveNow = Math.sign(raw) * Math.pow(Math.abs(raw), 3) * 0.9;
 
         const dz = speed * 0.0042;
 
@@ -246,9 +249,9 @@
           }
         }
 
-        // Tráfico
+        // Tráfico (pocos coches)
         if (--trafficTimer <= 0) {
-          trafficTimer = 80 + Math.floor(Math.random() * 70);
+          trafficTimer = 170 + Math.floor(Math.random() * 120);
           traffic.push({ lane: (Math.random() * 1.4 - 0.7), depth: 2.7, color: pick(TRAFFIC_COLORS) });
         }
         for (let i = traffic.length - 1; i >= 0; i--) {
@@ -263,11 +266,25 @@
           }
         }
 
-        // Cactus / rocas
+        // Rival: corre por delante, serpentea y a veces se acerca
+        rival.lane = Math.sin(roadScroll * 0.55) * 0.62;
+        rival.depth = 0.72 + Math.sin(roadScroll * 0.34) * 0.6;   // 0.12 .. 1.32
+        if (rival.bumpCd > 0) rival.bumpCd--;
+        if (rival.bumpCd <= 0 && rival.depth < 0.22 && Math.abs(rival.lane - car.lane) < 0.3) {
+          // empujón suave (NO trompo)
+          const dir = Math.sign(car.lane - rival.lane) || 1;
+          car.lane += dir * 0.1; car.targetLane = Math.max(-0.9, Math.min(0.9, car.targetLane + dir * 0.08));
+          car.wobble = 8; rival.bumpCd = 45;
+          const px = projX(rival.lane, Math.max(rival.depth, 0)), py = projY(Math.max(rival.depth, 0));
+          spawnParticles(px, py, '#fff', 5, 4);
+          beep(300, 0.06, 'sine', 0.05);
+        }
+
+        // Cactus / rocas / elementos del oeste
         if (--propTimer <= 0) {
-          propTimer = 34 + Math.floor(Math.random() * 26);
+          propTimer = 30 + Math.floor(Math.random() * 24);
           const side = Math.random() < 0.5 ? -1 : 1;
-          props.push({ lane: side * (1.22 + Math.random() * 0.5), depth: 2.7, kind: Math.floor(Math.random() * 3) });
+          props.push({ lane: side * (1.22 + Math.random() * 0.5), depth: 2.7, kind: Math.floor(Math.random() * 5) });
         }
         for (let i = props.length - 1; i >= 0; i--) {
           props[i].depth -= dz;
@@ -328,6 +345,7 @@
       for (const p of props) scene.push({ d: p.depth, kind: 'prop', ref: p });
       for (const c of traffic) scene.push({ d: c.depth, kind: 'traffic', ref: c });
       for (const it of items) scene.push({ d: it.depth, kind: 'item', ref: it });
+      if (started) scene.push({ d: rival.depth, kind: 'rival', ref: rival });
       scene.sort((a, b) => b.d - a.d);
       for (const o of scene) {
         const d = Math.max(o.d, 0);
@@ -335,6 +353,7 @@
         const x = projX(o.ref.lane, d), y = projY(d);
         if (o.kind === 'prop') drawProp(x, y, s, o.ref.kind);
         else if (o.kind === 'traffic') drawTrafficCar(x, y, s, o.ref.color);
+        else if (o.kind === 'rival') drawRivalCar(x, y, s);
         else if (o.ref.type === 'cup') drawCup(x, y + Math.sin((t + o.ref.bob) * 0.15) * 2, s);
         else drawCone(x, y, s);
       }
@@ -386,10 +405,48 @@
       ctx.fill();
     }
 
-    // Mesas / buttes del desierto en capas (parallax)
+    // Mesas / buttes del desierto en capas (parallax) — pocas, con formación central
     function drawMesas() {
-      mesaRow(0.18, 200, ['#caa07e', '#b98b6a'], 56, 96, -0.5);
-      mesaRow(0.34, 150, ['#c2724a', '#a85a37'], 40, 80, 0.3);
+      drawLandmark();
+      mesaRow(0.16, 360, ['#caa07e', '#b98b6a'], 46, 78, -0.5);
+      mesaRow(0.30, 320, ['#c2724a', '#a85a37'], 34, 60, 0.3);
+    }
+
+    // Gran formación rocosa central al fondo (la silueta característica del valle)
+    function drawLandmark() {
+      const cxp = CX() + Math.sin(roadScroll * 0.05) * 14;
+      const baseY = HORIZON + 2;
+      const W = Math.min(VIEW_W * 0.46, 380);
+      const top = HORIZON - 118;
+      const g = ctx.createLinearGradient(0, top, 0, baseY);
+      g.addColorStop(0, '#c08274'); g.addColorStop(1, '#9c5d4c');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(cxp - W / 2, baseY);
+      ctx.lineTo(cxp - W * 0.34, HORIZON - 54);
+      ctx.lineTo(cxp - W * 0.26, HORIZON - 52);
+      ctx.lineTo(cxp - W * 0.14, top + 14);          // pico 1
+      ctx.lineTo(cxp - W * 0.05, HORIZON - 66);
+      ctx.lineTo(cxp + W * 0.06, top);               // pico 2 (el más alto)
+      ctx.lineTo(cxp + W * 0.16, HORIZON - 60);
+      ctx.lineTo(cxp + W * 0.26, top + 28);          // pico 3
+      ctx.lineTo(cxp + W * 0.36, HORIZON - 50);
+      ctx.lineTo(cxp + W / 2, baseY);
+      ctx.closePath(); ctx.fill();
+      // estratos
+      ctx.fillStyle = 'rgba(0,0,0,0.07)';
+      ctx.fillRect(cxp - W * 0.4, HORIZON - 40, W * 0.8, 4);
+      ctx.fillRect(cxp - W * 0.34, HORIZON - 20, W * 0.68, 4);
+      // luz cálida en los picos
+      ctx.fillStyle = 'rgba(255,228,180,0.18)';
+      ctx.beginPath();
+      ctx.moveTo(cxp + W * 0.06, top); ctx.lineTo(cxp + W * 0.12, HORIZON - 40); ctx.lineTo(cxp + W * 0.02, HORIZON - 40);
+      ctx.closePath(); ctx.fill();
+      // bruma en la base para fundirla con el fondo
+      const haze = ctx.createLinearGradient(0, HORIZON - 30, 0, baseY);
+      haze.addColorStop(0, 'rgba(255,225,173,0)'); haze.addColorStop(1, 'rgba(255,225,173,0.5)');
+      ctx.fillStyle = haze;
+      ctx.fillRect(cxp - W / 2, HORIZON - 30, W, 32);
     }
     function mesaRow(par, spacing, cols, minH, maxH, seedShift) {
       const off = (roadScroll * 7 * par) % spacing;
@@ -463,7 +520,7 @@
       }
     }
 
-    // Cactus saguaro / roca del desierto
+    // Ambiente del oeste: cactus, roca, cráneo de vaca y cartel
     function drawProp(x, y, sc, kind) {
       ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
       ctx.fillStyle = 'rgba(0,0,0,0.16)'; ell(0, 2, 15, 4);
@@ -473,15 +530,13 @@
         g.addColorStop(0, '#3f8f3a'); g.addColorStop(0.5, '#5fbf4a'); g.addColorStop(1, '#3f8f3a');
         ctx.fillStyle = g;
         roundRect(-6, -52, 12, 54, 6); ctx.fill();
-        roundRect(-22, -34, 9, 22, 5); ctx.fill();   // brazo izq
-        roundRect(-22, -34, 9, 9, 5); ctx.fill();
-        ctx.fillStyle = g; roundRect(-21, -50, 9, 18, 5); ctx.fill();
-        roundRect(13, -42, 9, 24, 5); ctx.fill();     // brazo der
+        roundRect(-22, -34, 9, 22, 5); ctx.fill();
+        roundRect(-21, -50, 9, 18, 5); ctx.fill();
+        roundRect(13, -42, 9, 24, 5); ctx.fill();
         roundRect(13, -56, 9, 18, 5); ctx.fill();
         ctx.fillStyle = 'rgba(255,255,255,0.12)'; roundRect(-4, -50, 3, 48, 2); ctx.fill();
-        // florecita
         ctx.fillStyle = '#ffd23f'; ell(0, -54, 3, 3);
-      } else {
+      } else if (kind === 2) {
         // roca rojiza
         const g = ctx.createLinearGradient(0, -26, 0, 2);
         g.addColorStop(0, '#c8704a'); g.addColorStop(1, '#9a5230');
@@ -491,6 +546,26 @@
         ctx.lineTo(16, -14); ctx.lineTo(18, 2); ctx.closePath(); ctx.fill();
         ctx.fillStyle = 'rgba(255,220,170,0.18)';
         ctx.beginPath(); ctx.moveTo(2, -24); ctx.lineTo(16, -14); ctx.lineTo(6, -12); ctx.closePath(); ctx.fill();
+      } else if (kind === 3) {
+        // cráneo de vaca (oeste)
+        ctx.strokeStyle = '#ece3d2'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(-7, -16); ctx.quadraticCurveTo(-19, -20, -22, -9); ctx.stroke();   // cuerno izq
+        ctx.beginPath(); ctx.moveTo(7, -16); ctx.quadraticCurveTo(19, -20, 22, -9); ctx.stroke();       // cuerno der
+        ctx.fillStyle = '#f1ead9';
+        ctx.beginPath();
+        ctx.moveTo(-9, -17); ctx.lineTo(9, -17); ctx.quadraticCurveTo(11, -6, 5, 0);
+        ctx.lineTo(0, 6); ctx.lineTo(-5, 0); ctx.quadraticCurveTo(-11, -6, -9, -17); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#5a4a3a'; ell(-4, -9, 2, 2.6); ell(4, -9, 2, 2.6);
+        ctx.beginPath(); ctx.moveTo(0, -3); ctx.lineTo(-2, 2); ctx.lineTo(2, 2); ctx.closePath(); ctx.fill();
+      } else {
+        // cartel de madera del oeste
+        ctx.fillStyle = '#6e4a28'; roundRect(-3, -30, 6, 32, 2); ctx.fill();
+        const g = ctx.createLinearGradient(0, -30, 0, -14);
+        g.addColorStop(0, '#a9763f'); g.addColorStop(1, '#8a5e30');
+        ctx.fillStyle = g; roundRect(-17, -30, 34, 15, 2); ctx.fill();
+        ctx.fillStyle = 'rgba(60,40,20,0.5)';
+        ctx.fillRect(-12, -25, 24, 2); ctx.fillRect(-12, -21, 17, 2);
+        ctx.fillStyle = '#5a3c1e'; ell(-13, -27, 1, 1); ell(13, -27, 1, 1);
       }
       ctx.restore();
     }
@@ -555,6 +630,52 @@
       return 'rgb(' + r + ',' + g + ',' + b + ')';
     }
 
+    // Rival: coche de carreras verde (vista trasera), diseño propio
+    function drawRivalCar(x, y, sc) {
+      ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
+      const w = 80, h = 74;
+      ctx.fillStyle = 'rgba(0,0,0,0.28)'; ell(0, h / 2 + 6, w / 2 + 8, 12);
+      for (const s of [-1, 1]) {
+        const wx = s * (w * 0.38);
+        ctx.fillStyle = '#16181b'; roundRect(wx - 8, h / 2 - 20, 16, 24, 7); ctx.fill();
+        ctx.fillStyle = '#2c2f34'; roundRect(wx - 5, h / 2 - 16, 10, 15, 4); ctx.fill();
+      }
+      const body = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
+      body.addColorStop(0, '#48d152'); body.addColorStop(0.55, '#27a33a'); body.addColorStop(1, '#16762a');
+      ctx.fillStyle = body;
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.30, -h / 2 + 8);
+      ctx.quadraticCurveTo(-w * 0.5, h / 2 - 18, -w * 0.5, h / 2 - 6);
+      ctx.lineTo(w * 0.5, h / 2 - 6);
+      ctx.quadraticCurveTo(w * 0.5, h / 2 - 18, w * 0.30, -h / 2 + 8);
+      ctx.closePath(); ctx.fill();
+      roundRect(-w / 2, h / 2 - 18, w, 15, 9); ctx.fill();
+      ctx.fillStyle = '#1f8c30'; roundRect(-w * 0.24, -h / 2, w * 0.48, 15, 8); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.18)'; roundRect(-w * 0.2, -h / 2 + 9, w * 0.4, 6, 4); ctx.fill();
+      // luneta
+      const gl = ctx.createLinearGradient(0, -h / 2 + 13, 0, -h / 2 + 32);
+      gl.addColorStop(0, '#384150'); gl.addColorStop(1, '#222831');
+      ctx.fillStyle = gl;
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.21, -h / 2 + 13); ctx.lineTo(w * 0.21, -h / 2 + 13);
+      ctx.lineTo(w * 0.27, -h / 2 + 32); ctx.lineTo(-w * 0.27, -h / 2 + 32); ctx.closePath(); ctx.fill();
+      // rayo blanco decorativo + número
+      ctx.fillStyle = '#f4f4f4';
+      ctx.beginPath();
+      ctx.moveTo(-8, -h / 2 + 36); ctx.lineTo(6, -h / 2 + 36); ctx.lineTo(-1, -h / 2 + 45);
+      ctx.lineTo(8, -h / 2 + 45); ctx.lineTo(-7, h / 2 - 22); ctx.lineTo(-1, -h / 2 + 49);
+      ctx.lineTo(-10, -h / 2 + 49); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#fff'; ell(0, h / 2 - 22, 12, 12);
+      ctx.fillStyle = '#111'; ctx.font = '900 14px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('84', 0, h / 2 - 21); ctx.textBaseline = 'alphabetic';
+      // alerón + pilotos
+      ctx.fillStyle = '#0f5e1f'; roundRect(-w * 0.42, h / 2 - 13, w * 0.84, 6, 3); ctx.fill();
+      ctx.fillStyle = '#1f8c30'; roundRect(-w * 0.30, h / 2 - 12, 6, 10, 2); ctx.fill(); roundRect(w * 0.30 - 6, h / 2 - 12, 6, 10, 2); ctx.fill();
+      ctx.fillStyle = '#ff5a4a'; roundRect(-w * 0.46, h / 2 - 6, 12, 5, 2); ctx.fill(); roundRect(w * 0.46 - 12, h / 2 - 6, 12, 5, 2); ctx.fill();
+      ctx.restore();
+      ctx.textAlign = 'left';
+    }
+
     // Coche de Rayo (vista trasera). Da trompos al chocar.
     function drawCar() {
       const wob = car.wobble > 0 ? Math.sin(t * 0.8) * 2.5 : 0;
@@ -570,12 +691,14 @@
 
       ctx.fillStyle = 'rgba(0,0,0,0.30)'; ell(0, h / 2 + 7, w / 2 + 10, 13);
 
+      // ruedas (pegadas al chasis, asoman poco)
       for (const s of [-1, 1]) {
+        const wx = s * (w * 0.38);
         ctx.fillStyle = '#16181b';
-        roundRect(s * (w / 2 - 4) - 10, h / 2 - 22, 20, 28, 8); ctx.fill();
+        roundRect(wx - 8, h / 2 - 21, 16, 25, 7); ctx.fill();
         ctx.fillStyle = '#2c2f34';
-        roundRect(s * (w / 2 - 4) - 7, h / 2 - 18, 14, 18, 5); ctx.fill();
-        ctx.fillStyle = '#c9ced6'; ell(s * (w / 2 - 4), h / 2 - 9, 4, 5);
+        roundRect(wx - 5, h / 2 - 17, 10, 16, 4); ctx.fill();
+        ctx.fillStyle = '#c9ced6'; ell(wx, h / 2 - 9, 3.4, 4.4);
       }
 
       const body = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
