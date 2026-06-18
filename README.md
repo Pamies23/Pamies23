@@ -17,6 +17,7 @@ Abre el archivo `mario.html` con doble clic en cualquier navegador.
 - **Dinosaurios**: salta encima para eliminarlos; si te tocan de lado pierdes una vida.
 - **Huesos** y **rocas ★** (golpéalas desde abajo) suman puntos.
 - Tienes **3 vidas**. Si caes al vacío o te quedas sin vidas, hay pantalla de Game Over.
+- **Móvil (iPhone, etc.)**: en horizontal aparecen **controles táctiles** semitransparentes (◀ ▶ saltar y ⟳ reiniciar). En vertical te pide girar el móvil.
 
 ## 🐍 Snake
 
