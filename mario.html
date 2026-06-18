@@ -7,46 +7,58 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      background: linear-gradient(#f6b26b, #e8a05a);
+      background: radial-gradient(circle at 50% 0%, #2a3d6b, #11182e 70%);
       font-family: system-ui, -apple-system, sans-serif;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 12px;
+      gap: 14px;
       padding: 16px;
       color: #fff;
     }
     h1 {
-      font-size: 1.5rem;
+      font-size: 1.6rem;
       letter-spacing: 1px;
-      text-shadow: 0 2px 6px rgba(0,0,0,0.35);
+      font-weight: 800;
+      background: linear-gradient(#fff1c4, #ffce6b);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 3px 10px rgba(0,0,0,0.4);
     }
     canvas {
-      background: #f4c27a;
-      border-radius: 14px;
-      max-width: 100%;
-      box-shadow: 0 18px 50px rgba(0,0,0,0.35), inset 0 0 0 2px rgba(255,255,255,0.15);
+      border-radius: 18px;
+      width: min(92vw, 880px);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5), inset 0 0 0 3px rgba(255,255,255,0.12);
     }
-    .hint { font-size: 0.85rem; opacity: 0.92; text-shadow: 0 1px 3px rgba(0,0,0,0.4); text-align: center; }
+    .hint { font-size: 0.85rem; opacity: 0.85; text-shadow: 0 1px 3px rgba(0,0,0,0.5); text-align: center; }
   </style>
 </head>
 <body>
   <h1>🦴 MUNDO PREHISTÓRICO</h1>
-  <canvas id="game" width="800" height="400"></canvas>
+  <canvas id="game"></canvas>
   <p class="hint">← → o A/D para moverte · ↑ / W / Espacio para saltar · Salta sobre los dinos · R para reiniciar</p>
 
   <script>
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
 
+    // --- Resolución (render nítido en pantallas modernas) ---
+    const VIEW_W = 800, VIEW_H = 400;
+    const DPR = Math.min(2, window.devicePixelRatio || 1) * 1.5;
+    canvas.width = VIEW_W * DPR;
+    canvas.height = VIEW_H * DPR;
+    ctx.scale(DPR, DPR);
+    ctx.imageSmoothingEnabled = true;
+
     // --- Constantes del mundo ---
     const GRAVITY = 0.8;
     const MOVE_SPEED = 4;
     const JUMP_FORCE = 15;
-    const GROUND_Y = 360;          // altura del suelo principal
-    const LEVEL_WIDTH = 3000;      // longitud total del nivel
+    const GROUND_Y = 360;
+    const LEVEL_WIDTH = 3000;
 
     // --- Plataformas (suelo + flotantes) ---
     const platforms = [
@@ -63,8 +75,7 @@
       { x: 2200, y: 190, w: 120, h: 20 }
     ];
 
-    // --- Bloques "?" (sueltan una moneda al golpearlos desde abajo) ---
-    // {x, y, w, h, used}
+    // --- Rocas "?" (sueltan puntos al golpearlas desde abajo) ---
     const blocksData = [
       { x: 480, y: 150, w: 32, h: 32, used: false },
       { x: 1000, y: 180, w: 32, h: 32, used: false },
@@ -72,7 +83,7 @@
       { x: 1950, y: 160, w: 32, h: 32, used: false }
     ];
 
-    // --- Monedas sueltas {x, y, w, h, taken} ---
+    // --- Huesos {x, y, w, h, taken} ---
     const coinsData = [
       { x: 290, y: 240, taken: false },
       { x: 500, y: 180, taken: false },
@@ -86,7 +97,7 @@
       { x: 2500, y: 320, taken: false }
     ].map(c => ({ ...c, w: 18, h: 18 }));
 
-    // --- Goombas (enemigos que patrullan) {x, y, w, h, vx, dir, alive, range} ---
+    // --- Dinos (enemigos que patrullan) ---
     const goombasData = [
       { x: 850,  y: GROUND_Y - 28, dir: -1, minX: 770,  maxX: 1100 },
       { x: 1300, y: GROUND_Y - 28, dir: 1,  minX: 1180, maxX: 1500 },
@@ -94,24 +105,34 @@
       { x: 2400, y: GROUND_Y - 28, dir: 1,  minX: 2250, maxX: 2700 }
     ];
 
-    // Meta (bandera)
+    // Meta (tótem)
     const goal = { x: 2850, y: GROUND_Y - 160, w: 12, h: 160 };
 
-    // --- Estado mutable (se reinicia) ---
-    const player = { x: 60, y: 0, w: 28, h: 36, vx: 0, vy: 0, onGround: false, facing: 1, anim: 0 };
+    // --- Vegetación decorativa (mundo) ---
+    const cycads = [120, 330, 560, 820, 1080, 1360, 1560, 1800, 2060, 2330, 2650, 2780];
+    const farFerns = [60, 240, 420, 600, 900, 1150, 1400, 1700, 2000, 2300, 2600, 2900];
+
+    // --- Estado mutable ---
+    const player = { x: 60, y: 0, w: 28, h: 36, vx: 0, vy: 0, onGround: false, facing: 1, anim: 0, prevOnGround: true };
     let blocks, coins, goombas;
     let cameraX = 0, score = 0, lives = 3, won = false, dead = false, invuln = 0;
-    let t = 0;                       // contador global para animaciones
-    const particles = [];            // efectos de partículas
+    let t = 0;
+    const particles = [];
+    const spores = Array.from({ length: 26 }, () => ({
+      x: Math.random() * VIEW_W, y: Math.random() * VIEW_H,
+      r: 1 + Math.random() * 2.5, sp: 0.2 + Math.random() * 0.5, ph: Math.random() * 6.3
+    }));
 
-    function spawnParticles(x, y, color, n, spread) {
+    function spawnParticles(x, y, color, n, spread, opts = {}) {
       for (let i = 0; i < n; i++) {
         particles.push({
           x, y,
           vx: (Math.random() - 0.5) * spread,
-          vy: -Math.random() * 4 - 1,
+          vy: -Math.random() * 4 - (opts.up || 1),
           life: 1, color,
-          r: 2 + Math.random() * 3
+          r: (opts.r || 2) + Math.random() * 3,
+          star: opts.star || false,
+          grav: opts.grav == null ? 0.2 : opts.grav
         });
       }
     }
@@ -130,15 +151,16 @@
     }
 
     function fullReset() {
-      blocks = blocksData.map(b => ({ ...b, used: false }));
+      blocks = blocksData.map(b => ({ ...b, used: false, pop: 0 }));
       coins = coinsData.map(c => ({ ...c, taken: false }));
-      goombas = goombasData.map(g => ({ ...g, w: 30, h: 28, vx: 1.2, alive: true, squashT: 0 }));
+      goombas = goombasData.map(g => ({ ...g, w: 30, h: 28, vx: 1.2, alive: true, squashT: 0, blink: Math.random() * 200 }));
       score = 0; lives = 3; won = false; dead = false;
       resetPlayer();
     }
 
     function loseLife() {
       lives--;
+      spawnParticles(player.x + player.w / 2, player.y + player.h / 2, '#ff7a7a', 16, 7, { up: 3 });
       if (lives <= 0) { dead = true; }
       else { resetPlayer(); }
     }
@@ -148,29 +170,26 @@
              a.y < b.y + b.h && a.y + a.h > b.y;
     }
 
-    // Conjunto de sólidos con los que choca el jugador: plataformas + bloques sin usar (siguen siendo sólidos)
-    function solids() {
-      return platforms.concat(blocks);
-    }
+    function solids() { return platforms.concat(blocks); }
 
+    // ===================== FÍSICA (sin cambios de jugabilidad) =====================
     function update() {
       if (won || dead) return;
       if (invuln > 0) invuln--;
 
-      // Movimiento horizontal
       player.vx = 0;
       if (keys['arrowleft'] || keys['a']) { player.vx = -MOVE_SPEED; player.facing = -1; }
       if (keys['arrowright'] || keys['d']) { player.vx = MOVE_SPEED; player.facing = 1; }
 
-      // Salto
       if ((keys['arrowup'] || keys['w'] || keys[' ']) && player.onGround) {
         player.vy = -JUMP_FORCE;
         player.onGround = false;
+        spawnParticles(player.x + player.w / 2, player.y + player.h, '#e8c9a0', 6, 3, { up: 0, grav: 0.05, r: 2 });
       }
 
       player.vy += GRAVITY;
 
-      // --- Colisión en X ---
+      // Colisión X
       player.x += player.vx;
       for (const p of solids()) {
         if (rectsOverlap(player, p)) {
@@ -181,47 +200,50 @@
       if (player.x < 0) player.x = 0;
       if (player.x + player.w > LEVEL_WIDTH) player.x = LEVEL_WIDTH - player.w;
 
-      // --- Colisión en Y ---
+      // Colisión Y
+      player.prevOnGround = player.onGround;
       player.y += player.vy;
       player.onGround = false;
       for (const p of solids()) {
         if (rectsOverlap(player, p)) {
-          if (player.vy > 0) {                 // aterriza encima
+          if (player.vy > 0) {
             player.y = p.y - player.h;
             player.vy = 0;
             player.onGround = true;
-          } else if (player.vy < 0) {           // golpea por debajo
+          } else if (player.vy < 0) {
             player.y = p.y + p.h;
             player.vy = 0;
-            // ¿es un bloque "?" sin usar? -> suelta moneda
             if (p.used === false && p.hasOwnProperty('used')) {
-              p.used = true;
+              p.used = true; p.pop = 1;
               score += 100;
-              spawnParticles(p.x + p.w / 2, p.y, '#cdbfae', 12, 5);
+              spawnParticles(p.x + p.w / 2, p.y, '#d8c7b0', 12, 5);
             }
           }
         }
       }
 
-      // Caída al vacío
-      if (player.y > canvas.height + 200) loseLife();
+      // Polvo al aterrizar
+      if (player.onGround && !player.prevOnGround) {
+        spawnParticles(player.x + player.w / 2, player.y + player.h, '#e8c9a0', 8, 4, { up: 0, grav: 0.05, r: 2 });
+      }
 
-      // animación de caminar
+      if (player.y > VIEW_H + 200) loseLife();
+
+      // Caminar
       if (Math.abs(player.vx) > 0 && player.onGround) player.anim += 0.25;
-      else player.anim = 0;
+      else player.anim *= 0.6;
 
-      // --- Huesos ---
+      // Huesos
       for (const c of coins) {
         if (!c.taken && rectsOverlap(player, c)) {
           c.taken = true; score += 50;
-          spawnParticles(c.x + c.w / 2, c.y + c.h / 2, '#fdf6e3', 10, 4);
+          spawnParticles(c.x + c.w / 2, c.y + c.h / 2, '#fff3d0', 12, 4, { star: true, up: 2, grav: 0.08 });
         }
       }
 
-      // --- Goombas ---
+      // Dinos
       for (const g of goombas) {
         if (!g.alive) { if (g.squashT > 0) g.squashT--; continue; }
-        // patrulla
         g.x += g.vx * g.dir;
         if (g.x <= g.minX) { g.x = g.minX; g.dir = 1; }
         if (g.x + g.w >= g.maxX) { g.x = g.maxX - g.w; g.dir = -1; }
@@ -230,24 +252,25 @@
           const cayendoSobre = player.vy > 0 && (player.y + player.h) - g.y < 20;
           if (cayendoSobre) {
             g.alive = false; g.squashT = 30;
-            player.vy = -JUMP_FORCE * 0.6;     // rebote
+            player.vy = -JUMP_FORCE * 0.6;
             score += 200;
-            spawnParticles(g.x + g.w / 2, g.y + g.h / 2, '#4f9c3a', 14, 6);
+            spawnParticles(g.x + g.w / 2, g.y + g.h / 2, '#8fe06a', 14, 6, { star: true });
           } else if (invuln === 0) {
             loseLife();
           }
         }
       }
 
-      // Meta
-      if (rectsOverlap(player, goal)) won = true;
+      if (rectsOverlap(player, goal)) {
+        if (!won) spawnParticles(goal.x, goal.y, '#ffe08a', 40, 9, { star: true, up: 4, grav: 0.15 });
+        won = true;
+      }
 
-      // Cámara
-      cameraX = player.x + player.w / 2 - canvas.width / 2;
-      cameraX = Math.max(0, Math.min(cameraX, LEVEL_WIDTH - canvas.width));
+      cameraX = player.x + player.w / 2 - VIEW_W / 2;
+      cameraX = Math.max(0, Math.min(cameraX, LEVEL_WIDTH - VIEW_W));
     }
 
-    // --- Helper: rectángulo redondeado ---
+    // ===================== HELPERS DE DIBUJO =====================
     function roundRect(x, y, w, h, r) {
       r = Math.min(r, w / 2, h / 2);
       ctx.beginPath();
@@ -258,70 +281,60 @@
       ctx.arcTo(x, y, x + w, y, r);
       ctx.closePath();
     }
-
-    // --- Helper: sombra elíptica bajo una entidad ---
-    function dropShadow(cx, groundY, w) {
-      ctx.save();
-      ctx.fillStyle = 'rgba(60,40,20,0.25)';
+    function dropShadow(cx, groundY, w, a = 0.22) {
+      ctx.fillStyle = 'rgba(40,30,15,' + a + ')';
       ctx.beginPath();
-      ctx.ellipse(cx, groundY, w * 0.5, 5, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx, groundY, w * 0.55, 5, 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.restore();
+    }
+    function star(cx, cy, r, rot) {
+      ctx.beginPath();
+      for (let i = 0; i < 8; i++) {
+        const ang = rot + i * Math.PI / 4;
+        const rr = i % 2 === 0 ? r : r * 0.42;
+        ctx[i === 0 ? 'moveTo' : 'lineTo'](cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr);
+      }
+      ctx.closePath();
+      ctx.fill();
     }
 
+    // ===================== RENDER =====================
     function draw() {
-      // Cielo (degradado cálido de amanecer)
-      const sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      sky.addColorStop(0, '#ffd98a');
-      sky.addColorStop(0.45, '#f7b66a');
-      sky.addColorStop(1, '#e8915a');
-      ctx.fillStyle = sky;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      drawSky();
+      drawFarLayer();
+      drawMidLayer();
 
-      // Sol con halo
-      const sunX = 660, sunY = 90;
-      const halo = ctx.createRadialGradient(sunX, sunY, 8, sunX, sunY, 120);
-      halo.addColorStop(0, 'rgba(255,247,214,0.9)');
-      halo.addColorStop(1, 'rgba(255,247,214,0)');
-      ctx.fillStyle = halo;
-      ctx.fillRect(sunX - 140, sunY - 140, 280, 280);
-      ctx.fillStyle = '#fff4cf';
-      ctx.beginPath();
-      ctx.arc(sunX, sunY, 34, 0, Math.PI * 2);
-      ctx.fill();
-
-      drawBackdrop();
-
-      // Nubes (blandas, con leve parallax)
-      for (let i = 0; i < 8; i++) {
-        const cx = ((i * 450 - cameraX * 0.4) % (LEVEL_WIDTH)) ;
-        drawCloud(cx, 55 + (i % 3) * 38, 0.8 - (i % 3) * 0.15);
+      // Nubes y esporas en espacio de pantalla (parallax suave)
+      for (let i = 0; i < 7; i++) {
+        const cx = (i * 470 - cameraX * 0.35) % (LEVEL_WIDTH);
+        drawCloud(((cx % (VIEW_W + 200)) + (VIEW_W + 200)) % (VIEW_W + 200) - 100, 50 + (i % 3) * 40, 0.9 - (i % 3) * 0.18);
       }
+      drawSpores();
 
       ctx.save();
       ctx.translate(-cameraX, 0);
 
-      // Plataformas (tierra con degradado + borde de hierba)
-      for (const p of platforms) drawPlatform(p);
+      // Vegetación de fondo (detrás de plataformas)
+      for (const x of cycads) drawCycad(x, GROUND_Y, 1);
 
-      // Rocas
+      for (const p of platforms) drawPlatform(p);
       for (const b of blocks) drawRock(b);
 
-      // Huesos (flotan suavemente y giran su brillo)
       for (const c of coins) {
         if (c.taken) continue;
         const bob = Math.sin((t + c.x) * 0.08) * 3;
-        drawBone(c.x, c.y + bob, c.w, c.h);
+        drawBone(c.x, c.y + bob, c.w, c.h, true);
       }
 
-      // Dinos
       for (const g of goombas) {
         if (!g.alive) {
-          if (g.squashT > 0) {                  // aplastado: torta verde que se desvanece
+          if (g.squashT > 0) {
             ctx.save();
             ctx.globalAlpha = g.squashT / 30;
-            ctx.fillStyle = '#3f7a2b';
-            roundRect(g.x, g.y + g.h - 7, g.w, 7, 3); ctx.fill();
+            const grd = ctx.createLinearGradient(0, g.y + g.h - 8, 0, g.y + g.h);
+            grd.addColorStop(0, '#7fd45a'); grd.addColorStop(1, '#3f7d2c');
+            ctx.fillStyle = grd;
+            roundRect(g.x, g.y + g.h - 8, g.w, 8, 4); ctx.fill();
             ctx.restore();
           }
           continue;
@@ -329,60 +342,570 @@
         drawDino(g);
       }
 
-      // Meta (tótem de piedra con musgo)
       drawTotem();
 
-      // Partículas (delante del mundo)
+      // Partículas
       for (const pa of particles) {
         ctx.globalAlpha = Math.max(0, pa.life);
         ctx.fillStyle = pa.color;
-        ctx.beginPath();
-        ctx.arc(pa.x, pa.y, pa.r, 0, Math.PI * 2);
-        ctx.fill();
+        if (pa.star) star(pa.x, pa.y, pa.r + 1.5, pa.life * 6);
+        else { ctx.beginPath(); ctx.arc(pa.x, pa.y, pa.r, 0, Math.PI * 2); ctx.fill(); }
       }
       ctx.globalAlpha = 1;
 
-      // Jugador (parpadea si es invulnerable)
       if (!(invuln > 0 && Math.floor(invuln / 5) % 2 === 0)) drawPlayer();
 
       ctx.restore();
 
-      // Viñeta sutil para dar profundidad
-      const vig = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 200, canvas.width/2, canvas.height/2, 520);
-      vig.addColorStop(0, 'rgba(0,0,0,0)');
-      vig.addColorStop(1, 'rgba(0,0,0,0.22)');
-      ctx.fillStyle = vig;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+      drawLightingAndVignette();
       drawHUD();
 
       if (won) overlay('¡Nivel completado!', 'Pulsa R para volver a jugar', '#ffe08a');
-      if (dead) overlay('GAME OVER', 'Pulsa R para reiniciar', '#ff8a8a');
+      if (dead) overlay('GAME OVER', 'Pulsa R para reiniciar', '#ff9a9a');
+    }
+
+    function drawSky() {
+      const sky = ctx.createLinearGradient(0, 0, 0, VIEW_H);
+      sky.addColorStop(0,   '#2fa9e6');
+      sky.addColorStop(0.4, '#69cfe6');
+      sky.addColorStop(0.7, '#bdeccb');
+      sky.addColorStop(1,   '#ffe6a8');
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+      // Resplandor cálido del horizonte
+      const glow = ctx.createRadialGradient(VIEW_W * 0.5, VIEW_H * 0.95, 40, VIEW_W * 0.5, VIEW_H * 0.95, 360);
+      glow.addColorStop(0, 'rgba(255,228,150,0.55)');
+      glow.addColorStop(1, 'rgba(255,228,150,0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, VIEW_H * 0.5, VIEW_W, VIEW_H * 0.5);
+
+      // Sol con halo
+      const sx = 150, sy = 80;
+      const halo = ctx.createRadialGradient(sx, sy, 10, sx, sy, 110);
+      halo.addColorStop(0, 'rgba(255,250,224,0.95)');
+      halo.addColorStop(1, 'rgba(255,250,224,0)');
+      ctx.fillStyle = halo;
+      ctx.fillRect(sx - 120, sy - 120, 240, 240);
+      ctx.fillStyle = '#fff6d8';
+      ctx.beginPath(); ctx.arc(sx, sy, 30, 0, Math.PI * 2); ctx.fill();
+    }
+
+    function drawFarLayer() {
+      // Montañas brumosas lejanas
+      const off = cameraX * 0.1;
+      const grd = ctx.createLinearGradient(0, 150, 0, 320);
+      grd.addColorStop(0, '#9fcfc0');
+      grd.addColorStop(1, '#bfe0cf');
+      ctx.fillStyle = grd;
+      for (let i = -1; i < 7; i++) {
+        const mx = i * 360 - (off % 360);
+        ctx.beginPath();
+        ctx.moveTo(mx, 330);
+        ctx.quadraticCurveTo(mx + 180, 150, mx + 360, 330);
+        ctx.fill();
+      }
+      // Volcán lejano humeante
+      const vx = 560 - ((cameraX * 0.1) % 1400);
+      const vg = ctx.createLinearGradient(0, 120, 0, 330);
+      vg.addColorStop(0, '#7f9aa0'); vg.addColorStop(1, '#9fbcae');
+      ctx.fillStyle = vg;
+      ctx.beginPath();
+      ctx.moveTo(vx - 10, 330); ctx.lineTo(vx + 80, 120);
+      ctx.lineTo(vx + 120, 120); ctx.lineTo(vx + 210, 330); ctx.fill();
+      const lava = ctx.createLinearGradient(0, 116, 0, 150);
+      lava.addColorStop(0, '#ffd34d'); lava.addColorStop(1, '#ff6a2b');
+      ctx.fillStyle = lava;
+      roundRect(vx + 78, 116, 44, 14, 5); ctx.fill();
+      for (let i = 0; i < 3; i++) {
+        const p = (t * 0.35 + i * 45) % 130;
+        ctx.fillStyle = 'rgba(200,200,200,' + (0.3 - p / 460) + ')';
+        ctx.beginPath();
+        ctx.arc(vx + 100 + Math.sin(p * 0.05) * 14, 112 - p, 10 + p * 0.14, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Niebla
+      ctx.fillStyle = 'rgba(220,240,225,0.45)';
+      ctx.fillRect(0, 290, VIEW_W, 50);
+
+      // Helechos arbóreos lejanos (silueta clara)
+      ctx.save();
+      ctx.translate(-cameraX * 0.45, 0);
+      for (const x of farFerns) drawTreeFern(x, GROUND_Y - 6, 'rgba(120,170,110,0.5)', 0.85);
+      ctx.restore();
+    }
+
+    function drawMidLayer() {
+      // Colinas verdes redondeadas
+      const off = cameraX * 0.25;
+      const grd = ctx.createLinearGradient(0, 250, 0, 400);
+      grd.addColorStop(0, '#74c24a');
+      grd.addColorStop(1, '#4e9b34');
+      ctx.fillStyle = grd;
+      for (let i = -1; i < 7; i++) {
+        const mx = i * 300 - (off % 300);
+        ctx.beginPath();
+        ctx.moveTo(mx, 400);
+        ctx.quadraticCurveTo(mx + 150, 250, mx + 300, 400);
+        ctx.fill();
+      }
+    }
+
+    function drawCloud(x, y, alpha) {
+      ctx.save();
+      // sombra inferior suave
+      ctx.fillStyle = 'rgba(180,210,230,' + (alpha * 0.5) + ')';
+      blob(x, y + 4, alpha);
+      ctx.fillStyle = 'rgba(255,255,255,' + alpha + ')';
+      blob(x, y, alpha);
+      ctx.restore();
+    }
+    function blob(x, y) {
+      ctx.beginPath();
+      ctx.arc(x, y, 16, 0, Math.PI * 2);
+      ctx.arc(x + 20, y + 5, 22, 0, Math.PI * 2);
+      ctx.arc(x + 46, y + 2, 18, 0, Math.PI * 2);
+      ctx.arc(x + 26, y - 9, 15, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawSpores() {
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      for (const s of spores) {
+        s.x -= s.sp;
+        if (s.x < -5) s.x = VIEW_W + 5;
+        const yy = s.y + Math.sin(t * 0.03 + s.ph) * 8;
+        ctx.globalAlpha = 0.4 + Math.sin(t * 0.05 + s.ph) * 0.3;
+        ctx.beginPath();
+        ctx.arc(s.x, yy, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // Cícada (planta prehistórica frondosa, en primer plano de mundo)
+    function drawCycad(x, baseY, sc) {
+      ctx.save();
+      ctx.translate(x, baseY);
+      // tronco bulboso
+      const tg = ctx.createLinearGradient(-10, -40, 10, 0);
+      tg.addColorStop(0, '#8a6a3e'); tg.addColorStop(1, '#6b4a26');
+      ctx.fillStyle = tg;
+      roundRect(-9, -40, 18, 42, 6); ctx.fill();
+      ctx.fillStyle = 'rgba(0,0,0,0.12)';
+      for (let i = 0; i < 3; i++) roundRect(-9, -34 + i * 12, 18, 4, 2), ctx.fill();
+      // corona de hojas
+      const fronds = 7;
+      for (let i = 0; i < fronds; i++) {
+        const ang = -Math.PI + (i / (fronds - 1)) * Math.PI;
+        const sway = Math.sin(t * 0.03 + i) * 0.05;
+        ctx.save();
+        ctx.translate(0, -38);
+        ctx.rotate(ang * 0.62 + sway);
+        const lg = ctx.createLinearGradient(0, 0, 0, -64);
+        lg.addColorStop(0, '#3f9e4a'); lg.addColorStop(1, '#6fce5e');
+        ctx.fillStyle = lg;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(10, -36, 3, -66);
+        ctx.quadraticCurveTo(-3, -36, 0, 0);
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    // Helecho arbóreo de fondo (silueta)
+    function drawTreeFern(x, baseY, color, sc) {
+      ctx.save();
+      ctx.translate(x, baseY);
+      ctx.scale(sc, sc);
+      ctx.fillStyle = color;
+      roundRect(-6, -90, 12, 92, 4); ctx.fill();
+      for (let i = 0; i < 6; i++) {
+        const ang = -Math.PI + (i / 5) * Math.PI;
+        ctx.save();
+        ctx.translate(0, -88);
+        ctx.rotate(ang * 0.7);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(16, -30, 6, -60);
+        ctx.quadraticCurveTo(-4, -30, 0, 0);
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    function drawPlatform(p) {
+      const isGround = p.y === GROUND_Y;
+      const h = isGround ? (VIEW_H - p.y + 60) : p.h;
+      // Tierra con degradado
+      const g = ctx.createLinearGradient(0, p.y, 0, p.y + h);
+      g.addColorStop(0, '#b07b46');
+      g.addColorStop(0.4, '#8a5a30');
+      g.addColorStop(1, '#623f22');
+      ctx.fillStyle = g;
+      roundRect(p.x, p.y, p.w, h, isGround ? 10 : 10); ctx.fill();
+      // motas de tierra
+      ctx.fillStyle = 'rgba(0,0,0,0.10)';
+      for (let i = 0; i < p.w; i += 26) {
+        ctx.beginPath();
+        ctx.arc(p.x + 10 + i, p.y + 24 + ((i * 7) % 30), 2.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Césped con borde ondulado
+      ctx.save();
+      const gg = ctx.createLinearGradient(0, p.y - 4, 0, p.y + 16);
+      gg.addColorStop(0, '#86d84e'); gg.addColorStop(1, '#5cae33');
+      ctx.fillStyle = gg;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y + 14);
+      let x = p.x;
+      const r = 7;
+      for (; x < p.x + p.w; x += r * 2) {
+        ctx.arc(x + r, p.y + 6, r, Math.PI, 0);
+      }
+      ctx.lineTo(p.x + p.w, p.y + 14);
+      ctx.closePath();
+      ctx.fill();
+      // brillo del césped
+      ctx.fillStyle = 'rgba(255,255,255,0.18)';
+      ctx.fillRect(p.x + 4, p.y + 2, p.w - 8, 2.5);
+      ctx.restore();
+
+      // Briznas y flores encima
+      for (let gx = p.x + 14; gx < p.x + p.w - 8; gx += 30) {
+        ctx.strokeStyle = '#4f9a2a';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(gx, p.y + 4);
+        ctx.lineTo(gx + Math.sin((t + gx) * 0.05) * 2, p.y - 6);
+        ctx.stroke();
+        if ((gx % 90) < 30) drawFlower(gx + 12, p.y - 2, (gx % 180 < 90) ? '#ff8fb0' : '#ffd24a');
+      }
+      // Arbustos decorativos en el suelo
+      if (isGround) {
+        for (let bx = p.x + 60; bx < p.x + p.w - 40; bx += 230) drawBush(bx, p.y + 2);
+      }
+    }
+
+    function drawFlower(x, y, color) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.fillStyle = color;
+      for (let i = 0; i < 5; i++) {
+        ctx.rotate(Math.PI * 2 / 5);
+        ctx.beginPath();
+        ctx.ellipse(0, -4, 2.4, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#fff3a0';
+      ctx.beginPath(); ctx.arc(0, 0, 2.2, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    function drawBush(x, y) {
+      const g = ctx.createLinearGradient(0, y - 26, 0, y);
+      g.addColorStop(0, '#5fb83c'); g.addColorStop(1, '#3f8f28');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y - 8, 16, Math.PI, 0);
+      ctx.arc(x + 18, y - 12, 20, Math.PI, 0);
+      ctx.arc(x + 38, y - 8, 15, Math.PI, 0);
+      ctx.lineTo(x + 38, y); ctx.lineTo(x - 16, y);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      ctx.beginPath(); ctx.arc(x + 14, y - 22, 6, 0, Math.PI * 2); ctx.fill();
+    }
+
+    function drawRock(b) {
+      const pop = b.pop > 0 ? (b.pop -= 0.08, Math.sin(b.pop * Math.PI) * 4) : 0;
+      const y = b.y - pop;
+      const g = ctx.createLinearGradient(0, y, 0, y + b.h);
+      g.addColorStop(0, b.used ? '#9a8d7e' : '#c8b7a4');
+      g.addColorStop(1, b.used ? '#6b6056' : '#94836f');
+      ctx.fillStyle = g;
+      roundRect(b.x, y, b.w, b.h, 9); ctx.fill();
+      // sombreado interno
+      ctx.fillStyle = 'rgba(255,255,255,0.22)';
+      roundRect(b.x + 3, y + 3, b.w - 6, 8, 5); ctx.fill();
+      ctx.strokeStyle = 'rgba(60,50,42,0.45)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(b.x + 9, y + 9); ctx.lineTo(b.x + 15, y + 18); ctx.lineTo(b.x + 10, y + 26);
+      ctx.stroke();
+      if (!b.used) {
+        const pulse = 0.55 + Math.sin(t * 0.12) * 0.45;
+        ctx.fillStyle = 'rgba(255,228,120,' + pulse + ')';
+        star(b.x + b.w / 2, y + b.h / 2, 8, t * 0.04);
+      }
+    }
+
+    function drawTotem() {
+      const x = goal.x, y = goal.y, w = goal.w + 18;
+      const g = ctx.createLinearGradient(x - 9, 0, x + w - 9, 0);
+      g.addColorStop(0, '#8a7d6f'); g.addColorStop(0.5, '#b0a395'); g.addColorStop(1, '#7a6d5f');
+      ctx.fillStyle = g;
+      roundRect(x - 9, y, w, goal.h, 9); ctx.fill();
+      // musgo
+      ctx.fillStyle = 'rgba(95,150,47,0.65)';
+      roundRect(x - 9, y + 52, 6, 44, 3); ctx.fill();
+      roundRect(x + w - 15, y + 96, 6, 32, 3); ctx.fill();
+      // caras talladas (dos)
+      ctx.fillStyle = '#3a332c';
+      for (const oy of [28, 96]) {
+        ctx.beginPath(); ctx.arc(x, y + oy, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x + goal.w, y + oy, 4, 0, Math.PI * 2); ctx.fill();
+        roundRect(x - 4, y + oy + 14, goal.w + 8, 5, 2); ctx.fill();
+      }
+      // plumas
+      const sway = Math.sin(t * 0.05) * 0.15;
+      for (const s of [-1, 1]) {
+        ctx.save();
+        ctx.translate(x + goal.w / 2 + s * 7, y - 4);
+        ctx.rotate(s * 0.4 + sway);
+        ctx.fillStyle = s < 0 ? '#e0584a' : '#f0a93b';
+        ctx.beginPath(); ctx.ellipse(0, -8, 4, 12, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // Hueso (recolectable o icono HUD)
+    function drawBone(x, y, w, h, sparkle) {
+      const cy = y + h / 2;
+      ctx.save();
+      if (sparkle) {
+        const s = 0.5 + Math.sin(t * 0.1 + x) * 0.5;
+        ctx.fillStyle = 'rgba(255,245,200,' + (0.25 * s) + ')';
+        ctx.beginPath(); ctx.arc(x + w / 2, cy, w * 0.9, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.fillStyle = '#fff7e4';
+      roundRect(x + 4, cy - 2.6, w - 8, 5.2, 2.6); ctx.fill();
+      const knob = (kx, ky) => { ctx.beginPath(); ctx.arc(kx, ky, 3.3, 0, Math.PI * 2); ctx.fill(); };
+      knob(x + 4, cy - 3); knob(x + 4, cy + 3);
+      knob(x + w - 4, cy - 3); knob(x + w - 4, cy + 3);
+      ctx.fillStyle = 'rgba(150,130,95,0.25)';
+      knob(x + 4, cy + 3.5); knob(x + w - 4, cy + 3.5);
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.fillRect(x + 6, cy - 1.6, w - 12, 1.4);
+      // destello
+      if (sparkle) {
+        const tw = (Math.sin(t * 0.15 + x) + 1) / 2;
+        ctx.fillStyle = 'rgba(255,255,255,' + tw + ')';
+        star(x + w - 3, cy - 4, 2 + tw * 1.5, t * 0.1);
+      }
+      ctx.restore();
+    }
+
+    // Dino: redondo, expresivo, con parpadeo y contoneo
+    function drawDino(g) {
+      const d = g.dir;
+      const cx = g.x + g.w / 2, cy = g.y + g.h / 2;
+      const wob = Math.sin(t * 0.18 + g.x) * 1.6;
+      const step = Math.sin(t * 0.3 + g.x) * 2;
+      const isBlink = (t + g.blink) % 200 < 8;
+      dropShadow(cx, g.y + g.h + 2, g.w);
+
+      ctx.save();
+      // cola
+      ctx.fillStyle = '#3f8f2c';
+      ctx.beginPath();
+      ctx.moveTo(cx - d * g.w * 0.35, cy + 5);
+      ctx.quadraticCurveTo(cx - d * g.w * 0.8, cy - 4 + wob, cx - d * g.w * 0.5, cy - 8 + wob);
+      ctx.quadraticCurveTo(cx - d * g.w * 0.55, cy + 4, cx - d * g.w * 0.35, cy + 11);
+      ctx.fill();
+
+      // patitas
+      ctx.fillStyle = '#2f6b1f';
+      roundRect(g.x + 6, g.y + g.h - 4, 8, 6 + step, 3); ctx.fill();
+      roundRect(g.x + g.w - 14, g.y + g.h - 4, 8, 6 - step, 3); ctx.fill();
+
+      // cuerpo
+      const body = ctx.createRadialGradient(cx - 4, cy - 4, 4, cx, cy, g.w * 0.7);
+      body.addColorStop(0, '#8fe06a');
+      body.addColorStop(1, '#4fa838');
+      ctx.fillStyle = body;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 2, g.w / 2, g.h / 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // panza
+      ctx.fillStyle = 'rgba(238,248,200,0.7)';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 8, g.w / 3.2, g.h / 3.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // púas redondeadas
+      ctx.fillStyle = '#2f7d22';
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.arc(g.x + 9 + i * 6, g.y + 3, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // ojos grandes (estilo Wonder)
+      const ex = cx + d * 5;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(ex, g.y + 6, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(ex - d * 9, g.y + 7, 5, 0, Math.PI * 2); ctx.fill();
+      if (isBlink) {
+        ctx.strokeStyle = '#256019'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(ex - 5, g.y + 6); ctx.lineTo(ex + 5, g.y + 6);
+        ctx.moveTo(ex - d * 9 - 4, g.y + 7); ctx.lineTo(ex - d * 9 + 4, g.y + 7); ctx.stroke();
+      } else {
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath(); ctx.arc(ex + d * 1.5, g.y + 6, 2.6, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(ex - d * 9 + d * 1, g.y + 7, 2.2, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(ex + d * 1.5 + 1, g.y + 5, 0.9, 0, Math.PI * 2); ctx.fill();
+      }
+      // sonrisa
+      ctx.strokeStyle = '#256019'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.arc(ex - d * 4, g.y + 13, 4, 0.1, Math.PI - 0.1); ctx.stroke();
+      ctx.restore();
+    }
+
+    // Cavernícola: redondo, expresivo, con squash & stretch y garrote
+    function drawPlayer() {
+      const { x, y, w, h } = player;
+      const cx = x + w / 2;
+      const swing = Math.sin(player.anim) * 4;
+      const air = !player.onGround;
+      const sx = air ? 1.08 : 1 + Math.sin(t * 0.1) * 0.01;   // estira en el aire
+      const sy = air ? 0.94 : 1;
+      dropShadow(cx, y + h + 2, w, air ? 0.12 : 0.22);
+
+      ctx.save();
+      ctx.translate(cx, y + h);
+      ctx.scale(sx, sy);
+      ctx.translate(-cx, -(y + h));
+
+      // piernas
+      ctx.fillStyle = '#cf9a62';
+      roundRect(x + 5, y + h * 0.74, 8, h * 0.26 + swing * 0.3, 4); ctx.fill();
+      roundRect(x + w - 13, y + h * 0.74, 8, h * 0.26 - swing * 0.3, 4); ctx.fill();
+      // pies
+      ctx.fillStyle = '#a06b38';
+      roundRect(x + 4 + (player.facing > 0 ? 2 : 0), y + h - 4 + swing * 0.3, 11, 5, 3); ctx.fill();
+      roundRect(x + w - 14, y + h - 4 - swing * 0.3, 11, 5, 3); ctx.fill();
+
+      // taparrabos con degradado y manchas
+      const fur = ctx.createLinearGradient(0, y + h * 0.5, 0, y + h * 0.82);
+      fur.addColorStop(0, '#a9692c'); fur.addColorStop(1, '#7c4a1c');
+      ctx.fillStyle = fur;
+      ctx.beginPath();
+      ctx.moveTo(x, y + h * 0.52);
+      ctx.lineTo(x + w, y + h * 0.52);
+      ctx.lineTo(x + w - 2, y + h * 0.74);
+      ctx.lineTo(x + w / 2, y + h * 0.82);
+      ctx.lineTo(x + 2, y + h * 0.74);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#4f2f12';
+      ctx.beginPath(); ctx.arc(x + 9, y + h * 0.64, 2.4, 0, 6.3); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + w - 10, y + h * 0.68, 2.4, 0, 6.3); ctx.fill();
+
+      // torso (piel con sombreado radial)
+      const skin = ctx.createRadialGradient(cx - 4, y + h * 0.4, 3, cx, y + h * 0.44, w * 0.7);
+      skin.addColorStop(0, '#f4b87a'); skin.addColorStop(1, '#d2925a');
+      ctx.fillStyle = skin;
+      roundRect(x + 2, y + h * 0.3, w - 4, h * 0.3, 8); ctx.fill();
+
+      // cabeza grande y redonda
+      const hy = y + h * 0.2;
+      ctx.fillStyle = '#f0b079';
+      ctx.beginPath(); ctx.arc(cx, hy, w * 0.46, 0, Math.PI * 2); ctx.fill();
+      // mejilla sonrosada
+      ctx.fillStyle = 'rgba(232,120,90,0.5)';
+      ctx.beginPath(); ctx.arc(cx + player.facing * 7, hy + 5, 3.2, 0, Math.PI * 2); ctx.fill();
+      // melena
+      ctx.fillStyle = '#3a2410';
+      ctx.beginPath(); ctx.arc(cx, hy - 3, w * 0.48, Math.PI, 0); ctx.fill();
+      ctx.fillRect(cx - w * 0.48, hy - 3, 5, 13);
+      ctx.fillRect(cx + w * 0.48 - 5, hy - 3, 5, 13);
+      // mechones
+      for (let i = -1; i <= 1; i++) {
+        ctx.beginPath();
+        ctx.moveTo(cx + i * 7, hy - w * 0.42);
+        ctx.lineTo(cx + i * 7 + 3, hy - w * 0.6);
+        ctx.lineTo(cx + i * 7 + 6, hy - w * 0.42);
+        ctx.fill();
+      }
+      // ceja prominente
+      ctx.fillStyle = '#caa06a';
+      roundRect(cx - 9, hy - 1, 18, 3.5, 2); ctx.fill();
+      // ojo grande
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(cx + player.facing * 4, hy + 5, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#1a1a1a';
+      ctx.beginPath(); ctx.arc(cx + player.facing * 5, hy + 5, 2.1, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(cx + player.facing * 6, hy + 4, 0.8, 0, Math.PI * 2); ctx.fill();
+      // sonrisa
+      ctx.strokeStyle = '#7a4a1e'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.arc(cx + player.facing * 3, hy + 10, 3.5, 0.1, Math.PI - 0.1); ctx.stroke();
+
+      // brazo + garrote
+      ctx.strokeStyle = '#d99a63'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+      const gx = cx + player.facing * 13, gyTop = y + h * 0.3;
+      ctx.beginPath();
+      ctx.moveTo(cx + player.facing * 5, y + h * 0.46);
+      ctx.lineTo(gx, gyTop);
+      ctx.stroke();
+      ctx.strokeStyle = '#7a4a1e'; ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(gx, gyTop);
+      ctx.lineTo(gx + player.facing * 4, gyTop - 12);
+      ctx.stroke();
+      const club = ctx.createRadialGradient(gx + player.facing * 4, gyTop - 14, 1, gx + player.facing * 4, gyTop - 14, 8);
+      club.addColorStop(0, '#a06a34'); club.addColorStop(1, '#7a4a1e');
+      ctx.fillStyle = club;
+      ctx.beginPath(); ctx.arc(gx + player.facing * 5, gyTop - 15, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#5e3613';
+      ctx.beginPath(); ctx.arc(gx + player.facing * 3, gyTop - 17, 1.4, 0, 6.3); ctx.fill();
+      ctx.restore();
+    }
+
+    function drawLightingAndVignette() {
+      // luz ambiental cálida desde arriba
+      const lg = ctx.createLinearGradient(0, 0, 0, VIEW_H);
+      lg.addColorStop(0, 'rgba(255,240,200,0.12)');
+      lg.addColorStop(0.5, 'rgba(255,240,200,0)');
+      ctx.fillStyle = lg;
+      ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+      // viñeta
+      const vig = ctx.createRadialGradient(VIEW_W/2, VIEW_H/2, 220, VIEW_W/2, VIEW_H/2, 540);
+      vig.addColorStop(0, 'rgba(0,0,0,0)');
+      vig.addColorStop(1, 'rgba(20,10,30,0.28)');
+      ctx.fillStyle = vig;
+      ctx.fillRect(0, 0, VIEW_W, VIEW_H);
     }
 
     function drawHUD() {
-      // panel translúcido redondeado
       ctx.save();
-      ctx.fillStyle = 'rgba(20,12,4,0.42)';
-      roundRect(12, 12, 200, 40, 12); ctx.fill();
-      ctx.font = 'bold 20px system-ui';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      // hueso + puntuación
-      drawBone(26, 24, 18, 14);
+      // panel "glass"
+      ctx.fillStyle = 'rgba(20,14,8,0.42)';
+      roundRect(12, 12, 196, 42, 14); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1.5;
+      roundRect(12, 12, 196, 42, 14); ctx.stroke();
+      // hueso animado + puntuación
+      const bob = Math.sin(t * 0.1) * 1.5;
+      drawBone(26, 25 + bob, 20, 14, false);
       ctx.fillStyle = '#fff';
-      ctx.fillText(score, 54, 33);
-      // corazones
+      ctx.font = '800 21px system-ui';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText(score, 56, 34);
+      // corazones con leve latido
       for (let i = 0; i < 3; i++) {
-        drawHeart(120 + i * 26, 32, 9, i < lives);
+        const beat = i < lives ? 1 + Math.sin(t * 0.12 + i) * 0.06 : 1;
+        drawHeart(128 + i * 26, 33, 9 * beat, i < lives);
       }
       ctx.restore();
-      ctx.textBaseline = 'alphabetic';
+      ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
     }
 
     function drawHeart(cx, cy, s, filled) {
       ctx.save();
-      ctx.fillStyle = filled ? '#ff5a6e' : 'rgba(255,255,255,0.25)';
+      ctx.fillStyle = filled ? '#ff5a6e' : 'rgba(255,255,255,0.22)';
       ctx.beginPath();
       ctx.moveTo(cx, cy + s * 0.3);
       ctx.bezierCurveTo(cx, cy, cx - s, cy - s * 0.5, cx - s, cy - s * 0.1);
@@ -390,326 +913,33 @@
       ctx.bezierCurveTo(cx, cy + s * 0.7, cx + s, cy + s * 0.5, cx + s, cy - s * 0.1);
       ctx.bezierCurveTo(cx + s, cy - s * 0.5, cx, cy, cx, cy + s * 0.3);
       ctx.fill();
+      if (filled) {
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.beginPath(); ctx.arc(cx - s * 0.35, cy - s * 0.1, s * 0.2, 0, Math.PI * 2); ctx.fill();
+      }
       ctx.restore();
     }
 
     function overlay(title, sub, color) {
-      ctx.fillStyle = 'rgba(0,0,0,0.55)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'rgba(10,6,20,0.6)';
+      ctx.fillRect(0, 0, VIEW_W, VIEW_H);
       ctx.textAlign = 'center';
       ctx.fillStyle = color;
-      ctx.font = '800 44px system-ui';
-      ctx.fillText(title, canvas.width / 2, canvas.height / 2 - 12);
+      ctx.font = '800 46px system-ui';
+      ctx.fillText(title, VIEW_W / 2, VIEW_H / 2 - 10);
       ctx.fillStyle = '#fff';
       ctx.font = '20px system-ui';
-      ctx.fillText(sub, canvas.width / 2, canvas.height / 2 + 24);
+      ctx.fillText(sub, VIEW_W / 2, VIEW_H / 2 + 26);
       ctx.fillStyle = 'rgba(255,255,255,0.8)';
       ctx.font = '16px system-ui';
-      ctx.fillText('Puntuación: ' + score, canvas.width / 2, canvas.height / 2 + 54);
+      ctx.fillText('Puntuación: ' + score, VIEW_W / 2, VIEW_H / 2 + 56);
       ctx.textAlign = 'left';
-    }
-
-    function drawCloud(x, y, alpha) {
-      ctx.save();
-      ctx.fillStyle = 'rgba(255,255,255,' + alpha + ')';
-      ctx.beginPath();
-      ctx.arc(x, y, 18, 0, Math.PI * 2);
-      ctx.arc(x + 22, y + 5, 24, 0, Math.PI * 2);
-      ctx.arc(x + 50, y, 18, 0, Math.PI * 2);
-      ctx.arc(x + 28, y - 8, 16, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-
-    // Montañas en capas (parallax + niebla) y volcán humeante
-    function drawBackdrop() {
-      // capa lejana (más clara/brumosa)
-      layerMountains(0.12, 230, '#cf9a6a', 380);
-      // capa media
-      layerMountains(0.22, 200, '#b97a45', 320);
-
-      // Volcán
-      const vx = 520 - ((cameraX * 0.22) % 1100);
-      const grd = ctx.createLinearGradient(0, 130, 0, canvas.height);
-      grd.addColorStop(0, '#8a542e');
-      grd.addColorStop(1, '#6b3f22');
-      ctx.fillStyle = grd;
-      ctx.beginPath();
-      ctx.moveTo(vx - 10, canvas.height);
-      ctx.lineTo(vx + 90, 130);
-      ctx.lineTo(vx + 130, 130);
-      ctx.lineTo(vx + 230, canvas.height);
-      ctx.fill();
-      // lava brillante
-      const lava = ctx.createLinearGradient(0, 128, 0, 175);
-      lava.addColorStop(0, '#ffd34d');
-      lava.addColorStop(1, '#e8531f');
-      ctx.fillStyle = lava;
-      roundRect(vx + 88, 128, 44, 16, 5); ctx.fill();
-      // chorritos de lava por la ladera
-      ctx.strokeStyle = '#e8531f';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(vx + 108, 140); ctx.lineTo(vx + 100, 175); ctx.lineTo(vx + 108, 205);
-      ctx.stroke();
-      // humo (bocanadas animadas)
-      for (let i = 0; i < 3; i++) {
-        const p = (t * 0.4 + i * 40) % 120;
-        ctx.fillStyle = 'rgba(120,110,100,' + (0.35 - p / 400) + ')';
-        ctx.beginPath();
-        ctx.arc(vx + 110 + Math.sin(p * 0.05) * 12, 120 - p, 12 + p * 0.12, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-
-    function layerMountains(par, baseY, color, spacing) {
-      const off = cameraX * par;
-      ctx.fillStyle = color;
-      for (let i = -1; i < 8; i++) {
-        const mx = i * spacing - (off % spacing);
-        ctx.beginPath();
-        ctx.moveTo(mx, canvas.height);
-        ctx.lineTo(mx + spacing * 0.5, baseY);
-        ctx.lineTo(mx + spacing, canvas.height);
-        ctx.fill();
-      }
-      // niebla en la base de la capa
-      ctx.fillStyle = 'rgba(247,182,106,0.35)';
-      ctx.fillRect(0, baseY + 70, canvas.width, canvas.height - baseY - 70);
-    }
-
-    function drawPlatform(p) {
-      const isGround = p.y === GROUND_Y;
-      const bottom = isGround ? canvas.height + cameraX * 0 : p.y + p.h;
-      const h = isGround ? (canvas.height - p.y + 40) : p.h;
-      // cuerpo de tierra con degradado
-      const g = ctx.createLinearGradient(0, p.y, 0, p.y + h);
-      g.addColorStop(0, '#9c6b3a');
-      g.addColorStop(1, '#6e4a26');
-      ctx.fillStyle = g;
-      roundRect(p.x, p.y, p.w, h, isGround ? 6 : 8); ctx.fill();
-      // franja de hierba
-      ctx.fillStyle = '#5fa12f';
-      roundRect(p.x, p.y, p.w, 9, isGround ? 6 : 8); ctx.fill();
-      ctx.fillStyle = '#74bd3c';
-      ctx.fillRect(p.x + 4, p.y, p.w - 8, 4);
-      // briznas de hierba
-      ctx.strokeStyle = '#4f8a28';
-      ctx.lineWidth = 2;
-      for (let gx = p.x + 6; gx < p.x + p.w - 4; gx += 12) {
-        ctx.beginPath();
-        ctx.moveTo(gx, p.y + 2);
-        ctx.lineTo(gx + Math.sin((t + gx) * 0.05) * 2, p.y - 5);
-        ctx.stroke();
-      }
-    }
-
-    function drawRock(b) {
-      const g = ctx.createLinearGradient(0, b.y, 0, b.y + b.h);
-      g.addColorStop(0, b.used ? '#8d8175' : '#bcab9b');
-      g.addColorStop(1, b.used ? '#6b6056' : '#8f8073');
-      ctx.fillStyle = g;
-      roundRect(b.x, b.y, b.w, b.h, 7); ctx.fill();
-      // brillo superior
-      ctx.fillStyle = 'rgba(255,255,255,0.18)';
-      roundRect(b.x + 3, b.y + 3, b.w - 6, 7, 4); ctx.fill();
-      // grietas
-      ctx.strokeStyle = 'rgba(60,50,42,0.5)';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(b.x + 9, b.y + 8); ctx.lineTo(b.x + 15, b.y + 17); ctx.lineTo(b.x + 10, b.y + 26);
-      ctx.stroke();
-      if (!b.used) {
-        const pulse = 0.6 + Math.sin(t * 0.12) * 0.4;
-        ctx.fillStyle = 'rgba(255,236,150,' + pulse + ')';
-        ctx.font = 'bold 18px system-ui';
-        ctx.textAlign = 'center';
-        ctx.fillText('★', b.x + b.w / 2, b.y + b.h - 9);
-        ctx.textAlign = 'left';
-      }
-    }
-
-    function drawTotem() {
-      const x = goal.x, y = goal.y, w = goal.w + 16;
-      const g = ctx.createLinearGradient(x - 8, 0, x + w - 8, 0);
-      g.addColorStop(0, '#8a7d6f');
-      g.addColorStop(0.5, '#a4978a');
-      g.addColorStop(1, '#7a6d5f');
-      ctx.fillStyle = g;
-      roundRect(x - 8, y, w, goal.h, 8); ctx.fill();
-      // musgo en los lados
-      ctx.fillStyle = 'rgba(95,140,47,0.6)';
-      ctx.fillRect(x - 8, y + 50, 5, 40);
-      ctx.fillRect(x + w - 13, y + 90, 5, 30);
-      // cara tallada
-      ctx.fillStyle = '#3a332c';
-      ctx.beginPath(); ctx.arc(x, y + 28, 4, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(x + goal.w, y + 28, 4, 0, Math.PI * 2); ctx.fill();
-      ctx.fillRect(x - 4, y + 44, goal.w + 8, 5);
-      // plumas decorativas arriba
-      ctx.fillStyle = '#e0584a';
-      ctx.beginPath();
-      ctx.ellipse(x + goal.w / 2 - 6, y - 6, 4, 10, -0.4, 0, Math.PI * 2);
-      ctx.ellipse(x + goal.w / 2 + 6, y - 6, 4, 10, 0.4, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Hueso (recolectable / icono HUD) — dibujado en (x,y) con tamaño (w,h)
-    function drawBone(x, y, w, h) {
-      const cy = y + h / 2;
-      ctx.save();
-      ctx.fillStyle = '#fdf6e3';
-      ctx.strokeStyle = 'rgba(120,110,90,0.5)';
-      ctx.lineWidth = 1;
-      // tallo
-      roundRect(x + 4, cy - 2.5, w - 8, 5, 2.5); ctx.fill();
-      // nudos
-      const knob = (kx, ky) => { ctx.beginPath(); ctx.arc(kx, ky, 3.2, 0, Math.PI * 2); ctx.fill(); };
-      knob(x + 4, cy - 3); knob(x + 4, cy + 3);
-      knob(x + w - 4, cy - 3); knob(x + w - 4, cy + 3);
-      // brillo
-      ctx.fillStyle = 'rgba(255,255,255,0.7)';
-      ctx.fillRect(x + 6, cy - 1.5, w - 12, 1.5);
-      ctx.restore();
-    }
-
-    // Dinosaurio enemigo (cuerpo redondeado con degradado)
-    function drawDino(g) {
-      const d = g.dir;
-      const cx = g.x + g.w / 2, cy = g.y + g.h / 2;
-      const wob = Math.sin(t * 0.2 + g.x) * 1.5;   // contoneo al andar
-      dropShadow(cx, g.y + g.h + 2, g.w);
-
-      ctx.save();
-      // cola
-      ctx.fillStyle = '#3f7d2c';
-      ctx.beginPath();
-      ctx.moveTo(cx - d * g.w * 0.4, cy + 4);
-      ctx.lineTo(cx - d * (g.w * 0.7), cy - 2 + wob);
-      ctx.lineTo(cx - d * g.w * 0.4, cy + 10);
-      ctx.fill();
-
-      // cuerpo
-      const body = ctx.createLinearGradient(0, g.y, 0, g.y + g.h);
-      body.addColorStop(0, '#67b84a');
-      body.addColorStop(1, '#3f7d2c');
-      ctx.fillStyle = body;
-      ctx.beginPath();
-      ctx.ellipse(cx, cy + 2, g.w / 2, g.h / 2 - 1, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // panza más clara
-      ctx.fillStyle = 'rgba(220,240,180,0.45)';
-      ctx.beginPath();
-      ctx.ellipse(cx, cy + 8, g.w / 3, g.h / 4, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // púas
-      ctx.fillStyle = '#2f6320';
-      for (let i = 0; i < 3; i++) {
-        ctx.beginPath();
-        ctx.moveTo(g.x + 7 + i * 7, g.y + 5);
-        ctx.lineTo(g.x + 10 + i * 7, g.y - 3);
-        ctx.lineTo(g.x + 13 + i * 7, g.y + 5);
-        ctx.fill();
-      }
-
-      // cabeza
-      const hx = d === 1 ? g.x + g.w - 4 : g.x + 4;
-      ctx.fillStyle = body;
-      ctx.beginPath();
-      ctx.arc(hx, g.y + 6, 8, 0, Math.PI * 2);
-      ctx.fill();
-      // patitas que se mueven
-      ctx.fillStyle = '#2f6320';
-      const step = Math.sin(t * 0.3 + g.x) * 2;
-      roundRect(g.x + 5, g.y + g.h - 4, 7, 5 + step, 2); ctx.fill();
-      roundRect(g.x + g.w - 12, g.y + g.h - 4, 7, 5 - step, 2); ctx.fill();
-      // ojo
-      ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.arc(hx + d * 2, g.y + 4, 3, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#1a1a1a';
-      ctx.beginPath(); ctx.arc(hx + d * 3, g.y + 4, 1.6, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-    }
-
-    // Cavernícola (jugador) con sombreado y animación
-    function drawPlayer() {
-      const { x, y, w, h } = player;
-      const cx = x + w / 2;
-      const legSwing = Math.sin(player.anim) * 4;
-      const squash = player.onGround ? 0 : -2;       // estira un poco al saltar
-      dropShadow(cx, y + h + 2, w);
-
-      ctx.save();
-      // piernas (se balancean al andar)
-      ctx.fillStyle = '#caa06a';
-      roundRect(x + 5, y + h * 0.75, 7, h * 0.25 + legSwing * 0.3, 3); ctx.fill();
-      roundRect(x + w - 12, y + h * 0.75, 7, h * 0.25 - legSwing * 0.3, 3); ctx.fill();
-
-      // taparrabos (piel con degradado y manchas)
-      const fur = ctx.createLinearGradient(0, y + h * 0.5, 0, y + h * 0.8);
-      fur.addColorStop(0, '#8a5524');
-      fur.addColorStop(1, '#643c16');
-      ctx.fillStyle = fur;
-      roundRect(x, y + h * 0.52, w, h * 0.28, 5); ctx.fill();
-      ctx.fillStyle = '#4a2c10';
-      ctx.beginPath(); ctx.arc(x + 8, y + h * 0.64, 2.5, 0, 6.3); ctx.fill();
-      ctx.beginPath(); ctx.arc(x + w - 9, y + h * 0.7, 2.5, 0, 6.3); ctx.fill();
-
-      // torso (piel con sombreado)
-      const skin = ctx.createLinearGradient(x, 0, x + w, 0);
-      skin.addColorStop(0, '#c98f57');
-      skin.addColorStop(0.5, '#e3a86d');
-      skin.addColorStop(1, '#c98f57');
-      ctx.fillStyle = skin;
-      roundRect(x + 2, y + h * 0.3, w - 4, h * 0.28, 6); ctx.fill();
-
-      // brazo delantero
-      ctx.fillStyle = '#d99a63';
-      roundRect(cx + player.facing * 4, y + h * 0.34 + squash, 6, h * 0.22, 3); ctx.fill();
-
-      // cabeza
-      ctx.fillStyle = '#e8b07a';
-      ctx.beginPath();
-      ctx.arc(cx, y + h * 0.2, w * 0.42, 0, Math.PI * 2);
-      ctx.fill();
-      // melena revuelta
-      ctx.fillStyle = '#3a2410';
-      ctx.beginPath();
-      ctx.arc(cx, y + h * 0.13, w * 0.45, Math.PI, 0);
-      ctx.fill();
-      ctx.fillRect(cx - w * 0.45, y + 2, 5, 12);
-      ctx.fillRect(cx + w * 0.45 - 5, y + 2, 5, 12);
-      // ceja prominente
-      ctx.fillStyle = '#caa06a';
-      ctx.fillRect(cx - 8, y + h * 0.2, 16, 3);
-      // ojo
-      ctx.fillStyle = '#1a1a1a';
-      ctx.beginPath();
-      ctx.arc(cx + player.facing * 4, y + h * 0.26, 2, 0, Math.PI * 2);
-      ctx.fill();
-
-      // garrote
-      ctx.strokeStyle = '#7a4a1e';
-      ctx.lineWidth = 4;
-      ctx.lineCap = 'round';
-      const gx = cx + player.facing * 12;
-      ctx.beginPath();
-      ctx.moveTo(cx + player.facing * 6, y + h * 0.5);
-      ctx.lineTo(gx, y + h * 0.32);
-      ctx.stroke();
-      ctx.fillStyle = '#8a5524';
-      ctx.beginPath();
-      ctx.arc(gx, y + h * 0.3, 5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
     }
 
     function updateParticles() {
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
-        p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life -= 0.025;
+        p.x += p.vx; p.y += p.vy; p.vy += p.grav; p.life -= 0.022;
         if (p.life <= 0) particles.splice(i, 1);
       }
     }
