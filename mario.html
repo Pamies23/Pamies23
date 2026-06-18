@@ -32,7 +32,7 @@
 <body>
   <h1>🍄 MARIO 2D</h1>
   <canvas id="game" width="800" height="400"></canvas>
-  <p class="hint">← → o A/D para moverte · ↑ / W / Espacio para saltar · R para reiniciar</p>
+  <p class="hint">← → o A/D para moverte · ↑ / W / Espacio para saltar · Pisa a los Goombas · R para reiniciar</p>
 
   <script>
     const canvas = document.getElementById('game');
@@ -45,21 +45,12 @@
     const GROUND_Y = 360;          // altura del suelo principal
     const LEVEL_WIDTH = 3000;      // longitud total del nivel
 
-    // --- Jugador ---
-    const player = {
-      x: 60, y: 0, w: 28, h: 36,
-      vx: 0, vy: 0,
-      onGround: false,
-      facing: 1
-    };
-
     // --- Plataformas (suelo + flotantes) ---
-    // {x, y, w, h}
     const platforms = [
-      { x: 0,    y: GROUND_Y, w: 700,  h: 40 },   // suelo
-      { x: 760,  y: GROUND_Y, w: 900,  h: 40 },   // suelo tras un hueco
-      { x: 1720, y: GROUND_Y, w: 1280, h: 40 },   // suelo final
-      { x: 250,  y: 280, w: 120, h: 20 },         // plataforma flotante
+      { x: 0,    y: GROUND_Y, w: 700,  h: 40 },
+      { x: 760,  y: GROUND_Y, w: 900,  h: 40 },
+      { x: 1720, y: GROUND_Y, w: 1280, h: 40 },
+      { x: 250,  y: 280, w: 120, h: 20 },
       { x: 450,  y: 220, w: 120, h: 20 },
       { x: 640,  y: 170, w: 100, h: 20 },
       { x: 950,  y: 250, w: 140, h: 20 },
@@ -69,23 +60,70 @@
       { x: 2200, y: 190, w: 120, h: 20 }
     ];
 
-    // Bandera de meta
+    // --- Bloques "?" (sueltan una moneda al golpearlos desde abajo) ---
+    // {x, y, w, h, used}
+    const blocksData = [
+      { x: 480, y: 150, w: 32, h: 32, used: false },
+      { x: 1000, y: 180, w: 32, h: 32, used: false },
+      { x: 1230, y: 130, w: 32, h: 32, used: false },
+      { x: 1950, y: 160, w: 32, h: 32, used: false }
+    ];
+
+    // --- Monedas sueltas {x, y, w, h, taken} ---
+    const coinsData = [
+      { x: 290, y: 240, taken: false },
+      { x: 500, y: 180, taken: false },
+      { x: 680, y: 130, taken: false },
+      { x: 990, y: 210, taken: false },
+      { x: 1240, y: 160, taken: false },
+      { x: 1490, y: 220, taken: false },
+      { x: 1620, y: 320, taken: false },
+      { x: 1940, y: 190, taken: false },
+      { x: 2240, y: 150, taken: false },
+      { x: 2500, y: 320, taken: false }
+    ].map(c => ({ ...c, w: 18, h: 18 }));
+
+    // --- Goombas (enemigos que patrullan) {x, y, w, h, vx, dir, alive, range} ---
+    const goombasData = [
+      { x: 850,  y: GROUND_Y - 28, dir: -1, minX: 770,  maxX: 1100 },
+      { x: 1300, y: GROUND_Y - 28, dir: 1,  minX: 1180, maxX: 1500 },
+      { x: 1850, y: GROUND_Y - 28, dir: -1, minX: 1740, maxX: 2050 },
+      { x: 2400, y: GROUND_Y - 28, dir: 1,  minX: 2250, maxX: 2700 }
+    ];
+
+    // Meta (bandera)
     const goal = { x: 2850, y: GROUND_Y - 160, w: 12, h: 160 };
 
-    const keys = {};
-    let cameraX = 0;
-    let won = false;
+    // --- Estado mutable (se reinicia) ---
+    const player = { x: 60, y: 0, w: 28, h: 36, vx: 0, vy: 0, onGround: false, facing: 1 };
+    let blocks, coins, goombas;
+    let cameraX = 0, score = 0, lives = 3, won = false, dead = false, invuln = 0;
 
+    const keys = {};
     document.addEventListener('keydown', e => {
       keys[e.key.toLowerCase()] = true;
       if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(e.key.toLowerCase())) e.preventDefault();
-      if (e.key.toLowerCase() === 'r') reset();
+      if (e.key.toLowerCase() === 'r') fullReset();
     });
     document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 
-    function reset() {
+    function resetPlayer() {
       player.x = 60; player.y = 0; player.vx = 0; player.vy = 0;
-      won = false;
+      cameraX = 0; invuln = 90;
+    }
+
+    function fullReset() {
+      blocks = blocksData.map(b => ({ ...b, used: false }));
+      coins = coinsData.map(c => ({ ...c, taken: false }));
+      goombas = goombasData.map(g => ({ ...g, w: 30, h: 28, vx: 1.2, alive: true, squashT: 0 }));
+      score = 0; lives = 3; won = false; dead = false;
+      resetPlayer();
+    }
+
+    function loseLife() {
+      lives--;
+      if (lives <= 0) { dead = true; }
+      else { resetPlayer(); }
     }
 
     function rectsOverlap(a, b) {
@@ -93,8 +131,14 @@
              a.y < b.y + b.h && a.y + a.h > b.y;
     }
 
+    // Conjunto de sólidos con los que choca el jugador: plataformas + bloques sin usar (siguen siendo sólidos)
+    function solids() {
+      return platforms.concat(blocks);
+    }
+
     function update() {
-      if (won) return;
+      if (won || dead) return;
+      if (invuln > 0) invuln--;
 
       // Movimiento horizontal
       player.vx = 0;
@@ -107,44 +151,72 @@
         player.onGround = false;
       }
 
-      // Gravedad
       player.vy += GRAVITY;
 
-      // --- Mover y colisionar en X ---
+      // --- Colisión en X ---
       player.x += player.vx;
-      for (const p of platforms) {
+      for (const p of solids()) {
         if (rectsOverlap(player, p)) {
           if (player.vx > 0) player.x = p.x - player.w;
           else if (player.vx < 0) player.x = p.x + p.w;
         }
       }
-      // Límites del nivel
       if (player.x < 0) player.x = 0;
       if (player.x + player.w > LEVEL_WIDTH) player.x = LEVEL_WIDTH - player.w;
 
-      // --- Mover y colisionar en Y ---
+      // --- Colisión en Y ---
       player.y += player.vy;
       player.onGround = false;
-      for (const p of platforms) {
+      for (const p of solids()) {
         if (rectsOverlap(player, p)) {
-          if (player.vy > 0) {            // cayendo: aterriza encima
+          if (player.vy > 0) {                 // aterriza encima
             player.y = p.y - player.h;
             player.vy = 0;
             player.onGround = true;
-          } else if (player.vy < 0) {     // saltando: golpea por debajo
+          } else if (player.vy < 0) {           // golpea por debajo
             player.y = p.y + p.h;
             player.vy = 0;
+            // ¿es un bloque "?" sin usar? -> suelta moneda
+            if (p.used === false && p.hasOwnProperty('used')) {
+              p.used = true;
+              score += 100;
+            }
           }
         }
       }
 
-      // Caída al vacío -> reinicia
-      if (player.y > canvas.height + 200) reset();
+      // Caída al vacío
+      if (player.y > canvas.height + 200) loseLife();
+
+      // --- Monedas ---
+      for (const c of coins) {
+        if (!c.taken && rectsOverlap(player, c)) { c.taken = true; score += 50; }
+      }
+
+      // --- Goombas ---
+      for (const g of goombas) {
+        if (!g.alive) { if (g.squashT > 0) g.squashT--; continue; }
+        // patrulla
+        g.x += g.vx * g.dir;
+        if (g.x <= g.minX) { g.x = g.minX; g.dir = 1; }
+        if (g.x + g.w >= g.maxX) { g.x = g.maxX - g.w; g.dir = -1; }
+
+        if (rectsOverlap(player, g)) {
+          const cayendoSobre = player.vy > 0 && (player.y + player.h) - g.y < 20;
+          if (cayendoSobre) {
+            g.alive = false; g.squashT = 30;
+            player.vy = -JUMP_FORCE * 0.6;     // rebote
+            score += 200;
+          } else if (invuln === 0) {
+            loseLife();
+          }
+        }
+      }
 
       // Meta
       if (rectsOverlap(player, goal)) won = true;
 
-      // Cámara sigue al jugador (centrado), sin salir del nivel
+      // Cámara
       cameraX = player.x + player.w / 2 - canvas.width / 2;
       cameraX = Math.max(0, Math.min(cameraX, LEVEL_WIDTH - canvas.width));
     }
@@ -152,10 +224,10 @@
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Nubes de fondo (parallax suave)
+      // Nubes
       ctx.fillStyle = '#ffffff';
       for (let i = 0; i < 8; i++) {
-        const cx = (i * 450 - cameraX * 0.4) % (LEVEL_WIDTH);
+        const cx = (i * 450 - cameraX * 0.4) % LEVEL_WIDTH;
         drawCloud(cx, 60 + (i % 3) * 40);
       }
 
@@ -167,12 +239,49 @@
         const isGround = p.y === GROUND_Y;
         ctx.fillStyle = isGround ? '#c84c0c' : '#e07b2c';
         ctx.fillRect(p.x, p.y, p.w, p.h);
-        // borde superior verde para el suelo
         ctx.fillStyle = isGround ? '#00a800' : '#f0a050';
         ctx.fillRect(p.x, p.y, p.w, 6);
       }
 
-      // Meta (bandera)
+      // Bloques "?"
+      for (const b of blocks) {
+        ctx.fillStyle = b.used ? '#9c5a2c' : '#f8b800';
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+        ctx.strokeStyle = '#7a4a10';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(b.x + 1.5, b.y + 1.5, b.w - 3, b.h - 3);
+        if (!b.used) {
+          ctx.fillStyle = '#fff';
+          ctx.font = 'bold 22px system-ui';
+          ctx.textAlign = 'center';
+          ctx.fillText('?', b.x + b.w / 2, b.y + b.h - 8);
+        }
+      }
+
+      // Monedas
+      for (const c of coins) {
+        if (c.taken) continue;
+        ctx.fillStyle = '#ffd700';
+        ctx.beginPath();
+        ctx.ellipse(c.x + c.w / 2, c.y + c.h / 2, c.w / 2, c.h / 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#c89000';
+        ctx.fillRect(c.x + c.w / 2 - 2, c.y + 3, 4, c.h - 6);
+      }
+
+      // Goombas
+      for (const g of goombas) {
+        if (!g.alive) {
+          if (g.squashT > 0) {                  // animación de aplastado
+            ctx.fillStyle = '#7a3b10';
+            ctx.fillRect(g.x, g.y + g.h - 8, g.w, 8);
+          }
+          continue;
+        }
+        drawGoomba(g);
+      }
+
+      // Meta
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(goal.x, goal.y, goal.w, goal.h);
       ctx.fillStyle = '#00a800';
@@ -182,23 +291,39 @@
       ctx.lineTo(goal.x + goal.w, goal.y + 30);
       ctx.fill();
 
-      // Jugador (Mario simplón)
-      drawPlayer();
+      // Jugador (parpadea si es invulnerable)
+      if (!(invuln > 0 && Math.floor(invuln / 5) % 2 === 0)) drawPlayer();
 
       ctx.restore();
 
-      // Mensaje de victoria
-      if (won) {
-        ctx.fillStyle = 'rgba(0,0,0,0.6)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#ffd700';
-        ctx.font = 'bold 40px system-ui';
-        ctx.textAlign = 'center';
-        ctx.fillText('¡Nivel completado! 🎉', canvas.width / 2, canvas.height / 2 - 10);
-        ctx.fillStyle = '#fff';
-        ctx.font = '20px system-ui';
-        ctx.fillText('Pulsa R para volver a jugar', canvas.width / 2, canvas.height / 2 + 30);
-      }
+      drawHUD();
+
+      if (won) overlay('¡Nivel completado! 🎉', 'Pulsa R para volver a jugar', '#ffd700');
+      if (dead) overlay('GAME OVER', 'Pulsa R para reiniciar', '#ff5050');
+    }
+
+    function drawHUD() {
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.fillRect(10, 10, 250, 36);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 18px system-ui';
+      ctx.textAlign = 'left';
+      ctx.fillText('🪙 ' + score, 24, 34);
+      ctx.fillText('❤️ '.repeat(Math.max(0, lives)).trim() || '—', 130, 34);
+    }
+
+    function overlay(title, sub, color) {
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = color;
+      ctx.font = 'bold 40px system-ui';
+      ctx.fillText(title, canvas.width / 2, canvas.height / 2 - 10);
+      ctx.fillStyle = '#fff';
+      ctx.font = '20px system-ui';
+      ctx.fillText(sub, canvas.width / 2, canvas.height / 2 + 30);
+      ctx.font = '16px system-ui';
+      ctx.fillText('Puntuación: ' + score, canvas.width / 2, canvas.height / 2 + 60);
     }
 
     function drawCloud(x, y) {
@@ -209,18 +334,33 @@
       ctx.fill();
     }
 
+    function drawGoomba(g) {
+      // cuerpo
+      ctx.fillStyle = '#a0521a';
+      ctx.beginPath();
+      ctx.ellipse(g.x + g.w / 2, g.y + g.h / 2, g.w / 2, g.h / 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // pies
+      ctx.fillStyle = '#5a2c0c';
+      ctx.fillRect(g.x + 2, g.y + g.h - 5, 8, 5);
+      ctx.fillRect(g.x + g.w - 10, g.y + g.h - 5, 8, 5);
+      // ojos
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(g.x + 7, g.y + 8, 6, 8);
+      ctx.fillRect(g.x + g.w - 13, g.y + 8, 6, 8);
+      ctx.fillStyle = '#000';
+      ctx.fillRect(g.x + 9, g.y + 10, 3, 5);
+      ctx.fillRect(g.x + g.w - 11, g.y + 10, 3, 5);
+    }
+
     function drawPlayer() {
       const { x, y, w, h } = player;
-      // cuerpo (overol azul)
       ctx.fillStyle = '#0058f8';
       ctx.fillRect(x, y + h * 0.45, w, h * 0.55);
-      // camiseta roja
       ctx.fillStyle = '#e03030';
       ctx.fillRect(x, y + h * 0.3, w, h * 0.2);
-      // cara
       ctx.fillStyle = '#ffc1a0';
       ctx.fillRect(x + 4, y + 6, w - 8, h * 0.28);
-      // gorra roja
       ctx.fillStyle = '#e03030';
       ctx.fillRect(x + 2, y, w - 4, 8);
     }
@@ -230,6 +370,8 @@
       draw();
       requestAnimationFrame(loop);
     }
+
+    fullReset();
     loop();
   </script>
 </body>

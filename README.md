@@ -12,7 +12,10 @@ Abre el archivo `mario.html` con doble clic en cualquier navegador.
 - **← →** o **A/D**: moverte
 - **↑**, **W** o **Espacio**: saltar
 - **R**: reiniciar
-- Recorre el nivel saltando por las plataformas hasta llegar a la bandera de meta. Si caes al vacío, vuelves al inicio.
+- Recorre el nivel saltando por las plataformas hasta llegar a la bandera de meta.
+- **Goombas**: písalos saltando encima para eliminarlos; si te tocan de lado pierdes una vida.
+- **Monedas** y **bloques "?"** (golpéalos desde abajo) suman puntos.
+- Tienes **3 vidas**. Si caes al vacío o te quedas sin vidas, hay pantalla de Game Over.
 
 ## 🐍 Snake
 
