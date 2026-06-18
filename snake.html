@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Snake</title>
+  <style>
+    :root {
+      --bg: #1a1a2e;
+      --grid: #16213e;
+      --snake: #4ade80;
+      --snake-head: #22c55e;
+      --food: #f87171;
+      --text: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 16px;
+    }
+    h1 { font-size: 1.8rem; letter-spacing: 2px; }
+    .scoreboard {
+      display: flex;
+      gap: 32px;
+      font-size: 1.1rem;
+    }
+    .scoreboard span { color: var(--snake); font-weight: bold; }
+    canvas {
+      background: var(--grid);
+      border-radius: 8px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+      touch-action: none;
+    }
+    .hint { font-size: 0.85rem; opacity: 0.6; text-align: center; }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+    .overlay.show { display: flex; }
+    .overlay h2 { font-size: 2rem; }
+    button {
+      background: var(--snake);
+      color: #07210f;
+      border: none;
+      padding: 12px 24px;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover { background: var(--snake-head); }
+  </style>
+</head>
+<body>
+  <h1>🐍 SNAKE</h1>
+  <div class="scoreboard">
+    <div>Puntos: <span id="score">0</span></div>
+    <div>Récord: <span id="best">0</span></div>
+  </div>
+  <canvas id="game" width="400" height="400"></canvas>
+  <p class="hint">Usa las flechas o WASD para moverte · Espacio para pausar</p>
+
+  <div class="overlay" id="overlay">
+    <h2 id="overlayTitle">Game Over</h2>
+    <p id="overlayText">Pulsa para empezar</p>
+    <button id="startBtn">Jugar</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const bestEl = document.getElementById('best');
+    const overlay = document.getElementById('overlay');
+    const overlayTitle = document.getElementById('overlayTitle');
+    const overlayText = document.getElementById('overlayText');
+    const startBtn = document.getElementById('startBtn');
+
+    const GRID = 20;                       // celdas por lado
+    const CELL = canvas.width / GRID;      // tamaño de cada celda en px
+    const SPEED = 120;                     // ms entre pasos
+
+    let snake, dir, nextDir, food, score, best, running, paused, loopId;
+
+    best = Number(localStorage.getItem('snakeBest') || 0);
+    bestEl.textContent = best;
+
+    function reset() {
+      snake = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }];
+      dir = { x: 1, y: 0 };
+      nextDir = { x: 1, y: 0 };
+      score = 0;
+      scoreEl.textContent = score;
+      placeFood();
+      paused = false;
+    }
+
+    function placeFood() {
+      while (true) {
+        const f = {
+          x: Math.floor(Math.random() * GRID),
+          y: Math.floor(Math.random() * GRID)
+        };
+        if (!snake.some(s => s.x === f.x && s.y === f.y)) { food = f; return; }
+      }
+    }
+
+    function step() {
+      if (paused) return;
+      dir = nextDir;
+      const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+
+      // colisión con paredes o consigo mismo
+      if (head.x < 0 || head.x >= GRID || head.y < 0 || head.y >= GRID ||
+          snake.some(s => s.x === head.x && s.y === head.y)) {
+        return gameOver();
+      }
+
+      snake.unshift(head);
+
+      if (head.x === food.x && head.y === food.y) {
+        score++;
+        scoreEl.textContent = score;
+        placeFood();
+      } else {
+        snake.pop();
+      }
+
+      draw();
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // comida
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--food');
+      drawCell(food.x, food.y);
+
+      // serpiente
+      snake.forEach((s, i) => {
+        ctx.fillStyle = i === 0
+          ? getComputedStyle(document.documentElement).getPropertyValue('--snake-head')
+          : getComputedStyle(document.documentElement).getPropertyValue('--snake');
+        drawCell(s.x, s.y);
+      });
+    }
+
+    function drawCell(x, y) {
+      const pad = 1;
+      ctx.fillRect(x * CELL + pad, y * CELL + pad, CELL - pad * 2, CELL - pad * 2);
+    }
+
+    function gameOver() {
+      running = false;
+      clearInterval(loopId);
+      if (score > best) {
+        best = score;
+        localStorage.setItem('snakeBest', best);
+        bestEl.textContent = best;
+      }
+      overlayTitle.textContent = 'Game Over';
+      overlayText.textContent = `Puntuación: ${score}`;
+      startBtn.textContent = 'Jugar de nuevo';
+      overlay.classList.add('show');
+    }
+
+    function start() {
+      reset();
+      running = true;
+      overlay.classList.remove('show');
+      clearInterval(loopId);
+      loopId = setInterval(step, SPEED);
+      draw();
+    }
+
+    function setDir(x, y) {
+      // evitar invertir el sentido directamente
+      if (x === -dir.x && y === -dir.y) return;
+      nextDir = { x, y };
+    }
+
+    document.addEventListener('keydown', e => {
+      switch (e.key) {
+        case 'ArrowUp': case 'w': case 'W': setDir(0, -1); break;
+        case 'ArrowDown': case 's': case 'S': setDir(0, 1); break;
+        case 'ArrowLeft': case 'a': case 'A': setDir(-1, 0); break;
+        case 'ArrowRight': case 'd': case 'D': setDir(1, 0); break;
+        case ' ':
+          if (running) { paused = !paused; }
+          break;
+      }
+      if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
+    });
+
+    startBtn.addEventListener('click', start);
+
+    // pantalla inicial
+    overlayTitle.textContent = '🐍 Snake';
+    overlayText.textContent = 'Come la comida y no choques';
+    overlay.classList.add('show');
+  </script>
+</body>
+</html>
