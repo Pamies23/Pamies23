@@ -31,6 +31,24 @@
     }
     .hint { font-size: 0.85rem; opacity: 0.85; text-shadow: 0 1px 3px rgba(0,0,0,0.5); text-align: center; }
 
+    /* ---- Flechas táctiles (una a cada lado) ---- */
+    #touch { position: fixed; inset: 0; pointer-events: none; display: none; z-index: 20; }
+    .arrow {
+      position: absolute;
+      bottom: calc(22px + env(safe-area-inset-bottom));
+      width: 92px; height: 92px; border-radius: 26px;
+      background: rgba(255,255,255,0.13);
+      border: 2px solid rgba(255,255,255,0.30);
+      backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+      color: rgba(255,255,255,0.85); font-size: 46px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.28);
+      pointer-events: auto; transition: transform .05s, background .05s;
+    }
+    .arrow.left  { left:  calc(18px + env(safe-area-inset-left)); }
+    .arrow.right { right: calc(18px + env(safe-area-inset-right)); }
+    .arrow.pressed, .arrow:active { background: rgba(255,255,255,0.32); transform: scale(0.94); }
+
     #rotate {
       position: fixed; inset: 0; z-index: 50; display: none;
       align-items: center; justify-content: center; flex-direction: column; gap: 14px;
@@ -39,9 +57,11 @@
     #rotate .ico { font-size: 56px; animation: spin 2s ease-in-out infinite; }
     @keyframes spin { 0%,100%{transform:rotate(-12deg)} 50%{transform:rotate(78deg)} }
 
+    @media (pointer: coarse) { #touch { display: block; } }
     @media (pointer: coarse) and (orientation: landscape) {
       body { padding: 0; gap: 0; }
       h1, .hint { display: none; }
+      canvas { position: fixed; inset: 0; border-radius: 0; }
     }
     @media (pointer: coarse) and (orientation: portrait) {
       #rotate { display: flex; }
@@ -51,7 +71,12 @@
 <body>
   <h1>⚡ RAYO — ¡A CORRER!</h1>
   <canvas id="game"></canvas>
-  <p class="hint">Toca o arrastra para mover el coche · Recoge las Copas 🏆 · Flechas/A-D en el ordenador</p>
+  <p class="hint">Usa las flechas de los lados para mover a Rayo · Recoge las Copas 🏆</p>
+
+  <div id="touch">
+    <div class="arrow left"  id="btnLeft"  aria-label="Izquierda">‹</div>
+    <div class="arrow right" id="btnRight" aria-label="Derecha">›</div>
+  </div>
 
   <div id="rotate">
     <div class="ico">📱</div>
@@ -63,7 +88,7 @@
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
 
-    // --- Resolución responsive (llena la pantalla sin deformar) ---
+    // --- Resolución responsive (llena toda la pantalla) ---
     const VIEW_H = 400;
     let VIEW_W = 800;
     const DPR = Math.min(2, window.devicePixelRatio || 1) * 1.5;
@@ -94,8 +119,8 @@
     resize();
 
     // --- Perspectiva (cámara trasera) ---
-    const HORIZON = VIEW_H * 0.34;
-    const HALF_HORIZON = 12;
+    const HORIZON = VIEW_H * 0.36;
+    const HALF_HORIZON = 10;
     function CX() { return VIEW_W / 2; }
     function halfBottom() { return VIEW_W * 0.42; }
     function fPersp(d) { return 1 / (1 + Math.max(d, 0) * 6); }
@@ -103,14 +128,15 @@
     function halfRoad(d) { return HALF_HORIZON + (halfBottom() - HALF_HORIZON) * fPersp(d); }
     function projX(lane, d) { return CX() + lane * halfRoad(d); }
 
-    // --- Estado del juego ---
-    const car = { w: 78, h: 70, lane: 0, targetLane: 0, wobble: 0, tilt: 0 };
-    let roadScroll = 0, speed = 5, cups = 0, started = false, t = 0;
-    const items = [];        // {lane, depth, type:'cup'|'cone', bob, done}
+    // --- Estado ---
+    const car = { w: 86, h: 78, lane: 0, targetLane: 0, wobble: 0, tilt: 0 };
+    let roadScroll = 0, speed = 3, cups = 0, started = false, t = 0;
+    const items = [];        // {lane, depth, type, bob, done}
+    const props = [];        // árboles decorativos a los lados
     const particles = [];
     const floats = [];
-    let spawnTimer = 0;
-    const clouds = Array.from({ length: 5 }, (_, i) => ({ x: i * 220, y: 40 + (i % 2) * 30 }));
+    let spawnTimer = 0, propTimer = 0;
+    const clouds = Array.from({ length: 5 }, (_, i) => ({ x: i * 220, y: 38 + (i % 2) * 26 }));
 
     // --- Sonido (se activa con el primer toque) ---
     let actx = null;
@@ -120,8 +146,7 @@
       try {
         const o = actx.createOscillator(), g = actx.createGain();
         o.type = type || 'sine'; o.frequency.value = freq;
-        g.gain.value = vol || 0.08;
-        o.connect(g); g.connect(actx.destination);
+        g.gain.value = vol || 0.08; o.connect(g); g.connect(actx.destination);
         const now = actx.currentTime;
         g.gain.setValueAtTime(g.gain.value, now);
         g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
@@ -131,17 +156,21 @@
     function happySound() { beep(660, 0.12, 'triangle', 0.09); setTimeout(() => beep(990, 0.14, 'triangle', 0.09), 90); }
     function boingSound() { beep(180, 0.18, 'sawtooth', 0.06); }
 
-    // --- Entrada: el coche va hacia donde tocas ---
+    // --- Entrada: flechas a los lados (+ teclado en ordenador) ---
     const keys = {};
-    function pointerToTarget(clientX) {
-      const rect = canvas.getBoundingClientRect();
-      const gx = (clientX - rect.left) / rect.width * VIEW_W;
-      car.targetLane = Math.max(-0.92, Math.min(0.92, (gx - CX()) / (halfBottom() * 0.8)));
+    function holdButton(id, key) {
+      const el = document.getElementById(id); if (!el) return;
+      const press = e => { e.preventDefault(); keys[key] = true; started = true; ensureAudio(); el.classList.add('pressed'); };
+      const release = e => { if (e) e.preventDefault(); keys[key] = false; el.classList.remove('pressed'); };
+      el.addEventListener('pointerdown', press);
+      el.addEventListener('pointerup', release);
+      el.addEventListener('pointercancel', release);
+      el.addEventListener('pointerleave', release);
+      el.addEventListener('contextmenu', e => e.preventDefault());
     }
-    function onDown(e) { started = true; ensureAudio(); pointerToTarget(e.clientX); e.preventDefault(); }
-    function onMove(e) { if (e.buttons || e.pointerType === 'touch') pointerToTarget(e.clientX); }
-    canvas.addEventListener('pointerdown', onDown);
-    canvas.addEventListener('pointermove', onMove);
+    holdButton('btnLeft', 'arrowleft');
+    holdButton('btnRight', 'arrowright');
+    canvas.addEventListener('pointerdown', e => { started = true; ensureAudio(); e.preventDefault(); });
     document.addEventListener('keydown', e => {
       keys[e.key.toLowerCase()] = true; started = true; ensureAudio();
       if (['arrowleft','arrowright','arrowup','arrowdown',' '].includes(e.key.toLowerCase())) e.preventDefault();
@@ -160,26 +189,32 @@
     function update() {
       t++;
       if (started) {
-        if (keys['arrowleft'] || keys['a']) car.targetLane = Math.max(-0.92, car.targetLane - 0.05);
-        if (keys['arrowright'] || keys['d']) car.targetLane = Math.min(0.92, car.targetLane + 0.05);
+        if (keys['arrowleft'] || keys['a']) car.targetLane = Math.max(-0.9, car.targetLane - 0.035);
+        if (keys['arrowright'] || keys['d']) car.targetLane = Math.min(0.9, car.targetLane + 0.035);
 
         const dl = car.targetLane - car.lane;
-        car.lane += dl * 0.18;
-        car.tilt = Math.max(-0.18, Math.min(0.18, dl * 0.6));
+        car.lane += dl * 0.15;
+        car.tilt = Math.max(-0.16, Math.min(0.16, dl * 0.5));
         if (car.wobble > 0) car.wobble--;
 
-        speed = Math.min(9, 5 + cups * 0.05);
-        roadScroll += speed * 0.02;
+        // Velocidad tranquila (sube muy poquito)
+        speed = Math.min(5, 3 + cups * 0.03);
+        roadScroll += speed * 0.016;
 
-        // Generar objetos lejos (en el horizonte)
+        // Copas y conos
         if (--spawnTimer <= 0) {
-          spawnTimer = Math.max(26, 64 - cups);
-          const isCone = Math.random() < 0.28;
+          spawnTimer = Math.max(46, 78 - cups);
+          const isCone = Math.random() < 0.26;
           items.push({ lane: (Math.random() * 1.6 - 0.8), depth: 2.7, type: isCone ? 'cone' : 'cup', bob: Math.random() * 6, done: false });
         }
+        // Árboles a los lados
+        if (--propTimer <= 0) {
+          propTimer = 40 + Math.floor(Math.random() * 30);
+          const side = Math.random() < 0.5 ? -1 : 1;
+          props.push({ lane: side * (1.25 + Math.random() * 0.4), depth: 2.7, kind: Math.random() < 0.5 ? 0 : 1 });
+        }
 
-        // Acercar objetos y comprobar recogida/choque
-        const dz = speed * 0.0017;
+        const dz = speed * 0.0042;
         for (let i = items.length - 1; i >= 0; i--) {
           const it = items[i];
           it.depth -= dz;
@@ -199,6 +234,10 @@
             items.splice(i, 1);
           }
         }
+        for (let i = props.length - 1; i >= 0; i--) {
+          props[i].depth -= dz;
+          if (props[i].depth < -0.2) props.splice(i, 1);
+        }
       }
 
       for (let i = particles.length - 1; i >= 0; i--) {
@@ -207,7 +246,7 @@
         if (p.life <= 0) particles.splice(i, 1);
       }
       for (let i = floats.length - 1; i >= 0; i--) {
-        floats[i].y -= 1.2; floats[i].life -= 0.02;
+        floats[i].y -= 1.1; floats[i].life -= 0.02;
         if (floats[i].life <= 0) floats.splice(i, 1);
       }
     }
@@ -233,56 +272,58 @@
       }
       ctx.closePath(); ctx.fill();
     }
+    function band(xLF, xRF, yF, xLN, xRN, yN) {
+      ctx.beginPath();
+      ctx.moveTo(xLF, yF); ctx.lineTo(xRF, yF); ctx.lineTo(xRN, yN); ctx.lineTo(xLN, yN);
+      ctx.closePath(); ctx.fill();
+    }
 
     // ===================== RENDER =====================
     function draw() {
-      // Cielo
-      const sky = ctx.createLinearGradient(0, 0, 0, HORIZON + 30);
-      sky.addColorStop(0, '#4db8ec'); sky.addColorStop(1, '#bfeaff');
-      ctx.fillStyle = sky; ctx.fillRect(0, 0, VIEW_W, HORIZON + 30);
+      // Cielo suave
+      const sky = ctx.createLinearGradient(0, 0, 0, HORIZON + 40);
+      sky.addColorStop(0, '#7ed0f2'); sky.addColorStop(1, '#d6f0ff');
+      ctx.fillStyle = sky; ctx.fillRect(0, 0, VIEW_W, HORIZON + 40);
 
-      // Sol
-      ctx.fillStyle = '#fff3b0';
-      ctx.beginPath(); ctx.arc(VIEW_W - 90, 56, 28, 0, Math.PI * 2); ctx.fill();
+      // Sol con halo
+      const sx = VIEW_W - 95, sy = 54;
+      const halo = ctx.createRadialGradient(sx, sy, 6, sx, sy, 70);
+      halo.addColorStop(0, 'rgba(255,248,210,0.9)'); halo.addColorStop(1, 'rgba(255,248,210,0)');
+      ctx.fillStyle = halo; ctx.fillRect(sx - 80, sy - 80, 160, 160);
+      ctx.fillStyle = '#fff4cf'; ctx.beginPath(); ctx.arc(sx, sy, 26, 0, Math.PI * 2); ctx.fill();
 
       // Nubes
-      ctx.fillStyle = 'rgba(255,255,255,0.95)';
-      for (const c of clouds) {
-        c.x -= 0.15; if (c.x < -90) c.x = VIEW_W + 60;
-        cloud(c.x, c.y);
-      }
+      ctx.fillStyle = 'rgba(255,255,255,0.96)';
+      for (const c of clouds) { c.x -= 0.12; if (c.x < -90) c.x = VIEW_W + 60; cloud(c.x, c.y); }
 
-      // Colinas en el horizonte
-      ctx.fillStyle = '#7cc85e';
-      for (let i = -1; i < 7; i++) {
-        const hx = i * 170 - ((roadScroll * 4) % 170);
-        ctx.beginPath(); ctx.moveTo(hx, HORIZON + 2);
-        ctx.quadraticCurveTo(hx + 85, HORIZON - 34, hx + 170, HORIZON + 2); ctx.fill();
-      }
+      // Colinas (dos capas suaves)
+      hills(0.30, '#9bd97e', 40);
+      hills(0.55, '#7cc85e', 18);
 
       drawRoad();
 
-      // Objetos: de lejos a cerca
-      const sorted = items.slice().sort((a, b) => b.depth - a.depth);
-      for (const it of sorted) {
-        const d = Math.max(it.depth, 0);
-        const s = 0.5 + fPersp(d) * 1.1;
-        const x = projX(it.lane, d), y = projY(d);
-        if (it.type === 'cup') drawCup(x, y + Math.sin((t + it.bob) * 0.15) * 2, s);
+      // Árboles laterales + objetos, ordenados de lejos a cerca
+      const scene = [];
+      for (const p of props) scene.push({ d: p.depth, kind: 'tree', ref: p });
+      for (const it of items) scene.push({ d: it.depth, kind: 'item', ref: it });
+      scene.sort((a, b) => b.d - a.d);
+      for (const o of scene) {
+        const d = Math.max(o.d, 0);
+        const s = 0.45 + fPersp(d) * 1.15;
+        const x = projX(o.ref.lane, d), y = projY(d);
+        if (o.kind === 'tree') drawTree(x, y, s, o.ref.kind);
+        else if (o.ref.type === 'cup') drawCup(x, y + Math.sin((t + o.ref.bob) * 0.15) * 2, s);
         else drawCone(x, y, s);
       }
 
       drawCar();
 
-      // Partículas
       for (const p of particles) {
         ctx.globalAlpha = Math.max(0, p.life);
-        ctx.fillStyle = p.color;
-        star(p.x, p.y, p.r + 1.5, p.life * 6);
+        ctx.fillStyle = p.color; star(p.x, p.y, p.r + 1.5, p.life * 6);
       }
       ctx.globalAlpha = 1;
 
-      // Textos flotantes
       ctx.textAlign = 'center';
       for (const f of floats) {
         ctx.globalAlpha = Math.max(0, f.life);
@@ -305,15 +346,26 @@
       ctx.fill();
     }
 
+    function hills(par, color, h) {
+      ctx.fillStyle = color;
+      const off = (roadScroll * 6 * par) % 200;
+      for (let i = -1; i < 8; i++) {
+        const hx = i * 200 - off;
+        ctx.beginPath();
+        ctx.moveTo(hx, HORIZON + 2);
+        ctx.quadraticCurveTo(hx + 100, HORIZON - h, hx + 200, HORIZON + 2);
+        ctx.fill();
+      }
+    }
+
     function drawRoad() {
       const cx = CX();
-      // Césped base
-      ctx.fillStyle = '#62c24c';
+      ctx.fillStyle = '#66bf48';
       ctx.fillRect(0, HORIZON, VIEW_W, VIEW_H - HORIZON);
 
-      // Bandas en perspectiva (suelo + carretera) para sensación de velocidad
-      const ROWS = 22, STEP = 0.16;
-      const scrollD = roadScroll * 0.9;
+      // Bandas en perspectiva — colores MUY suaves (sin parpadeo)
+      const ROWS = 18, STEP = 0.2;
+      const scrollD = roadScroll * 0.5;
       for (let i = ROWS; i >= 0; i--) {
         const dF = (i + 1) * STEP - (scrollD % STEP);
         const dN = i * STEP - (scrollD % STEP);
@@ -323,183 +375,185 @@
         const parity = (i + Math.floor(scrollD / STEP)) % 2;
         const hF = halfRoad(Math.max(dF, 0)), hN = halfRoad(Math.max(dN, 0));
 
-        // césped (dos verdes alternos)
-        ctx.fillStyle = parity ? '#5cbb44' : '#67c952';
+        // césped: dos verdes casi idénticos (textura sutil)
+        ctx.fillStyle = parity ? '#69bf47' : '#65bb44';
         ctx.fillRect(0, yF, VIEW_W, yN - yF + 1);
 
-        // rumble (bordes rojo/blanco)
-        ctx.fillStyle = parity ? '#e23b2b' : '#f4f4f4';
-        band(cx - hF * 1.16, cx - hF, yF, cx - hN * 1.16, cx - hN, yN);
-        band(cx + hF, cx + hF * 1.16, yF, cx + hN, cx + hN * 1.16, yN);
+        // rumble lateral: rojo apagado / crema (poco contraste)
+        ctx.fillStyle = parity ? '#cf6b59' : '#ece4d6';
+        band(cx - hF * 1.14, cx - hF, yF, cx - hN * 1.14, cx - hN, yN);
+        band(cx + hF, cx + hF * 1.14, yF, cx + hN, cx + hN * 1.14, yN);
 
-        // asfalto
-        ctx.fillStyle = parity ? '#3b4048' : '#434851';
+        // asfalto: tono único (sin parpadeo)
+        ctx.fillStyle = '#474d57';
         band(cx - hF, cx + hF, yF, cx - hN, cx + hN, yN);
 
-        // línea discontinua central (en bandas claras)
-        if (!parity) {
-          ctx.fillStyle = 'rgba(255,220,90,0.95)';
-          band(cx - hF * 0.04, cx + hF * 0.04, yF, cx - hN * 0.04, cx + hN * 0.04, yN);
+        // línea central discontinua (suave)
+        if (parity) {
+          ctx.fillStyle = 'rgba(245,225,140,0.8)';
+          band(cx - hF * 0.035, cx + hF * 0.035, yF, cx - hN * 0.035, cx + hN * 0.035, yN);
         }
       }
     }
-    // Cuadrilátero (trapecio) entre dos líneas horizontales
-    function band(xLF, xRF, yF, xLN, xRN, yN) {
-      ctx.beginPath();
-      ctx.moveTo(xLF, yF); ctx.lineTo(xRF, yF); ctx.lineTo(xRN, yN); ctx.lineTo(xLN, yN);
-      ctx.closePath(); ctx.fill();
+
+    function drawTree(x, y, sc, kind) {
+      ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
+      ctx.fillStyle = 'rgba(0,0,0,0.16)'; ell(0, 2, 14, 4);
+      ctx.fillStyle = '#7a4a1e'; roundRect(-4, -22, 8, 24, 3); ctx.fill();
+      if (kind === 0) {
+        const g = ctx.createRadialGradient(-5, -42, 4, 0, -38, 24);
+        g.addColorStop(0, '#7ad95f'); g.addColorStop(1, '#3f9e34');
+        ctx.fillStyle = g;
+        ell(0, -38, 20, 22);
+        ctx.fillStyle = 'rgba(255,255,255,0.12)'; ell(-7, -46, 6, 6);
+      } else {
+        const g = ctx.createLinearGradient(0, -54, 0, -20);
+        g.addColorStop(0, '#7ad95f'); g.addColorStop(1, '#3f9e34');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.moveTo(0, -56); ctx.lineTo(15, -22); ctx.lineTo(-15, -22); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(0, -44); ctx.lineTo(17, -8); ctx.lineTo(-17, -8); ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
     }
 
-    // Copa Pistón
     function drawCup(x, y, sc) {
       ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
       const tw = 0.5 + Math.sin(t * 0.1 + x) * 0.5;
-      ctx.fillStyle = 'rgba(255,240,160,' + (0.3 * tw) + ')';
-      ell(0, 0, 20, 20);
+      ctx.fillStyle = 'rgba(255,240,160,' + (0.3 * tw) + ')'; ell(0, 0, 20, 20);
       const g = ctx.createLinearGradient(-12, -12, 12, 12);
       g.addColorStop(0, '#ffe98a'); g.addColorStop(0.5, '#ffd23f'); g.addColorStop(1, '#e0a000');
       ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.moveTo(-11, -12); ctx.quadraticCurveTo(-13, 4, 0, 8); ctx.quadraticCurveTo(13, 4, 11, -12);
-      ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-11, -12); ctx.quadraticCurveTo(-13, 4, 0, 8); ctx.quadraticCurveTo(13, 4, 11, -12); ctx.closePath(); ctx.fill();
       ctx.strokeStyle = '#e0a000'; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.arc(-11, -7, 5, Math.PI * 0.4, Math.PI * 1.6); ctx.stroke();
       ctx.beginPath(); ctx.arc(11, -7, 5, -Math.PI * 0.6, Math.PI * 0.6); ctx.stroke();
-      ctx.fillStyle = '#e0a000';
-      roundRect(-3, 8, 6, 6, 1); ctx.fill();
-      roundRect(-9, 13, 18, 5, 2); ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,' + tw + ')';
-      star(6, -8, 3, t * 0.1);
+      ctx.fillStyle = '#e0a000'; roundRect(-3, 8, 6, 6, 1); ctx.fill(); roundRect(-9, 13, 18, 5, 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,' + tw + ')'; star(6, -8, 3, t * 0.1);
       ctx.restore();
     }
 
     function drawCone(x, y, sc) {
       ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
-      ctx.fillStyle = 'rgba(0,0,0,0.18)';
-      ell(0, 16, 16, 5);
+      ctx.fillStyle = 'rgba(0,0,0,0.18)'; ell(0, 16, 16, 5);
       const g = ctx.createLinearGradient(0, -18, 0, 16);
       g.addColorStop(0, '#ff8a3c'); g.addColorStop(1, '#ef5f1f');
       ctx.fillStyle = g;
       ctx.beginPath(); ctx.moveTo(0, -18); ctx.lineTo(14, 14); ctx.lineTo(-14, 14); ctx.closePath(); ctx.fill();
       ctx.fillStyle = '#fff';
       ctx.beginPath(); ctx.moveTo(-8, 1); ctx.lineTo(8, 1); ctx.lineTo(10, 7); ctx.lineTo(-10, 7); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#d84e16';
-      roundRect(-16, 14, 32, 5, 2); ctx.fill();
+      ctx.fillStyle = '#d84e16'; roundRect(-16, 14, 32, 5, 2); ctx.fill();
       ctx.restore();
     }
 
-    // Coche estilo carrera (vista TRASERA / cámara de persecución)
+    // Coche de carreras visto por DETRÁS (sin ojos), diseño limpio
     function drawCar() {
-      const wob = car.wobble > 0 ? Math.sin(t * 0.8) * 3 : 0;
-      const bounce = Math.sin(t * 0.25) * 1.0;
+      const wob = car.wobble > 0 ? Math.sin(t * 0.8) * 2.5 : 0;
+      const bounce = Math.sin(t * 0.22) * 0.8;
       const x = CX() + car.lane * halfBottom() * 0.8 + wob;
-      const y = VIEW_H - 58 + bounce;
-      const w = car.w, h = car.h;
+      const y = VIEH(), w = car.w, h = car.h;
       ctx.save();
-      ctx.translate(x, y);
+      ctx.translate(x, y + bounce);
       ctx.rotate(car.tilt);
 
       // sombra
-      ctx.fillStyle = 'rgba(0,0,0,0.28)';
-      ell(0, h / 2 + 6, w / 2 + 8, 12);
+      ctx.fillStyle = 'rgba(0,0,0,0.30)'; ell(0, h / 2 + 7, w / 2 + 10, 13);
 
-      // ruedas traseras (grandes, cerca)
+      // ruedas traseras con llanta
       for (const s of [-1, 1]) {
-        ctx.fillStyle = '#15171a';
-        roundRect(s * (w / 2 - 5) - 9, h / 2 - 20, 18, 26, 7); ctx.fill();
-        ctx.fillStyle = '#3a3d42';
-        roundRect(s * (w / 2 - 5) - 6, h / 2 - 16, 12, 16, 4); ctx.fill();
+        ctx.fillStyle = '#16181b';
+        roundRect(s * (w / 2 - 4) - 10, h / 2 - 22, 20, 28, 8); ctx.fill();
+        ctx.fillStyle = '#2c2f34';
+        roundRect(s * (w / 2 - 4) - 7, h / 2 - 18, 14, 18, 5); ctx.fill();
+        ctx.fillStyle = '#c9ced6';
+        ell(s * (w / 2 - 4), h / 2 - 9, 4, 5);
       }
 
-      // carrocería (trapecio: más ancho atrás/abajo)
-      const body = ctx.createLinearGradient(-w / 2, 0, w / 2, 0);
-      body.addColorStop(0, '#b41a0c'); body.addColorStop(0.5, '#f0331f'); body.addColorStop(1, '#b41a0c');
+      // carrocería (trapecio: más ancho abajo/atrás) con degradado vertical
+      const body = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
+      body.addColorStop(0, '#ff4630'); body.addColorStop(0.55, '#e22a18'); body.addColorStop(1, '#a81708');
       ctx.fillStyle = body;
       ctx.beginPath();
-      ctx.moveTo(-w * 0.32, -h / 2 + 6); ctx.lineTo(w * 0.32, -h / 2 + 6);
-      ctx.lineTo(w * 0.5, h / 2 - 4); ctx.lineTo(-w * 0.5, h / 2 - 4);
+      ctx.moveTo(-w * 0.30, -h / 2 + 8);
+      ctx.quadraticCurveTo(-w * 0.5, h / 2 - 20, -w * 0.5, h / 2 - 6);
+      ctx.lineTo(w * 0.5, h / 2 - 6);
+      ctx.quadraticCurveTo(w * 0.5, h / 2 - 20, w * 0.30, -h / 2 + 8);
       ctx.closePath(); ctx.fill();
-      roundRect(-w / 2, h / 2 - 18, w, 16, 9); ctx.fill();
+      roundRect(-w / 2, h / 2 - 20, w, 16, 10); ctx.fill();
 
-      // techo (delante, lejos) más estrecho
-      ctx.fillStyle = '#e22a18';
-      roundRect(-w * 0.26, -h / 2, w * 0.52, 15, 8); ctx.fill();
-      // brillo
-      ctx.fillStyle = 'rgba(255,255,255,0.16)';
-      roundRect(-w * 0.22, -h / 2 + 3, w * 0.44, 5, 3); ctx.fill();
+      // sombreado lateral para dar volumen
+      ctx.fillStyle = 'rgba(0,0,0,0.16)';
+      roundRect(-w / 2, h / 2 - 22, 9, 18, 5); ctx.fill();
+      roundRect(w / 2 - 9, h / 2 - 22, 9, 18, 5); ctx.fill();
+      // brillo central superior
+      ctx.fillStyle = 'rgba(255,255,255,0.20)';
+      roundRect(-w * 0.22, -h / 2 + 10, w * 0.44, 7, 4); ctx.fill();
 
-      // parabrisas + OJOS asomando por delante (Rayo reconocible)
-      const ws = ctx.createLinearGradient(0, -h / 2 + 4, 0, -h / 2 + 20);
-      ws.addColorStop(0, '#d6f1ff'); ws.addColorStop(1, '#8ccbef');
-      ctx.fillStyle = ws;
+      // techo/capó (parte de delante, más estrecho y lejano)
+      ctx.fillStyle = '#cf2314';
+      roundRect(-w * 0.24, -h / 2, w * 0.48, 16, 9); ctx.fill();
+
+      // luneta trasera (cristal oscuro con reflejo) — sin ojos
+      const gl = ctx.createLinearGradient(0, -h / 2 + 14, 0, -h / 2 + 34);
+      gl.addColorStop(0, '#3a4350'); gl.addColorStop(1, '#222831');
+      ctx.fillStyle = gl;
       ctx.beginPath();
-      ctx.moveTo(-w * 0.22, -h / 2 + 6); ctx.lineTo(w * 0.22, -h / 2 + 6);
-      ctx.lineTo(w * 0.17, -h / 2 + 19); ctx.lineTo(-w * 0.17, -h / 2 + 19);
+      ctx.moveTo(-w * 0.22, -h / 2 + 14); ctx.lineTo(w * 0.22, -h / 2 + 14);
+      ctx.lineTo(w * 0.28, -h / 2 + 34); ctx.lineTo(-w * 0.28, -h / 2 + 34);
       ctx.closePath(); ctx.fill();
-      const blink = (t % 220) < 8;
-      for (const s of [-1, 1]) {
-        const ex = s * 9, ey = -h / 2 + 12;
-        ctx.fillStyle = '#fff'; ell(ex, ey, 5.5, 6);
-        if (!blink) {
-          ctx.fillStyle = '#2aa3e0'; ell(ex, ey + 1, 3, 3.4);
-          ctx.fillStyle = '#10243a'; ell(ex, ey + 1.5, 1.5, 1.8);
-          ctx.fillStyle = '#fff'; ell(ex + 1, ey, 0.8, 0.9);
-        } else {
-          ctx.strokeStyle = '#2b4a5c'; ctx.lineWidth = 1.6;
-          ctx.beginPath(); ctx.moveTo(ex - 4, ey); ctx.lineTo(ex + 4, ey); ctx.stroke();
-        }
-      }
-
-      // luneta trasera oscura
-      ctx.fillStyle = '#2a2f36';
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
       ctx.beginPath();
-      ctx.moveTo(-w * 0.22, -h / 2 + 16); ctx.lineTo(w * 0.22, -h / 2 + 16);
-      ctx.lineTo(w * 0.28, -h / 2 + 30); ctx.lineTo(-w * 0.28, -h / 2 + 30);
+      ctx.moveTo(-w * 0.18, -h / 2 + 16); ctx.lineTo(-w * 0.02, -h / 2 + 16);
+      ctx.lineTo(-w * 0.10, -h / 2 + 33); ctx.lineTo(-w * 0.24, -h / 2 + 33);
       ctx.closePath(); ctx.fill();
 
-      // rayo amarillo + 95
+      // rayo amarillo + número 95
       ctx.fillStyle = '#ffd23f'; ctx.strokeStyle = '#e8a000'; ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.moveTo(-9, -h / 2 + 34); ctx.lineTo(6, -h / 2 + 34); ctx.lineTo(-1, -h / 2 + 42);
-      ctx.lineTo(9, -h / 2 + 42); ctx.lineTo(-7, h / 2 - 20); ctx.lineTo(0, -h / 2 + 46);
-      ctx.lineTo(-10, -h / 2 + 46); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#fff'; ell(0, h / 2 - 22, 12, 12);
-      ctx.fillStyle = '#111'; ctx.font = '900 14px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('95', 0, h / 2 - 21); ctx.textBaseline = 'alphabetic';
+      ctx.moveTo(-9, -h / 2 + 38); ctx.lineTo(7, -h / 2 + 38); ctx.lineTo(-1, -h / 2 + 47);
+      ctx.lineTo(10, -h / 2 + 47); ctx.lineTo(-8, h / 2 - 22); ctx.lineTo(0, -h / 2 + 52);
+      ctx.lineTo(-11, -h / 2 + 52); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#fff'; ell(0, h / 2 - 24, 13, 13);
+      ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(0, h / 2 - 24, 13, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = '#111'; ctx.font = '900 15px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('95', 0, h / 2 - 23); ctx.textBaseline = 'alphabetic';
 
-      // alerón trasero
-      ctx.fillStyle = '#7a0f06';
-      roundRect(-w * 0.42, h / 2 - 12, w * 0.84, 6, 3); ctx.fill();
+      // alerón trasero con placas laterales
+      ctx.fillStyle = '#8a1107';
+      roundRect(-w * 0.44, h / 2 - 14, w * 0.88, 7, 3); ctx.fill();
       ctx.fillStyle = '#c81f0f';
-      roundRect(-w * 0.30, h / 2 - 11, 6, 9, 2); ctx.fill();
-      roundRect(w * 0.30 - 6, h / 2 - 11, 6, 9, 2); ctx.fill();
+      roundRect(-w * 0.30, h / 2 - 13, 6, 11, 2); ctx.fill();
+      roundRect(w * 0.30 - 6, h / 2 - 13, 6, 11, 2); ctx.fill();
+      roundRect(-w * 0.46, h / 2 - 17, 5, 13, 2); ctx.fill();
+      roundRect(w * 0.46 - 5, h / 2 - 17, 5, 13, 2); ctx.fill();
 
-      // pilotos traseros
-      ctx.fillStyle = '#ff5a4a';
-      roundRect(-w * 0.46, h / 2 - 6, 12, 5, 2); ctx.fill();
-      roundRect(w * 0.46 - 12, h / 2 - 6, 12, 5, 2); ctx.fill();
-      ctx.fillStyle = 'rgba(255,200,150,0.95)';
-      roundRect(-w * 0.44, h / 2 - 5, 5, 3, 1); ctx.fill();
-      roundRect(w * 0.44 - 5, h / 2 - 5, 5, 3, 1); ctx.fill();
-
-      // escapes
-      ctx.fillStyle = '#cdd3da';
-      ell(-7, h / 2 - 1, 2.5, 2); ell(7, h / 2 - 1, 2.5, 2);
+      // pilotos traseros (brillan)
+      for (const s of [-1, 1]) {
+        ctx.fillStyle = '#7a0f06'; roundRect(s * w * 0.30 - 13, h / 2 - 6, 26 * 0 + 16, 6, 3); ctx.fill();
+        ctx.fillStyle = '#ff5a4a'; roundRect(s * w * 0.30 - 12, h / 2 - 5, 14, 4, 2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,210,170,0.95)'; roundRect(s * w * 0.30 - 10, h / 2 - 4.5, 5, 2.5, 1); ctx.fill();
+      }
+      // difusor + escapes
+      ctx.fillStyle = '#23262b'; roundRect(-12, h / 2 - 6, 24, 6, 2); ctx.fill();
+      ctx.fillStyle = '#3a3f47';
+      for (let k = -2; k <= 2; k++) { roundRect(k * 4 - 1, h / 2 - 6, 2, 6, 1); ctx.fill(); }
+      ctx.fillStyle = '#cdd3da'; ell(-8, h / 2 - 1, 2.6, 2); ell(8, h / 2 - 1, 2.6, 2);
 
       ctx.restore();
       ctx.textAlign = 'left';
     }
+    function VIEH() { return VIEW_H - 54; }
 
     function drawHUD() {
       ctx.save();
       ctx.fillStyle = 'rgba(20,14,8,0.42)';
-      roundRect(12, 12, 132, 44, 14); ctx.fill();
+      roundRect(14, 14, 132, 44, 14); ctx.fill();
       ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1.5;
-      roundRect(12, 12, 132, 44, 14); ctx.stroke();
-      drawCup(34, 34, 1);
+      roundRect(14, 14, 132, 44, 14); ctx.stroke();
+      drawCup(36, 36, 1);
       ctx.fillStyle = '#fff'; ctx.font = '800 24px system-ui';
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.fillText('×' + cups, 56, 35);
+      ctx.fillText('×' + cups, 58, 37);
       ctx.restore();
       ctx.textBaseline = 'alphabetic';
     }
@@ -510,9 +564,9 @@
       ctx.textAlign = 'center';
       ctx.fillStyle = '#ffd23f'; ctx.font = '800 40px system-ui';
       ctx.fillText('⚡ ¡A CORRER!', VIEW_W / 2, VIEW_H / 2 - 14);
-      ctx.fillStyle = '#fff'; ctx.font = '700 20px system-ui';
+      ctx.fillStyle = '#fff'; ctx.font = '700 19px system-ui';
       ctx.globalAlpha = 0.6 + Math.sin(t * 0.08) * 0.4;
-      ctx.fillText('Toca la pantalla para empezar', VIEW_W / 2, VIEW_H / 2 + 22);
+      ctx.fillText('Toca para empezar · flechas para conducir', VIEW_W / 2, VIEW_H / 2 + 22);
       ctx.globalAlpha = 1; ctx.textAlign = 'left';
     }
 
