@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1a2a52">
+  <title>Rayo - Carreras</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+    body {
+      background: radial-gradient(circle at 50% 0%, #2a4a8b, #14213e 70%);
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 12px; padding: 14px; color: #fff;
+      touch-action: none; user-select: none; -webkit-user-select: none;
+    }
+    h1 {
+      font-size: 1.6rem; letter-spacing: 1px; font-weight: 800;
+      background: linear-gradient(#fff3b0, #ffcf3f);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      text-shadow: 0 3px 10px rgba(0,0,0,0.4);
+    }
+    canvas {
+      border-radius: 18px; display: block;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5), inset 0 0 0 3px rgba(255,255,255,0.12);
+      touch-action: none;
+    }
+    .hint { font-size: 0.85rem; opacity: 0.85; text-shadow: 0 1px 3px rgba(0,0,0,0.5); text-align: center; }
+
+    #rotate {
+      position: fixed; inset: 0; z-index: 50; display: none;
+      align-items: center; justify-content: center; flex-direction: column; gap: 14px;
+      background: #14213e; color: #fff; text-align: center; padding: 24px;
+    }
+    #rotate .ico { font-size: 56px; animation: spin 2s ease-in-out infinite; }
+    @keyframes spin { 0%,100%{transform:rotate(-12deg)} 50%{transform:rotate(78deg)} }
+
+    @media (pointer: coarse) and (orientation: landscape) {
+      body { padding: 0; gap: 0; }
+      h1, .hint { display: none; }
+    }
+    @media (pointer: coarse) and (orientation: portrait) {
+      #rotate { display: flex; }
+    }
+  </style>
+</head>
+<body>
+  <h1>⚡ RAYO — ¡A CORRER!</h1>
+  <canvas id="game"></canvas>
+  <p class="hint">Toca o arrastra para llevar el coche · Recoge las Copas 🏆 · Flechas/A-D en el ordenador</p>
+
+  <div id="rotate">
+    <div class="ico">📱</div>
+    <div style="font-size:1.1rem;font-weight:700">Gira el móvil en horizontal</div>
+    <div style="opacity:.7">Para jugar a pantalla completa</div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    // --- Resolución responsive (llena la pantalla sin deformar) ---
+    const VIEW_H = 400;
+    let VIEW_W = 800;
+    const DPR = Math.min(2, window.devicePixelRatio || 1) * 1.5;
+
+    function resize() {
+      const coarse = matchMedia('(pointer: coarse)').matches;
+      const landscape = window.innerWidth >= window.innerHeight;
+      let cssW, cssH;
+      if (coarse && landscape) {
+        cssW = window.innerWidth; cssH = window.innerHeight;
+        canvas.style.borderRadius = '0'; canvas.style.boxShadow = 'none';
+      } else {
+        cssH = Math.min(window.innerHeight * 0.82, (window.innerWidth * 0.94) / 2);
+        cssW = cssH * 2;
+        canvas.style.borderRadius = '18px';
+        canvas.style.boxShadow = '0 24px 60px rgba(0,0,0,0.5), inset 0 0 0 3px rgba(255,255,255,0.12)';
+      }
+      VIEW_W = Math.round(VIEW_H * (cssW / cssH));
+      canvas.style.width = cssW + 'px';
+      canvas.style.height = cssH + 'px';
+      canvas.width = Math.round(VIEW_W * DPR);
+      canvas.height = Math.round(VIEW_H * DPR);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+    }
+    window.addEventListener('resize', resize);
+    window.addEventListener('orientationchange', resize);
+    resize();
+
+    // --- Estado del juego ---
+    const car = { x: 400, y: VIEW_H - 78, w: 54, h: 86, wobble: 0, tilt: 0 };
+    let targetX = 400;
+    let scroll = 0, speed = 5, cups = 0, started = false, t = 0;
+    const items = [];        // {x, y, type:'cup'|'cone', r}
+    const particles = [];
+    const floats = [];       // textos "¡BIEN!" que suben
+    let spawnTimer = 0;
+
+    function roadLeft()  { return VIEW_W * 0.20; }
+    function roadRight() { return VIEW_W * 0.80; }
+
+    // --- Sonido (se activa con el primer toque) ---
+    let actx = null;
+    function ensureAudio() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } }
+    function beep(freq, dur, type, vol) {
+      if (!actx) return;
+      try {
+        const o = actx.createOscillator(), g = actx.createGain();
+        o.type = type || 'sine'; o.frequency.value = freq;
+        g.gain.value = vol || 0.08;
+        o.connect(g); g.connect(actx.destination);
+        const now = actx.currentTime;
+        g.gain.setValueAtTime(g.gain.value, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+        o.start(now); o.stop(now + dur);
+      } catch (e) {}
+    }
+    function happySound() { beep(660, 0.12, 'triangle', 0.09); setTimeout(() => beep(990, 0.14, 'triangle', 0.09), 90); }
+    function boingSound() { beep(180, 0.18, 'sawtooth', 0.06); }
+
+    // --- Entrada: el coche va hacia donde tocas ---
+    const keys = {};
+    function pointerToTarget(clientX) {
+      const rect = canvas.getBoundingClientRect();
+      const gx = (clientX - rect.left) / rect.width * VIEW_W;
+      targetX = Math.max(roadLeft() + car.w / 2, Math.min(roadRight() - car.w / 2, gx));
+    }
+    function onDown(e) { started = true; ensureAudio(); pointerToTarget(e.clientX); e.preventDefault(); }
+    function onMove(e) { if (e.buttons || e.pointerType === 'touch') pointerToTarget(e.clientX); }
+    canvas.addEventListener('pointerdown', onDown);
+    canvas.addEventListener('pointermove', onMove);
+    document.addEventListener('keydown', e => {
+      keys[e.key.toLowerCase()] = true; started = true; ensureAudio();
+      if (['arrowleft','arrowright','arrowup','arrowdown',' '].includes(e.key.toLowerCase())) e.preventDefault();
+    });
+    document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+    function spawnParticles(x, y, color, n) {
+      for (let i = 0; i < n; i++) particles.push({
+        x, y, vx: (Math.random() - 0.5) * 6, vy: -Math.random() * 5 - 1,
+        life: 1, color, r: 2 + Math.random() * 3, star: true
+      });
+    }
+
+    // ===================== LÓGICA =====================
+    function update() {
+      t++;
+      if (started) {
+        // Teclado mueve el objetivo
+        if (keys['arrowleft'] || keys['a']) targetX -= 7;
+        if (keys['arrowright'] || keys['d']) targetX += 7;
+        targetX = Math.max(roadLeft() + car.w / 2, Math.min(roadRight() - car.w / 2, targetX));
+
+        // El coche se acerca suavemente al objetivo
+        const dx = targetX - car.x;
+        car.x += dx * 0.18;
+        car.tilt = Math.max(-0.25, Math.min(0.25, dx * 0.01));
+        if (car.wobble > 0) car.wobble--;
+
+        // Velocidad sube poquito a poco (suave, nunca brusca)
+        speed = Math.min(9, 5 + cups * 0.05);
+        scroll += speed;
+
+        // Generar objetos por delante
+        if (--spawnTimer <= 0) {
+          spawnTimer = Math.max(28, 70 - cups);    // aparecen un poco más seguido al avanzar
+          const lane = roadLeft() + 40 + Math.random() * (roadRight() - roadLeft() - 80);
+          const isCone = Math.random() < 0.28;     // mayoría copas
+          items.push({ x: lane, y: -40, type: isCone ? 'cone' : 'cup', r: isCone ? 18 : 17, bob: Math.random() * 6 });
+        }
+
+        // Mover objetos y detectar recogida/choque
+        for (let i = items.length - 1; i >= 0; i--) {
+          const it = items[i];
+          it.y += speed;
+          const near = Math.abs(it.x - car.x) < (car.w / 2 + it.r - 6) &&
+                       Math.abs(it.y - (car.y + 10)) < (car.h / 2 + it.r - 10);
+          if (near) {
+            if (it.type === 'cup') {
+              cups++;
+              spawnParticles(it.x, it.y, '#ffd23f', 12);
+              floats.push({ x: it.x, y: it.y, life: 1, txt: pick(['¡BIEN!', '¡GENIAL!', '¡YUJU!', '¡TOMA!']) });
+              happySound();
+            } else {
+              car.wobble = 18; boingSound();
+              spawnParticles(it.x, it.y, '#ff7a3c', 8);
+            }
+            items.splice(i, 1);
+            continue;
+          }
+          if (it.y > VIEW_H + 40) items.splice(i, 1);
+        }
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx; p.y += p.vy; p.vy += 0.25; p.life -= 0.025;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+      for (let i = floats.length - 1; i >= 0; i--) {
+        floats[i].y -= 1.2; floats[i].life -= 0.02;
+        if (floats[i].life <= 0) floats.splice(i, 1);
+      }
+    }
+
+    function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+
+    // ===================== HELPERS =====================
+    function roundRect(x, y, w, h, r) {
+      r = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+    function star(cx, cy, r, rot) {
+      ctx.beginPath();
+      for (let i = 0; i < 8; i++) {
+        const ang = rot + i * Math.PI / 4;
+        const rr = i % 2 === 0 ? r : r * 0.42;
+        ctx[i === 0 ? 'moveTo' : 'lineTo'](cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr);
+      }
+      ctx.closePath(); ctx.fill();
+    }
+
+    // ===================== RENDER =====================
+    function draw() {
+      // Cielo
+      const sky = ctx.createLinearGradient(0, 0, 0, VIEW_H);
+      sky.addColorStop(0, '#5ec8f0'); sky.addColorStop(1, '#bfeaff');
+      ctx.fillStyle = sky; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+      // Sol
+      ctx.fillStyle = '#fff3b0';
+      ctx.beginPath(); ctx.arc(VIEW_W - 80, 60, 30, 0, Math.PI * 2); ctx.fill();
+
+      // Nubes
+      for (let i = 0; i < 5; i++) {
+        const cx = ((i * 260 - (scroll * 0.15)) % (VIEW_W + 200) + (VIEW_W + 200)) % (VIEW_W + 200) - 100;
+        cloud(cx, 50 + (i % 2) * 34);
+      }
+
+      // Césped
+      ctx.fillStyle = '#6cca52';
+      ctx.fillRect(0, 120, VIEW_W, VIEW_H - 120);
+      // franja de horizonte
+      ctx.fillStyle = '#4fae3e';
+      ctx.fillRect(0, 120, VIEW_W, 6);
+
+      // Carretera
+      const rl = roadLeft(), rr = roadRight();
+      ctx.fillStyle = '#3a3f47';
+      ctx.fillRect(rl, 120, rr - rl, VIEW_H - 120);
+      // bordes
+      ctx.fillStyle = '#e8e8e8';
+      ctx.fillRect(rl - 6, 120, 6, VIEW_H - 120);
+      ctx.fillRect(rr, 120, 6, VIEW_H - 120);
+      // líneas discontinuas centrales
+      ctx.fillStyle = 'rgba(255,220,90,0.95)';
+      const mid = (rl + rr) / 2;
+      for (let y = 120 + (scroll % 60) - 60; y < VIEW_H; y += 60) {
+        roundRect(mid - 4, y, 8, 30, 4); ctx.fill();
+      }
+      // arbolitos en el césped (dentro de la zona verde)
+      for (let i = 0; i < 6; i++) {
+        const ty  = 130 + ((i * 130 + scroll) % (VIEW_H - 100));
+        const ty2 = 130 + ((i * 130 + 65 + scroll) % (VIEW_H - 100));
+        tree(rl - 34, ty);
+        tree(rr + 34, ty2);
+      }
+
+      // Objetos (copas y conos)
+      for (const it of items) {
+        if (it.type === 'cup') drawCup(it.x, it.y + Math.sin((t + it.bob) * 0.15) * 2);
+        else drawCone(it.x, it.y);
+      }
+
+      // Coche
+      drawCar();
+
+      // Partículas
+      for (const p of particles) {
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.fillStyle = p.color;
+        star(p.x, p.y, p.r + 1.5, p.life * 6);
+      }
+      ctx.globalAlpha = 1;
+
+      // Textos flotantes
+      for (const f of floats) {
+        ctx.globalAlpha = Math.max(0, f.life);
+        ctx.fillStyle = '#fff';
+        ctx.strokeStyle = '#e8a000'; ctx.lineWidth = 4;
+        ctx.font = '800 26px system-ui'; ctx.textAlign = 'center';
+        ctx.strokeText(f.txt, f.x, f.y); ctx.fillText(f.txt, f.x, f.y);
+      }
+      ctx.globalAlpha = 1; ctx.textAlign = 'left';
+
+      drawHUD();
+
+      if (!started) startSplash();
+    }
+
+    function cloud(x, y) {
+      ctx.fillStyle = 'rgba(255,255,255,0.95)';
+      ctx.beginPath();
+      ctx.arc(x, y, 16, 0, Math.PI * 2);
+      ctx.arc(x + 20, y + 5, 22, 0, Math.PI * 2);
+      ctx.arc(x + 46, y + 2, 17, 0, Math.PI * 2);
+      ctx.arc(x + 26, y - 8, 15, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function tree(x, y) {
+      ctx.fillStyle = '#7a4a1e';
+      roundRect(x - 4, y, 8, 18, 2); ctx.fill();
+      const g = ctx.createRadialGradient(x - 4, y - 12, 4, x, y - 8, 20);
+      g.addColorStop(0, '#6fd45a'); g.addColorStop(1, '#3f9e34');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(x, y - 8, 17, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Copa Pistón
+    function drawCup(x, y) {
+      ctx.save();
+      // brillo
+      const tw = 0.5 + Math.sin(t * 0.1 + x) * 0.5;
+      ctx.fillStyle = 'rgba(255,240,160,' + (0.3 * tw) + ')';
+      ctx.beginPath(); ctx.arc(x, y, 22, 0, Math.PI * 2); ctx.fill();
+      const g = ctx.createLinearGradient(x - 12, y - 12, x + 12, y + 12);
+      g.addColorStop(0, '#ffe98a'); g.addColorStop(0.5, '#ffd23f'); g.addColorStop(1, '#e0a000');
+      ctx.fillStyle = g;
+      // copa
+      ctx.beginPath();
+      ctx.moveTo(x - 11, y - 12);
+      ctx.quadraticCurveTo(x - 13, y + 4, x, y + 8);
+      ctx.quadraticCurveTo(x + 13, y + 4, x + 11, y - 12);
+      ctx.closePath(); ctx.fill();
+      // asas
+      ctx.strokeStyle = '#e0a000'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(x - 11, y - 7, 5, Math.PI * 0.4, Math.PI * 1.6); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x + 11, y - 7, 5, -Math.PI * 0.6, Math.PI * 0.6); ctx.stroke();
+      // pie
+      ctx.fillStyle = '#e0a000';
+      roundRect(x - 3, y + 8, 6, 6, 1); ctx.fill();
+      roundRect(x - 9, y + 13, 18, 5, 2); ctx.fill();
+      // destello
+      ctx.fillStyle = 'rgba(255,255,255,' + tw + ')';
+      star(x + 6, y - 8, 3, t * 0.1);
+      ctx.restore();
+    }
+
+    function drawCone(x, y) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      ctx.beginPath(); ctx.ellipse(x, y + 16, 16, 5, 0, 0, Math.PI * 2); ctx.fill();
+      const g = ctx.createLinearGradient(x, y - 18, x, y + 16);
+      g.addColorStop(0, '#ff8a3c'); g.addColorStop(1, '#ef5f1f');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(x, y - 18); ctx.lineTo(x + 14, y + 14); ctx.lineTo(x - 14, y + 14);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.moveTo(x - 8, y + 1); ctx.lineTo(x + 8, y + 1); ctx.lineTo(x + 10, y + 7); ctx.lineTo(x - 10, y + 7); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#d84e16';
+      roundRect(x - 16, y + 14, 32, 5, 2); ctx.fill();
+      ctx.restore();
+    }
+
+    // Coche estilo Rayo McQueen (vista cenital, mirando hacia arriba)
+    function drawCar() {
+      const wob = car.wobble > 0 ? Math.sin(t * 0.8) * 3 : 0;
+      const cx = car.x + wob, cy = car.y;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(car.tilt);
+
+      // sombra
+      ctx.fillStyle = 'rgba(0,0,0,0.22)';
+      ctx.beginPath(); ctx.ellipse(0, car.h / 2 - 4, car.w / 2 + 4, 10, 0, 0, Math.PI * 2); ctx.fill();
+
+      const w = car.w, h = car.h;
+      // ruedas
+      ctx.fillStyle = '#1a1a1a';
+      roundRect(-w / 2 - 4, -h / 2 + 12, 9, 20, 4); ctx.fill();
+      roundRect(w / 2 - 5, -h / 2 + 12, 9, 20, 4); ctx.fill();
+      roundRect(-w / 2 - 4, h / 2 - 30, 9, 20, 4); ctx.fill();
+      roundRect(w / 2 - 5, h / 2 - 30, 9, 20, 4); ctx.fill();
+
+      // alerón trasero
+      ctx.fillStyle = '#b81e10';
+      roundRect(-w / 2 + 4, h / 2 - 12, w - 8, 8, 3); ctx.fill();
+
+      // carrocería
+      const body = ctx.createLinearGradient(-w / 2, 0, w / 2, 0);
+      body.addColorStop(0, '#c01f10'); body.addColorStop(0.5, '#ee3322'); body.addColorStop(1, '#c01f10');
+      ctx.fillStyle = body;
+      roundRect(-w / 2, -h / 2, w, h, 16); ctx.fill();
+      // morro más estrecho (frente arriba)
+      ctx.fillStyle = '#ee3322';
+      roundRect(-w / 2 + 6, -h / 2 - 2, w - 12, 22, 12); ctx.fill();
+
+      // rayo amarillo lateral
+      ctx.fillStyle = '#ffd23f';
+      ctx.beginPath();
+      ctx.moveTo(-w / 2 + 6, 6); ctx.lineTo(-2, 0); ctx.lineTo(-6, 10);
+      ctx.lineTo(w / 2 - 6, 4); ctx.lineTo(2, 14); ctx.lineTo(6, 6);
+      ctx.closePath(); ctx.fill();
+
+      // número 95 en el techo
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(0, 2, 12, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#111'; ctx.font = '800 13px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText('95', 0, 7);
+
+      // parabrisas con ojos (Rayo McQueen)
+      const ws = ctx.createLinearGradient(0, -h / 2 + 6, 0, -h / 2 + 30);
+      ws.addColorStop(0, '#bfe9ff'); ws.addColorStop(1, '#7fc4ef');
+      ctx.fillStyle = ws;
+      roundRect(-w / 2 + 9, -h / 2 + 6, w - 18, 24, 9); ctx.fill();
+      // ojos
+      const blink = (t % 200) < 7;
+      const ey = -h / 2 + 18;
+      for (const s of [-1, 1]) {
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(s * 10, ey, 8, 0, Math.PI * 2); ctx.fill();
+        if (blink) {
+          ctx.strokeStyle = '#244'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(s * 10 - 6, ey); ctx.lineTo(s * 10 + 6, ey); ctx.stroke();
+        } else {
+          ctx.fillStyle = '#2a7fd0';
+          ctx.beginPath(); ctx.arc(s * 10, ey + 1, 4, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#111';
+          ctx.beginPath(); ctx.arc(s * 10, ey + 1, 2, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#fff';
+          ctx.beginPath(); ctx.arc(s * 10 + 1.5, ey - 1, 1, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+
+      // sonrisa en el morro
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.arc(0, -h / 2 + 4, 7, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+
+      ctx.restore();
+      ctx.textAlign = 'left';
+    }
+
+    function drawHUD() {
+      ctx.save();
+      ctx.fillStyle = 'rgba(20,14,8,0.42)';
+      roundRect(12, 12, 132, 44, 14); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1.5;
+      roundRect(12, 12, 132, 44, 14); ctx.stroke();
+      drawCup(34, 34);
+      ctx.fillStyle = '#fff'; ctx.font = '800 24px system-ui';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText('×' + cups, 56, 35);
+      ctx.restore();
+      ctx.textBaseline = 'alphabetic';
+    }
+
+    function startSplash() {
+      ctx.fillStyle = 'rgba(10,20,40,0.55)';
+      ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffd23f';
+      ctx.font = '800 40px system-ui';
+      ctx.fillText('⚡ ¡A CORRER!', VIEW_W / 2, VIEW_H / 2 - 14);
+      ctx.fillStyle = '#fff';
+      ctx.font = '700 20px system-ui';
+      const pulse = 0.6 + Math.sin(t * 0.08) * 0.4;
+      ctx.globalAlpha = pulse;
+      ctx.fillText('Toca la pantalla para empezar', VIEW_W / 2, VIEW_H / 2 + 22);
+      ctx.globalAlpha = 1;
+      ctx.textAlign = 'left';
+    }
+
+    function loop() {
+      update();
+      draw();
+      requestAnimationFrame(loop);
+    }
+    loop();
+  </script>
+</body>
+</html>

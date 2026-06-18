@@ -1,6 +1,19 @@
 # Pamies23
 Deep Learning
 
+## ⚡ Rayo — Carreras (para peques)
+
+Un juego de coches sencillísimo y sin "perder", pensado para niños pequeños (~4 años).
+Conduces un coche rojo con ojos estilo **Rayo McQueen**, recoges **Copas Pistón** 🏆 y esquivas conos (que solo hacen un "boing", sin castigo).
+
+### Cómo jugar
+
+Abre `cars.html` en el navegador (ideal en móvil/tablet en horizontal).
+
+- **Toca o arrastra** dónde quieres que vaya el coche (en el ordenador: **flechas** o **A/D**).
+- Recoge las **Copas** 🏆 para sumar puntos. Hay sonidos alegres y mensajes de ánimo.
+- No se puede perder: es para disfrutar sin frustración.
+
 ## 🦴 Mundo Prehistórico (plataformas 2D)
 
 Un plataformas 2D sencillo hecho en HTML, CSS y JavaScript (sin dependencias).

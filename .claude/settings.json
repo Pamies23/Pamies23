@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sha=$(git rev-parse HEAD 2>/dev/null); printf '{\"systemMessage\":\"🎮 Jugar (versión más reciente): Mario → https://htmlpreview.github.io/?https://github.com/Pamies23/Pamies23/blob/%s/mario.html | Snake → https://htmlpreview.github.io/?https://github.com/Pamies23/Pamies23/blob/%s/snake.html\"}' \"$sha\" \"$sha\""
+            "command": "sha=$(git rev-parse HEAD 2>/dev/null); printf '{\"systemMessage\":\"🎮 Jugar (versión más reciente): Rayo → https://htmlpreview.github.io/?https://github.com/Pamies23/Pamies23/blob/%s/cars.html | Mario → https://htmlpreview.github.io/?https://github.com/Pamies23/Pamies23/blob/%s/mario.html | Snake → https://htmlpreview.github.io/?https://github.com/Pamies23/Pamies23/blob/%s/snake.html\"}' \"$sha\" \"$sha\" \"$sha\""
           }
         ]
       }
