@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mario 2D</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #5c94fc;
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 16px;
+      color: #fff;
+    }
+    h1 { font-size: 1.5rem; text-shadow: 2px 2px 0 #000; }
+    canvas {
+      background: #5c94fc;
+      border: 4px solid #1a1a2e;
+      border-radius: 4px;
+      max-width: 100%;
+      image-rendering: pixelated;
+    }
+    .hint { font-size: 0.85rem; opacity: 0.95; text-shadow: 1px 1px 0 #000; text-align: center; }
+  </style>
+</head>
+<body>
+  <h1>🍄 MARIO 2D</h1>
+  <canvas id="game" width="800" height="400"></canvas>
+  <p class="hint">← → o A/D para moverte · ↑ / W / Espacio para saltar · R para reiniciar</p>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    // --- Constantes del mundo ---
+    const GRAVITY = 0.8;
+    const MOVE_SPEED = 4;
+    const JUMP_FORCE = 15;
+    const GROUND_Y = 360;          // altura del suelo principal
+    const LEVEL_WIDTH = 3000;      // longitud total del nivel
+
+    // --- Jugador ---
+    const player = {
+      x: 60, y: 0, w: 28, h: 36,
+      vx: 0, vy: 0,
+      onGround: false,
+      facing: 1
+    };
+
+    // --- Plataformas (suelo + flotantes) ---
+    // {x, y, w, h}
+    const platforms = [
+      { x: 0,    y: GROUND_Y, w: 700,  h: 40 },   // suelo
+      { x: 760,  y: GROUND_Y, w: 900,  h: 40 },   // suelo tras un hueco
+      { x: 1720, y: GROUND_Y, w: 1280, h: 40 },   // suelo final
+      { x: 250,  y: 280, w: 120, h: 20 },         // plataforma flotante
+      { x: 450,  y: 220, w: 120, h: 20 },
+      { x: 640,  y: 170, w: 100, h: 20 },
+      { x: 950,  y: 250, w: 140, h: 20 },
+      { x: 1200, y: 200, w: 120, h: 20 },
+      { x: 1450, y: 260, w: 120, h: 20 },
+      { x: 1900, y: 230, w: 140, h: 20 },
+      { x: 2200, y: 190, w: 120, h: 20 }
+    ];
+
+    // Bandera de meta
+    const goal = { x: 2850, y: GROUND_Y - 160, w: 12, h: 160 };
+
+    const keys = {};
+    let cameraX = 0;
+    let won = false;
+
+    document.addEventListener('keydown', e => {
+      keys[e.key.toLowerCase()] = true;
+      if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(e.key.toLowerCase())) e.preventDefault();
+      if (e.key.toLowerCase() === 'r') reset();
+    });
+    document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+    function reset() {
+      player.x = 60; player.y = 0; player.vx = 0; player.vy = 0;
+      won = false;
+    }
+
+    function rectsOverlap(a, b) {
+      return a.x < b.x + b.w && a.x + a.w > b.x &&
+             a.y < b.y + b.h && a.y + a.h > b.y;
+    }
+
+    function update() {
+      if (won) return;
+
+      // Movimiento horizontal
+      player.vx = 0;
+      if (keys['arrowleft'] || keys['a']) { player.vx = -MOVE_SPEED; player.facing = -1; }
+      if (keys['arrowright'] || keys['d']) { player.vx = MOVE_SPEED; player.facing = 1; }
+
+      // Salto
+      if ((keys['arrowup'] || keys['w'] || keys[' ']) && player.onGround) {
+        player.vy = -JUMP_FORCE;
+        player.onGround = false;
+      }
+
+      // Gravedad
+      player.vy += GRAVITY;
+
+      // --- Mover y colisionar en X ---
+      player.x += player.vx;
+      for (const p of platforms) {
+        if (rectsOverlap(player, p)) {
+          if (player.vx > 0) player.x = p.x - player.w;
+          else if (player.vx < 0) player.x = p.x + p.w;
+        }
+      }
+      // Límites del nivel
+      if (player.x < 0) player.x = 0;
+      if (player.x + player.w > LEVEL_WIDTH) player.x = LEVEL_WIDTH - player.w;
+
+      // --- Mover y colisionar en Y ---
+      player.y += player.vy;
+      player.onGround = false;
+      for (const p of platforms) {
+        if (rectsOverlap(player, p)) {
+          if (player.vy > 0) {            // cayendo: aterriza encima
+            player.y = p.y - player.h;
+            player.vy = 0;
+            player.onGround = true;
+          } else if (player.vy < 0) {     // saltando: golpea por debajo
+            player.y = p.y + p.h;
+            player.vy = 0;
+          }
+        }
+      }
+
+      // Caída al vacío -> reinicia
+      if (player.y > canvas.height + 200) reset();
+
+      // Meta
+      if (rectsOverlap(player, goal)) won = true;
+
+      // Cámara sigue al jugador (centrado), sin salir del nivel
+      cameraX = player.x + player.w / 2 - canvas.width / 2;
+      cameraX = Math.max(0, Math.min(cameraX, LEVEL_WIDTH - canvas.width));
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Nubes de fondo (parallax suave)
+      ctx.fillStyle = '#ffffff';
+      for (let i = 0; i < 8; i++) {
+        const cx = (i * 450 - cameraX * 0.4) % (LEVEL_WIDTH);
+        drawCloud(cx, 60 + (i % 3) * 40);
+      }
+
+      ctx.save();
+      ctx.translate(-cameraX, 0);
+
+      // Plataformas
+      for (const p of platforms) {
+        const isGround = p.y === GROUND_Y;
+        ctx.fillStyle = isGround ? '#c84c0c' : '#e07b2c';
+        ctx.fillRect(p.x, p.y, p.w, p.h);
+        // borde superior verde para el suelo
+        ctx.fillStyle = isGround ? '#00a800' : '#f0a050';
+        ctx.fillRect(p.x, p.y, p.w, 6);
+      }
+
+      // Meta (bandera)
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(goal.x, goal.y, goal.w, goal.h);
+      ctx.fillStyle = '#00a800';
+      ctx.beginPath();
+      ctx.moveTo(goal.x + goal.w, goal.y);
+      ctx.lineTo(goal.x + goal.w + 40, goal.y + 15);
+      ctx.lineTo(goal.x + goal.w, goal.y + 30);
+      ctx.fill();
+
+      // Jugador (Mario simplón)
+      drawPlayer();
+
+      ctx.restore();
+
+      // Mensaje de victoria
+      if (won) {
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#ffd700';
+        ctx.font = 'bold 40px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText('¡Nivel completado! 🎉', canvas.width / 2, canvas.height / 2 - 10);
+        ctx.fillStyle = '#fff';
+        ctx.font = '20px system-ui';
+        ctx.fillText('Pulsa R para volver a jugar', canvas.width / 2, canvas.height / 2 + 30);
+      }
+    }
+
+    function drawCloud(x, y) {
+      ctx.beginPath();
+      ctx.arc(x, y, 18, 0, Math.PI * 2);
+      ctx.arc(x + 22, y + 4, 22, 0, Math.PI * 2);
+      ctx.arc(x + 48, y, 18, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawPlayer() {
+      const { x, y, w, h } = player;
+      // cuerpo (overol azul)
+      ctx.fillStyle = '#0058f8';
+      ctx.fillRect(x, y + h * 0.45, w, h * 0.55);
+      // camiseta roja
+      ctx.fillStyle = '#e03030';
+      ctx.fillRect(x, y + h * 0.3, w, h * 0.2);
+      // cara
+      ctx.fillStyle = '#ffc1a0';
+      ctx.fillRect(x + 4, y + 6, w - 8, h * 0.28);
+      // gorra roja
+      ctx.fillStyle = '#e03030';
+      ctx.fillRect(x + 2, y, w - 4, 8);
+    }
+
+    function loop() {
+      update();
+      draw();
+      requestAnimationFrame(loop);
+    }
+    loop();
+  </script>
+</body>
+</html>

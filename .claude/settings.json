@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"systemMessage\": \"🎮 Jugar: Mario → https://htmlpreview.github.io/?https://github.com/Pamies23/Pamies23/blob/claude/happy-lamport-2h0fce/mario.html | Snake → https://htmlpreview.github.io/?https://github.com/Pamies23/Pamies23/blob/claude/happy-lamport-2h0fce/snake.html\"}'"
+          }
+        ]
+      }
+    ]
+  }
+}
