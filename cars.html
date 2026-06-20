@@ -250,9 +250,8 @@
 
         speed = Math.min(5, 3 + cups * 0.03);
         roadScroll += speed * 0.016;
-        // Curvas ocasionales y suaves (menos mareo)
-        const raw = Math.sin(roadScroll * 0.14);
-        curveNow = Math.sign(raw) * Math.pow(Math.abs(raw), 4) * 0.7;
+        // Carretera recta (sin curvas)
+        curveNow = 0;
 
         const dz = speed * 0.0042;
 
