@@ -142,7 +142,8 @@
     <button class="btn small" id="btnBack">← Volver</button>
   </div>
 
-  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"
+          onerror="var s=document.createElement('script');s.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';document.head.appendChild(s);"></script>
   <script>
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
@@ -303,37 +304,71 @@
         try { conn.send({ l: car.lane, m: meters, c: cups, a: !gameover }); } catch (e) {}
       }
     }
+    let netTimeout = null;
+    function status(m) { const e = $('mpStatus'); if (e) e.textContent = m; }
+    function clearNetTimeout() { if (netTimeout) { clearTimeout(netTimeout); netTimeout = null; } }
     function wireConn() {
-      conn.on('open', () => { opp.present = true; hide($('mp')); hide($('menu')); mode = 'mp'; resetGame(); });
+      conn.on('open', () => { clearNetTimeout(); opp.present = true; hide($('mp')); hide($('menu')); mode = 'mp'; resetGame(); });
       conn.on('data', d => { if (d) { opp.lane = d.l || 0; opp.meters = d.m || 0; opp.cups = d.c || 0; opp.alive = !!d.a; } });
-      conn.on('close', () => { opp.present = false; $('mpStatus').textContent = 'Tu hermano se desconectó'; });
+      conn.on('close', () => { opp.present = false; status('Tu hermano se desconectó'); });
+      conn.on('error', () => { status('Conexión perdida, reintenta'); });
     }
     function cleanupNet() {
+      clearNetTimeout();
       try { if (conn) conn.close(); } catch (e) {}
       try { if (peer) peer.destroy(); } catch (e) {}
       conn = null; peer = null; opp.present = false;
     }
+    function pid(code) { return 'rayocars' + code.toLowerCase(); }   // sin guion (IDs más fiables)
+
     function createGame() {
-      if (typeof Peer === 'undefined') { $('mpStatus').textContent = 'Sin conexión a internet'; return; }
+      if (typeof Peer === 'undefined') { status('Cargando conexión… espera unos segundos y reintenta'); return; }
       ensureAudio(); cleanupNet();
       myCar = 'red'; oppCar = 'blue';
+      hide($('codeBox'));
+      tryHost(0);
+    }
+    function tryHost(attempt) {
+      if (attempt > 6) { status('No se pudo crear la sala. Pulsa CREAR otra vez.'); return; }
       const code = genCode();
-      $('mpStatus').textContent = 'Creando sala…';
-      peer = new Peer('rayocars-' + code.toLowerCase(), { debug: 0 });
-      peer.on('open', () => { $('codeBox').textContent = code; show($('codeBox')); $('mpStatus').textContent = 'Dale el código a tu hermano y que se una…'; });
+      status('Creando sala…');
+      let opened = false;
+      try { peer = new Peer(pid(code), { debug: 0 }); }
+      catch (e) { status('No se pudo iniciar la conexión'); return; }
+      clearNetTimeout();
+      netTimeout = setTimeout(() => {
+        if (!opened) { try { peer.destroy(); } catch (e) {} status('El servidor tarda, reintentando…'); tryHost(attempt + 1); }
+      }, 9000);
+      peer.on('open', () => {
+        opened = true; clearNetTimeout();
+        $('codeBox').textContent = code; show($('codeBox'));
+        status('Comparte el código. Esperando a tu hermano…');
+      });
       peer.on('connection', c => { conn = c; wireConn(); });
-      peer.on('error', err => { $('mpStatus').textContent = 'Error de conexión (reintenta): ' + err.type; });
+      peer.on('error', err => {
+        const ty = (err && err.type) || '';
+        if (!opened && (ty === 'unavailable-id' || ty === 'network' || ty === 'server-error')) {
+          clearNetTimeout(); try { peer.destroy(); } catch (e) {} tryHost(attempt + 1); return;
+        }
+        clearNetTimeout(); status('Error (' + (ty || '?') + '). Pulsa CREAR otra vez.');
+      });
     }
     function joinGame() {
-      const code = ($('codeInput').value || '').trim().toUpperCase();
-      if (code.length < 3) { $('mpStatus').textContent = 'Escribe el código'; return; }
-      if (typeof Peer === 'undefined') { $('mpStatus').textContent = 'Sin conexión a internet'; return; }
+      const code = ($('codeInput').value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (code.length < 3) { status('Escribe el código'); return; }
+      if (typeof Peer === 'undefined') { status('Cargando conexión… espera y reintenta'); return; }
       ensureAudio(); cleanupNet();
       myCar = 'blue'; oppCar = 'red';
-      $('mpStatus').textContent = 'Conectando…';
-      peer = new Peer({ debug: 0 });
-      peer.on('open', () => { conn = peer.connect('rayocars-' + code.toLowerCase(), { serialization: 'json' }); wireConn(); });
-      peer.on('error', () => { $('mpStatus').textContent = 'No se pudo conectar. Revisa el código.'; });
+      status('Conectando…');
+      try { peer = new Peer({ debug: 0 }); }
+      catch (e) { status('No se pudo iniciar la conexión'); return; }
+      clearNetTimeout();
+      netTimeout = setTimeout(() => { status('No conecta. Revisa el código y el internet.'); }, 13000);
+      peer.on('open', () => {
+        conn = peer.connect(pid(code), { serialization: 'json' });
+        wireConn();
+      });
+      peer.on('error', err => { clearNetTimeout(); status('No se pudo conectar (' + ((err && err.type) || '?') + ').'); });
     }
     if ($('btn1p')) {
       $('btn1p').onclick = () => { ensureAudio(); mode = 'solo'; myCar = 'red'; opp.present = false; hide($('menu')); resetGame(); };
