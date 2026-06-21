@@ -142,8 +142,9 @@
     <button class="btn small" id="btnBack">← Volver</button>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"
-          onerror="var s=document.createElement('script');s.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';document.head.appendChild(s);"></script>
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script>window.Peer || document.write('<scr' + 'ipt src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></scr' + 'ipt>');</script>
+  <script>window.Peer || document.write('<scr' + 'ipt src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></scr' + 'ipt>');</script>
   <script>
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
@@ -321,12 +322,26 @@
     }
     function pid(code) { return 'rayocars' + code.toLowerCase(); }   // sin guion (IDs más fiables)
 
+    // Espera a que la librería de red (PeerJS) termine de cargar desde el CDN
+    function withPeer(go) {
+      if (typeof Peer !== 'undefined') { go(); return; }
+      status('Cargando conexión…');
+      let waited = 0;
+      const iv = setInterval(() => {
+        if (typeof Peer !== 'undefined') { clearInterval(iv); go(); }
+        else if ((waited += 300) > 20000) {
+          clearInterval(iv);
+          status('No carga la conexión. Prueba con datos móviles o abre el enlace en Safari/Chrome.');
+        }
+      }, 300);
+    }
     function createGame() {
-      if (typeof Peer === 'undefined') { status('Cargando conexión… espera unos segundos y reintenta'); return; }
-      ensureAudio(); cleanupNet();
-      myCar = 'red'; oppCar = 'blue';
-      hide($('codeBox'));
-      tryHost(0);
+      withPeer(() => {
+        ensureAudio(); cleanupNet();
+        myCar = 'red'; oppCar = 'blue';
+        hide($('codeBox'));
+        tryHost(0);
+      });
     }
     function tryHost(attempt) {
       if (attempt > 6) { status('No se pudo crear la sala. Pulsa CREAR otra vez.'); return; }
@@ -356,7 +371,9 @@
     function joinGame() {
       const code = ($('codeInput').value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
       if (code.length < 3) { status('Escribe el código'); return; }
-      if (typeof Peer === 'undefined') { status('Cargando conexión… espera y reintenta'); return; }
+      withPeer(() => doJoin(code));
+    }
+    function doJoin(code) {
       ensureAudio(); cleanupNet();
       myCar = 'blue'; oppCar = 'red';
       status('Conectando…');
