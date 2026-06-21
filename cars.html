@@ -132,6 +132,7 @@
     // --- Estado ---
     const car = { w: 94, h: 70, lane: 0, targetLane: 0, wobble: 0, tilt: 0, crash: 0, crashDur: 1, spins: 0 };
     let roadScroll = 0, speed = 3, cups = 0, started = false, t = 0, shake = 0;
+    let meters = 0, lives = 5, gameover = false;
     const items = [];        // copas/conos
     const traffic = [];      // coches a esquivar
     const props = [];        // cactus/rocas
@@ -168,7 +169,7 @@
     const keys = {};
     function holdButton(id, key) {
       const el = document.getElementById(id); if (!el) return;
-      const press = e => { e.preventDefault(); keys[key] = true; started = true; ensureAudio(); el.classList.add('pressed'); };
+      const press = e => { e.preventDefault(); keys[key] = true; if (gameover) resetGame(); started = true; ensureAudio(); el.classList.add('pressed'); };
       const release = e => { if (e) e.preventDefault(); keys[key] = false; el.classList.remove('pressed'); };
       el.addEventListener('pointerdown', press);
       el.addEventListener('pointerup', release);
@@ -178,9 +179,9 @@
     }
     holdButton('btnLeft', 'arrowleft');
     holdButton('btnRight', 'arrowright');
-    canvas.addEventListener('pointerdown', e => { started = true; ensureAudio(); e.preventDefault(); });
+    canvas.addEventListener('pointerdown', e => { if (gameover) resetGame(); started = true; ensureAudio(); e.preventDefault(); });
     document.addEventListener('keydown', e => {
-      keys[e.key.toLowerCase()] = true; started = true; ensureAudio();
+      keys[e.key.toLowerCase()] = true; if (gameover) resetGame(); started = true; ensureAudio();
       if (['arrowleft','arrowright','arrowup','arrowdown',' '].includes(e.key.toLowerCase())) e.preventDefault();
     });
     document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
@@ -209,7 +210,7 @@
       const bR = gp.buttons[15] && gp.buttons[15].pressed;
       keys['arrowleft'] = bL || ax < -0.35;
       keys['arrowright'] = bR || ax > 0.35;
-      for (const b of gp.buttons) { if (b && b.pressed) { started = true; ensureAudio(); break; } }
+      for (const b of gp.buttons) { if (b && b.pressed) { if (gameover) resetGame(); started = true; ensureAudio(); break; } }
     }
 
     function spawnParticles(x, y, color, n, sp) {
@@ -220,6 +221,15 @@
     }
     function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
 
+    function resetGame() {
+      items.length = 0; traffic.length = 0; props.length = 0; particles.length = 0; floats.length = 0;
+      cups = 0; meters = 0; lives = 5; gameover = false;
+      roadScroll = 0; speed = 3; spawnTimer = 0; propTimer = 0; trafficTimer = 150;
+      rivalLead = 1.3; rivalAhead = false; rival.bumpCd = 0; rival.depth = 1.0; rival.lane = 0;
+      car.lane = 0; car.targetLane = 0; car.wobble = 0; car.tilt = 0; car.crash = 0; shake = 0;
+      started = true;
+    }
+
     function crashCar(px, py, intensity) {
       if (car.crash > 0) return;
       car.crashDur = 30 + 26 * intensity;
@@ -229,6 +239,8 @@
       spawnParticles(px, py, '#ffd23f', 10 + (intensity * 8 | 0), 8);
       spawnParticles(px, py, '#fff', 6, 7);
       rivalLead = Math.min(1.8, rivalLead + 0.35 + 0.3 * intensity);   // pierdes tiempo: el rival te alcanza
+      lives--;
+      if (lives <= 0) { lives = 0; gameover = true; }
       crashSound();
     }
 
@@ -236,7 +248,7 @@
     function update() {
       t++;
       pollGamepad();
-      if (started) {
+      if (started && !gameover) {
         const crashing = car.crash > 0;
         if (!crashing) {
           if (keys['arrowleft'] || keys['a']) car.targetLane = Math.max(-0.9, car.targetLane - 0.035);
@@ -248,8 +260,10 @@
         if (car.wobble > 0) car.wobble--;
         if (car.crash > 0) car.crash--;
 
-        speed = Math.min(5, 3 + cups * 0.03);
+        // Cada 10 trofeos, TODO va más rápido
+        speed = Math.min(9, 3 + Math.floor(cups / 10) * 0.8);
         roadScroll += speed * 0.016;
+        meters += speed * 0.2;
         // Carretera recta (sin curvas)
         curveNow = 0;
 
@@ -419,7 +433,8 @@
       ctx.globalAlpha = 1; ctx.textAlign = 'left';
 
       drawHUD();
-      if (!started) startSplash();
+      if (gameover) gameOverScreen();
+      else if (!started) startSplash();
       ctx.restore();
     }
 
@@ -802,21 +817,38 @@
       ctx.textAlign = 'left';
     }
 
+    function drawHeart(cx, cy, s, filled) {
+      ctx.fillStyle = filled ? '#ff5a6e' : 'rgba(255,255,255,0.25)';
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + s * 0.3);
+      ctx.bezierCurveTo(cx, cy, cx - s, cy - s * 0.5, cx - s, cy - s * 0.1);
+      ctx.bezierCurveTo(cx - s, cy + s * 0.5, cx, cy + s * 0.7, cx, cy + s);
+      ctx.bezierCurveTo(cx, cy + s * 0.7, cx + s, cy + s * 0.5, cx + s, cy - s * 0.1);
+      ctx.bezierCurveTo(cx + s, cy - s * 0.5, cx, cy, cx, cy + s * 0.3);
+      ctx.fill();
+    }
+
     function drawHUD() {
       ctx.save();
+      // panel izquierdo: trofeos · metros · posición
       ctx.fillStyle = 'rgba(40,20,8,0.45)';
-      roundRect(14, 14, 200, 44, 14); ctx.fill();
+      roundRect(14, 14, 232, 44, 14); ctx.fill();
       ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1.5;
-      roundRect(14, 14, 200, 44, 14); ctx.stroke();
+      roundRect(14, 14, 232, 44, 14); ctx.stroke();
       drawCup(36, 36, 1);
-      ctx.fillStyle = '#fff'; ctx.font = '800 24px system-ui';
+      ctx.fillStyle = '#fff'; ctx.font = '800 22px system-ui';
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.fillText('×' + cups, 58, 37);
-      // posición en la carrera
+      ctx.fillText('×' + cups, 56, 37);
+      ctx.fillStyle = '#ffe6a8'; ctx.font = '800 18px system-ui';
+      ctx.fillText(Math.floor(meters) + ' m', 116, 37);
       const first = rivalLead < 0;
-      ctx.fillStyle = first ? '#ffd23f' : '#e8e8e8';
-      ctx.font = '800 20px system-ui';
-      ctx.fillText(first ? '🏁 1º' : '🏁 2º', 128, 37);
+      ctx.fillStyle = first ? '#ffd23f' : '#e8e8e8'; ctx.font = '800 18px system-ui';
+      ctx.fillText(first ? '1º' : '2º', 214, 37);
+      ctx.restore();
+
+      // vidas (5 corazones) arriba al centro
+      ctx.save();
+      for (let i = 0; i < 5; i++) drawHeart(CX() - 52 + i * 26, 28, 9, i < lives);
       ctx.restore();
       ctx.textBaseline = 'alphabetic';
     }
@@ -830,6 +862,20 @@
       ctx.fillStyle = '#fff'; ctx.font = '700 19px system-ui';
       ctx.globalAlpha = 0.6 + Math.sin(t * 0.08) * 0.4;
       ctx.fillText('Toca para empezar · flechas para conducir', VIEW_W / 2, VIEW_H / 2 + 22);
+      ctx.globalAlpha = 1; ctx.textAlign = 'left';
+    }
+
+    function gameOverScreen() {
+      ctx.fillStyle = 'rgba(20,8,4,0.62)';
+      ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ff6a4a'; ctx.font = '800 44px system-ui';
+      ctx.fillText('¡FIN!', VIEW_W / 2, VIEW_H / 2 - 20);
+      ctx.fillStyle = '#fff'; ctx.font = '800 22px system-ui';
+      ctx.fillText('🏆 ' + cups + '   ·   ' + Math.floor(meters) + ' m', VIEW_W / 2, VIEW_H / 2 + 12);
+      ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = '700 18px system-ui';
+      ctx.globalAlpha = 0.6 + Math.sin(t * 0.08) * 0.4;
+      ctx.fillText('Toca para volver a jugar', VIEW_W / 2, VIEW_H / 2 + 44);
       ctx.globalAlpha = 1; ctx.textAlign = 'left';
     }
 
