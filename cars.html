@@ -65,6 +65,43 @@
     @media (pointer: coarse) and (orientation: portrait) {
       #rotate { display: flex; }
     }
+
+    /* ---- Menús (1 jugador / 2 jugadores online) ---- */
+    .screen {
+      position: fixed; inset: 0; z-index: 40;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 14px; padding: 24px; text-align: center;
+      background: rgba(20,12,6,0.74);
+      -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+    }
+    .screen.hidden { display: none; }
+    .screen h2 {
+      font-size: 1.7rem; font-weight: 800; margin-bottom: 4px;
+      background: linear-gradient(#ffe6a0, #ff9f3f);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .btn {
+      min-width: 240px; padding: 15px 22px; border-radius: 16px;
+      border: 2px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.12);
+      color: #fff; font-size: 1.1rem; font-weight: 800; cursor: pointer;
+      pointer-events: auto;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn.red  { background: #e23a2a; border-color: #ff7a5a; }
+    .btn.blue { background: #2f6fe0; border-color: #6aa6ff; }
+    .btn.small { min-width: 0; padding: 11px 16px; font-size: 0.95rem; }
+    .code {
+      font-size: 2.4rem; font-weight: 900; letter-spacing: 6px; color: #ffd23f;
+      background: rgba(0,0,0,0.3); padding: 8px 20px; border-radius: 12px;
+    }
+    .row { display: flex; gap: 10px; align-items: center; }
+    input.codein {
+      font-size: 1.4rem; letter-spacing: 4px; text-transform: uppercase;
+      width: 160px; text-align: center; padding: 11px; border-radius: 12px;
+      border: 2px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: #fff;
+    }
+    .status { opacity: 0.9; min-height: 1.2em; font-weight: 600; }
+    .muted { opacity: 0.65; font-size: 0.82rem; max-width: 320px; }
   </style>
 </head>
 <body>
@@ -83,6 +120,29 @@
     <div style="opacity:.7">Para jugar a pantalla completa</div>
   </div>
 
+  <!-- Menú principal -->
+  <div class="screen" id="menu">
+    <h2>⚡ RAYO — CARRERAS</h2>
+    <button class="btn red" id="btn1p">🏎️ 1 JUGADOR</button>
+    <button class="btn blue" id="btn2p">👥 2 JUGADORES</button>
+    <div class="muted">2 jugadores: cada uno en su móvil, conectando por un código (hace falta internet en ambos).</div>
+  </div>
+
+  <!-- Menú multijugador -->
+  <div class="screen hidden" id="mp">
+    <h2>2 JUGADORES</h2>
+    <button class="btn red" id="btnCreate">CREAR PARTIDA (Rayo rojo)</button>
+    <div class="muted">o únete a la partida de tu hermano:</div>
+    <div class="row">
+      <input class="codein" id="codeInput" placeholder="CÓDIGO" maxlength="5" autocomplete="off" autocapitalize="characters">
+      <button class="btn blue small" id="btnJoin">UNIRSE 🚀</button>
+    </div>
+    <div class="code hidden" id="codeBox">----</div>
+    <div class="status" id="mpStatus"></div>
+    <button class="btn small" id="btnBack">← Volver</button>
+  </div>
+
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script>
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
@@ -133,6 +193,15 @@
     const car = { w: 94, h: 70, lane: 0, targetLane: 0, wobble: 0, tilt: 0, crash: 0, crashDur: 1, spins: 0 };
     let roadScroll = 0, speed = 3, cups = 0, started = false, t = 0, shake = 0;
     let meters = 0, lives = 5, gameover = false;
+    // --- Multijugador ---
+    let mode = 'solo';          // 'solo' | 'mp'
+    let myCar = 'red', oppCar = 'blue';
+    const opp = { lane: 0, meters: 0, cups: 0, alive: true, present: false };
+    let peer = null, conn = null, netT = 0;
+    function carPreset(kind) {
+      if (kind === 'blue') return { g: ['#5ab0ff', '#2f6fe0', '#16489c'], roof: '#2f6fe0', num: '1', rocket: true };
+      return { g: ['#ff4c34', '#e62a18', '#a01506'], roof: '#d4250f', num: '95', rocket: false };
+    }
     const items = [];        // copas/conos
     const traffic = [];      // coches a esquivar
     const props = [];        // cactus/rocas
@@ -219,6 +288,60 @@
         life: 1, color, r: 2 + Math.random() * 3, star: Math.random() < 0.4
       });
     }
+
+    // ===================== MENÚS + RED (multijugador) =====================
+    const $ = id => document.getElementById(id);
+    function show(el) { el.classList.remove('hidden'); }
+    function hide(el) { el.classList.add('hidden'); }
+    function genCode() {
+      const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let s = ''; for (let i = 0; i < 4; i++) s += A[Math.floor(Math.random() * A.length)];
+      return s;
+    }
+    function netSend() {
+      if (mode === 'mp' && conn && conn.open && (++netT % 3 === 0)) {
+        try { conn.send({ l: car.lane, m: meters, c: cups, a: !gameover }); } catch (e) {}
+      }
+    }
+    function wireConn() {
+      conn.on('open', () => { opp.present = true; hide($('mp')); hide($('menu')); mode = 'mp'; resetGame(); });
+      conn.on('data', d => { if (d) { opp.lane = d.l || 0; opp.meters = d.m || 0; opp.cups = d.c || 0; opp.alive = !!d.a; } });
+      conn.on('close', () => { opp.present = false; $('mpStatus').textContent = 'Tu hermano se desconectó'; });
+    }
+    function cleanupNet() {
+      try { if (conn) conn.close(); } catch (e) {}
+      try { if (peer) peer.destroy(); } catch (e) {}
+      conn = null; peer = null; opp.present = false;
+    }
+    function createGame() {
+      if (typeof Peer === 'undefined') { $('mpStatus').textContent = 'Sin conexión a internet'; return; }
+      ensureAudio(); cleanupNet();
+      myCar = 'red'; oppCar = 'blue';
+      const code = genCode();
+      $('mpStatus').textContent = 'Creando sala…';
+      peer = new Peer('rayocars-' + code.toLowerCase(), { debug: 0 });
+      peer.on('open', () => { $('codeBox').textContent = code; show($('codeBox')); $('mpStatus').textContent = 'Dale el código a tu hermano y que se una…'; });
+      peer.on('connection', c => { conn = c; wireConn(); });
+      peer.on('error', err => { $('mpStatus').textContent = 'Error de conexión (reintenta): ' + err.type; });
+    }
+    function joinGame() {
+      const code = ($('codeInput').value || '').trim().toUpperCase();
+      if (code.length < 3) { $('mpStatus').textContent = 'Escribe el código'; return; }
+      if (typeof Peer === 'undefined') { $('mpStatus').textContent = 'Sin conexión a internet'; return; }
+      ensureAudio(); cleanupNet();
+      myCar = 'blue'; oppCar = 'red';
+      $('mpStatus').textContent = 'Conectando…';
+      peer = new Peer({ debug: 0 });
+      peer.on('open', () => { conn = peer.connect('rayocars-' + code.toLowerCase(), { serialization: 'json' }); wireConn(); });
+      peer.on('error', () => { $('mpStatus').textContent = 'No se pudo conectar. Revisa el código.'; });
+    }
+    if ($('btn1p')) {
+      $('btn1p').onclick = () => { ensureAudio(); mode = 'solo'; myCar = 'red'; opp.present = false; hide($('menu')); resetGame(); };
+      $('btn2p').onclick = () => { ensureAudio(); hide($('menu')); show($('mp')); if (typeof Peer === 'undefined') $('mpStatus').textContent = '⚠️ Necesitas internet para 2 jugadores'; };
+      $('btnCreate').onclick = createGame;
+      $('btnJoin').onclick = joinGame;
+      $('btnBack').onclick = () => { cleanupNet(); hide($('mp')); show($('menu')); $('mpStatus').textContent = ''; hide($('codeBox')); };
+    }
     function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
 
     function resetGame() {
@@ -264,6 +387,7 @@
         speed = Math.min(9, 3 + Math.floor(cups / 10) * 0.8);
         roadScroll += speed * 0.016;
         meters += speed * 0.2;
+        netSend();
         // Carretera recta (sin curvas)
         curveNow = 0;
 
@@ -312,27 +436,27 @@
           }
         }
 
-        // Rival: te saca ventaja que se va alejando, pero las copas te acercan a él
-        rivalLead = Math.max(-0.7, Math.min(1.8, rivalLead + 0.0009));
-        rival.lane = Math.sin(roadScroll * 0.5) * 0.6;
-        rival.depth = rivalLead + Math.sin(roadScroll * 0.3) * 0.16;
-        // ¡Adelantamiento!
-        if (!rivalAhead && rivalLead < -0.45) {
-          rivalAhead = true;
-          floats.push({ x: CX(), y: VIEW_H * 0.42, life: 1.6, txt: '¡VAS 1º!' });
-          happySound();
-          for (let k = 0; k < 22; k++) spawnParticles(CX() + (Math.random() - 0.5) * 140, VIEW_H * 0.42, pick(['#ffd23f', '#fff', '#ff6b6b', '#4db8ff', '#37b24d']), 1, 7);
-        }
-        if (rivalLead > 0.25) rivalAhead = false;
-        if (rival.bumpCd > 0) rival.bumpCd--;
-        if (rival.bumpCd <= 0 && rival.depth < 0.22 && rival.depth > -0.1 && Math.abs(rival.lane - car.lane) < 0.3) {
-          // empujón suave (NO trompo)
-          const dir = Math.sign(car.lane - rival.lane) || 1;
-          car.lane += dir * 0.1; car.targetLane = Math.max(-0.9, Math.min(0.9, car.targetLane + dir * 0.08));
-          car.wobble = 8; rival.bumpCd = 45;
-          const px = projX(rival.lane, Math.max(rival.depth, 0)), py = projY(Math.max(rival.depth, 0));
-          spawnParticles(px, py, '#fff', 5, 4);
-          beep(300, 0.06, 'sine', 0.05);
+        // Rival IA (solo en 1 jugador; en multijugador el rival es tu hermano)
+        if (mode === 'solo') {
+          rivalLead = Math.max(-0.7, Math.min(1.8, rivalLead + 0.0009));
+          rival.lane = Math.sin(roadScroll * 0.5) * 0.6;
+          rival.depth = rivalLead + Math.sin(roadScroll * 0.3) * 0.16;
+          if (!rivalAhead && rivalLead < -0.45) {
+            rivalAhead = true;
+            floats.push({ x: CX(), y: VIEW_H * 0.42, life: 1.6, txt: '¡VAS 1º!' });
+            happySound();
+            for (let k = 0; k < 22; k++) spawnParticles(CX() + (Math.random() - 0.5) * 140, VIEW_H * 0.42, pick(['#ffd23f', '#fff', '#ff6b6b', '#4db8ff', '#37b24d']), 1, 7);
+          }
+          if (rivalLead > 0.25) rivalAhead = false;
+          if (rival.bumpCd > 0) rival.bumpCd--;
+          if (rival.bumpCd <= 0 && rival.depth < 0.22 && rival.depth > -0.1 && Math.abs(rival.lane - car.lane) < 0.3) {
+            const dir = Math.sign(car.lane - rival.lane) || 1;
+            car.lane += dir * 0.1; car.targetLane = Math.max(-0.9, Math.min(0.9, car.targetLane + dir * 0.08));
+            car.wobble = 8; rival.bumpCd = 45;
+            const px = projX(rival.lane, Math.max(rival.depth, 0)), py = projY(Math.max(rival.depth, 0));
+            spawnParticles(px, py, '#fff', 5, 4);
+            beep(300, 0.06, 'sine', 0.05);
+          }
         }
 
         // Cactus / rocas / elementos del oeste
@@ -400,7 +524,11 @@
       for (const p of props) scene.push({ d: p.depth, kind: 'prop', ref: p });
       for (const c of traffic) scene.push({ d: c.depth, kind: 'traffic', ref: c });
       for (const it of items) scene.push({ d: it.depth, kind: 'item', ref: it });
-      if (started && rival.depth > -0.06) scene.push({ d: rival.depth, kind: 'rival', ref: rival });
+      if (mode === 'solo' && started && rival.depth > -0.06) scene.push({ d: rival.depth, kind: 'rival', ref: rival });
+      if (mode === 'mp' && opp.present) {
+        const od = (opp.meters - meters) * 0.05;
+        if (od > -0.05 && od < 2.7) scene.push({ d: od, kind: 'opp', ref: opp });
+      }
       scene.sort((a, b) => b.d - a.d);
       for (const o of scene) {
         const d = Math.max(o.d, 0);
@@ -409,6 +537,12 @@
         if (o.kind === 'prop') drawProp(x, y, s, o.ref.kind);
         else if (o.kind === 'traffic') drawTractor(x, y, s, o.ref.color);
         else if (o.kind === 'rival') drawRivalCar(x, y, Math.min(s, 0.9));
+        else if (o.kind === 'opp') {
+          const p = carPreset(oppCar), s2 = Math.min(s, 0.92);
+          ctx.save(); ctx.translate(x, y); ctx.scale(s2, s2);
+          drawRacerBody(94, 70, p.g[0], p.g[1], p.g[2], p.roof, p.num, p.rocket);
+          ctx.restore();
+        }
         else if (o.ref.type === 'cup') drawCup(x, y + Math.sin((t + o.ref.bob) * 0.15) * 2, s);
         else drawCone(x, y, s);
       }
@@ -715,9 +849,21 @@
     }
 
     // Carrocería compartida (coupé deportivo). Rayo y el rival usan el MISMO diseño, distinto color.
-    function drawRacerBody(w, h, g0, g1, g2, roof, number) {
+    function drawRacerBody(w, h, g0, g1, g2, roof, number, rocket) {
       const top = -h / 2, bot = h / 2;
       ctx.fillStyle = 'rgba(0,0,0,0.30)'; ell(0, bot + 6, w / 2 + 12, 12);
+      // propulsores de cohete (coche azul "Rey")
+      if (rocket) {
+        for (const fx of [-9, 9]) {
+          const fl = 12 + Math.abs(Math.sin(t * 0.6 + fx)) * 8;
+          const g = ctx.createLinearGradient(0, bot, 0, bot + fl + 6);
+          g.addColorStop(0, '#fff7b0'); g.addColorStop(0.45, '#ff9a3c'); g.addColorStop(1, 'rgba(255,70,20,0)');
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.moveTo(fx - 4, bot - 1); ctx.quadraticCurveTo(fx, bot + fl + 6, fx + 4, bot - 1);
+          ctx.closePath(); ctx.fill();
+        }
+      }
       for (const s of [-1, 1]) {
         const wx = s * (w * 0.40);
         ctx.fillStyle = '#15171a'; roundRect(wx - 10, bot - 19, 20, 24, 7); ctx.fill();
@@ -802,8 +948,9 @@
       ctx.save();
       ctx.translate(x, y);
       ctx.rotate(car.tilt + spinA);
-      // mismo coche que el rival, pero ROJO
-      drawRacerBody(car.w, car.h, '#ff4c34', '#e62a18', '#a01506', '#d4250f', '95');
+      // color del jugador (rojo Rayo, o azul-cohete si eres el que se une)
+      const mp = carPreset(myCar);
+      drawRacerBody(car.w, car.h, mp.g[0], mp.g[1], mp.g[2], mp.roof, mp.num, mp.rocket);
       ctx.restore();
 
       // estrellitas de mareo girando sobre el coche tras el trompo
@@ -841,7 +988,7 @@
       ctx.fillText('×' + cups, 56, 37);
       ctx.fillStyle = '#ffe6a8'; ctx.font = '800 18px system-ui';
       ctx.fillText(Math.floor(meters) + ' m', 116, 37);
-      const first = rivalLead < 0;
+      const first = (mode === 'mp' && opp.present) ? (meters >= opp.meters) : (rivalLead < 0);
       ctx.fillStyle = first ? '#ffd23f' : '#e8e8e8'; ctx.font = '800 18px system-ui';
       ctx.fillText(first ? '1º' : '2º', 214, 37);
       ctx.restore();
