@@ -110,34 +110,23 @@
     }
     .splash-sub { position: relative; margin-top: 12px; font-size: 16px; font-weight: 500; color: rgba(255,255,255,0.9); }
 
-    /* ---------- Cabecera ---------- */
+    /* ---------- Cabecera (todo en una línea: fecha + círculo de versión) ---------- */
     .topbar {
       display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 22px;
+      gap: 12px; margin-bottom: 20px;
     }
-    .greeting .eyebrow {
-      font-family: var(--disp);
-      font-size: 12px; font-weight: 700; letter-spacing: 0.12em;
-      text-transform: uppercase; color: var(--muted);
-    }
-    .greeting h1 {
+    .topbar h1 {
+      flex: 1; min-width: 0; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
       font-family: var(--exp);
-      font-weight: 800; font-size: 30px; line-height: 0.98;
-      letter-spacing: -0.01em; text-transform: uppercase;
-      margin-top: 3px; color: var(--ink);
+      font-weight: 800; font-size: 19px; line-height: 1;
+      letter-spacing: -0.01em; text-transform: uppercase; color: var(--ink);
     }
-    /* Etiqueta de versión (para confirmar que tienes la última) */
-    .greeting .version {
-      display: inline-block; margin-top: 6px;
-      background: var(--ink); color: var(--lime);
-      font-family: var(--disp); font-size: 11px; font-weight: 800;
-      letter-spacing: 0.08em; text-transform: uppercase;
-      padding: 3px 8px; border-radius: 99px;
-    }
+    /* El círculo del perfil ahora muestra la versión (mismo estilo de antes) */
     .avatar {
       width: 44px; height: 44px; border-radius: 50%;
       background: var(--ink); color: var(--lime);
-      font-family: var(--disp); font-weight: 800; font-size: 18px;
+      font-family: var(--disp); font-weight: 800; font-size: 14px; letter-spacing: 0.02em;
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
 
@@ -160,36 +149,49 @@
     .view-tabs button.active { background: var(--ink); color: #fff; }
 
     /* ---------- Hero: contador de calorías (tarjeta negra) ---------- */
+    /* Dos columnas: izquierda datos, derecha anillo de progreso */
     .hero {
       background: var(--ink); color: #fff;
       border-radius: var(--r-lg);
-      padding: 22px 22px 24px;
+      padding: 20px 22px;
       margin-bottom: 14px;
+      display: flex; align-items: center; gap: 16px;
     }
-    .hero .label {
-      font-family: var(--disp);
-      font-size: 12px; font-weight: 700; letter-spacing: 0.12em;
-      text-transform: uppercase; color: rgba(255,255,255,0.5);
+    .hero-left {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column; align-items: flex-start;
     }
-    .hero .count {
-      display: flex; align-items: baseline; gap: 8px; margin: 8px 0 4px;
-    }
-    .hero .count .now {
+    .hero .now {
       font-family: var(--exp);
-      font-weight: 900; font-size: 64px; line-height: 0.9;
-      letter-spacing: -0.02em;
+      font-weight: 900; font-size: 60px; line-height: 0.9;
+      letter-spacing: -0.02em; color: #fff;
     }
-    .hero .count .goal { font-family: var(--disp); font-weight: 700; font-size: 20px; color: rgba(255,255,255,0.45); }
-    .hero .count .unit { font-family: var(--disp); font-weight: 700; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.45); }
-    .hero .remaining { font-size: 14px; color: rgba(255,255,255,0.7); margin-bottom: 18px; }
+    /* "/ 1176 KCAL" debajo del número; su ancho se ajusta por JS al del número */
+    .hero .goal {
+      font-family: var(--disp); font-weight: 800; font-size: 20px;
+      letter-spacing: 0.01em; line-height: 1; color: rgba(255,255,255,0.45);
+      margin-top: 5px; white-space: nowrap;
+    }
+    .hero .remaining { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 11px; }
     .hero .remaining b { color: var(--lime); font-weight: 700; }
 
-    .bar {
-      height: 12px; border-radius: 99px;
-      background: rgba(255,255,255,0.14); overflow: hidden; display: flex;
+    /* Anillo de progreso (mismos colores que la barra anterior) */
+    .ring-wrap {
+      flex-shrink: 0; position: relative;
+      width: 104px; height: 104px;
+      display: flex; align-items: center; justify-content: center;
     }
-    .bar .seg { height: 100%; background: var(--lime); width: 0; transition: width 0.8s cubic-bezier(.22,.61,.36,1); }
-    .bar .seg.rest { background: var(--lime-dim); }
+    .ring {
+      position: absolute; inset: 0; border-radius: 50%;
+      background: rgba(255,255,255,0.14);   /* la pista; el conic-gradient lo pone el JS */
+      -webkit-mask: radial-gradient(circle, transparent 57%, #000 58%);
+              mask: radial-gradient(circle, transparent 57%, #000 58%);
+      transition: background 0.6s ease;
+    }
+    .ring-pct {
+      position: relative;
+      font-family: var(--disp); font-weight: 800; font-size: 21px; color: #fff;
+    }
 
     /* ---------- Macros (cajetines blancos sobre el agua) ---------- */
     .macros { display: flex; flex-direction: column; gap: 10px; margin-bottom: 0; }
@@ -431,11 +433,8 @@
 
   <div class="top-region">
     <header class="topbar">
-      <div class="greeting">
-        <h1 id="greeting">Hola</h1>
-        <div class="version" id="version">V.1</div>
-      </div>
-      <div class="avatar" id="avatar">V</div>
+      <h1 id="greeting">Hola</h1>
+      <div class="avatar" id="version">V.3</div>
     </header>
 
     <div class="view-tabs" id="viewTabs">
@@ -446,16 +445,14 @@
     </div>
 
     <section class="hero">
-      <div class="label" id="heroLabel">Hoy</div>
-      <div class="count">
-        <span class="now" id="kcalNow">0</span>
-        <span class="goal" id="kcalGoal">/ 0</span>
-        <span class="unit">kcal</span>
+      <div class="hero-left">
+        <div class="now" id="kcalNow">0</div>
+        <div class="goal" id="kcalGoal">/ 0 KCAL</div>
+        <div class="remaining" id="kcalSub">0 kcal para objetivo</div>
       </div>
-      <div class="remaining" id="kcalSub">Te quedan <b id="kcalLeft">0 kcal</b> para tu objetivo</div>
-      <div class="bar">
-        <span class="seg" id="kcalSel"></span>
-        <span class="seg rest" id="kcalRest"></span>
+      <div class="ring-wrap">
+        <div class="ring" id="kcalRing"></div>
+        <span class="ring-pct" id="kcalRingPct">0%</span>
       </div>
     </section>
 
@@ -665,12 +662,25 @@
     // Vista activa para el filtro de estadísticas: "dia" o un momento del día
     let activeView = "dia";
 
+    // Ajusta el ancho del "/ 1176 KCAL" para que coincida con el del número grande
+    function fitGoalWidth() {
+      const now = $("kcalNow"), g = $("kcalGoal");
+      if (!g.textContent) return;
+      const target = now.getBoundingClientRect().width;
+      if (!target) return;
+      g.style.fontSize = "20px";
+      const w = g.getBoundingClientRect().width;
+      if (!w) return;
+      let size = 20 * target / w;
+      size = Math.max(12, Math.min(size, 30));   // ni minúsculo ni que se pase
+      g.style.fontSize = size + "px";
+    }
+
     function render() {
-      // Cabecera — el título muestra la fecha de hoy (mismo formato que la antigua línea pequeña)
+      // Cabecera — la fecha en una sola línea (sin coma)
       const d = new Date();
       $("greeting").textContent = d.toLocaleDateString("es-ES",
-        { weekday: "long", day: "numeric", month: "long" }).toUpperCase();
-      $("avatar").textContent = DATA.user.initial;
+        { weekday: "long", day: "numeric", month: "long" }).replace(",", "").toUpperCase();
 
       // Resolver cada comida (con su índice original) y totales del día
       const sum = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
@@ -708,22 +718,27 @@
         b.classList.toggle("active", b.dataset.view === activeView));
 
       // ---- Contador de calorías (hero) ----
-      $("heroLabel").textContent = isDay ? "Hoy" : activeView;
       $("kcalNow").textContent = view.kcal.toLocaleString("es-ES");
       if (isDay) {
         const leftK = Math.max(0, goal - sum.kcal);
-        $("kcalGoal").textContent = "/ " + goal.toLocaleString("es-ES");
-        $("kcalSub").innerHTML = "Te quedan <b>" + leftK.toLocaleString("es-ES") + " kcal</b> para tu objetivo";
+        $("kcalGoal").textContent = "/ " + goal.toLocaleString("es-ES") + " KCAL";
+        $("kcalGoal").style.display = "";
+        $("kcalSub").innerHTML = "<b>" + leftK.toLocaleString("es-ES") + " kcal</b> para objetivo";
       } else {
         const pctDay = dayKcal > 0 ? Math.round(view.kcal / dayKcal * 100) : 0;
         $("kcalGoal").textContent = "";
+        $("kcalGoal").style.display = "none";
         $("kcalSub").innerHTML = "<b>" + pctDay + "%</b> de las " + dayKcal.toLocaleString("es-ES") + " kcal de hoy";
       }
       const kSel = Math.min(100, Math.round(view.kcal / goal * 100));
       const kRest = isDay ? 0 : Math.min(100 - kSel, Math.round(Math.max(0, dayKcal - view.kcal) / goal * 100));
+      $("kcalRingPct").textContent = kSel + "%";
       requestAnimationFrame(() => {
-        $("kcalSel").style.width = kSel + "%";
-        $("kcalRest").style.width = kRest + "%";
+        const stop = kSel + kRest;
+        $("kcalRing").style.background =
+          "conic-gradient(#C7F23E 0 " + kSel + "%, #7FA22E " + kSel + "% " + stop + "%, " +
+          "rgba(255,255,255,0.14) " + stop + "% 100%)";
+        if (isDay) fitGoalWidth();
       });
 
       // ---- Macros (con resaltado tipo Power BI) ----
@@ -961,7 +976,7 @@
     });
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.2";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.3";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadLog();
     render();
