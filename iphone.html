@@ -42,21 +42,34 @@
       color: var(--ink);
       font-family: var(--sans);
       -webkit-font-smoothing: antialiased;
-      overscroll-behavior-y: none;
     }
 
-    body {
-      min-height: 100vh;
+    /* El body NO scrollea: queda fijo a la pantalla. Así evitamos el
+       "tirón" del scroll de página en iOS y los saltos al ocultarse barras. */
+    html, body {
+      height: 100%;
+      position: fixed;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    /* Contenedor real de scroll con momentum/rebote nativos de iOS. */
+    .app {
+      height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;   /* inercia tipo nativo */
+      overscroll-behavior-y: contain;       /* el rebote se queda dentro */
+      scroll-behavior: smooth;
       padding:
         calc(env(safe-area-inset-top) + 12px)
         20px
-        calc(env(safe-area-inset-bottom) + 24px);
+        calc(env(safe-area-inset-bottom) + 110px);
       padding-left: max(20px, env(safe-area-inset-left));
       padding-right: max(20px, env(safe-area-inset-right));
     }
 
     /* En modo app, un pelín más de respiro bajo el reloj/Dynamic Island */
-    .standalone body { padding-top: calc(env(safe-area-inset-top) + 20px); }
+    .standalone .app { padding-top: calc(env(safe-area-inset-top) + 20px); }
 
     /* ---------- Cabecera ---------- */
     .topbar {
@@ -268,9 +281,159 @@
       transition: transform 0.15s ease;
     }
     .add:active { transform: scale(0.92); }
+    .add.hidden { opacity: 0; pointer-events: none; transform: scale(0.6); }
+
+    /* ---------- Pantalla Añadir comida (sheet) ---------- */
+    .sheet {
+      position: fixed;
+      inset: 0;
+      background: var(--cream);
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(100%);
+      transition: transform 0.36s cubic-bezier(.22,.61,.36,1);
+      will-change: transform;
+    }
+    .sheet.open { transform: translateY(0); }
+
+    .sheet-grip {
+      width: 38px; height: 5px; border-radius: 99px;
+      background: var(--line);
+      margin: 0 auto;
+      margin-top: calc(env(safe-area-inset-top) + 10px);
+      flex-shrink: 0;
+    }
+    .standalone .sheet-grip { margin-top: calc(env(safe-area-inset-top) + 16px); }
+
+    .sheet-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px 6px;
+      flex-shrink: 0;
+    }
+    .sheet-head h2 {
+      font-family: var(--serif); font-weight: 500; font-size: 19px; color: var(--forest);
+    }
+    .sheet-close {
+      background: none; border: none; color: var(--terracotta);
+      font-family: var(--sans); font-size: 15px; font-weight: 600; cursor: pointer;
+      padding: 4px 0;
+    }
+    .sheet-spacer { width: 48px; }
+
+    .meal-tabs {
+      display: flex; gap: 8px; padding: 10px 20px 4px; flex-shrink: 0;
+      overflow-x: auto;
+    }
+    .meal-tabs button {
+      flex: 1 0 auto;
+      border: 1px solid var(--line);
+      background: var(--cream-card);
+      color: var(--olive);
+      border-radius: 99px;
+      padding: 9px 16px;
+      font-family: var(--sans); font-size: 14px; font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .meal-tabs button.active {
+      background: var(--forest); color: var(--cream); border-color: var(--forest);
+    }
+
+    .search-wrap {
+      position: relative; padding: 12px 20px 8px; flex-shrink: 0;
+    }
+    .search-ico {
+      position: absolute; left: 34px; top: 50%; transform: translateY(-30%);
+      font-size: 15px; opacity: 0.6; pointer-events: none;
+    }
+    .search-wrap input {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: var(--cream-card);
+      border-radius: var(--r-md);
+      padding: 13px 14px 13px 40px;
+      font-family: var(--sans); font-size: 16px; color: var(--ink);
+      outline: none;
+      -webkit-appearance: none;
+    }
+    .search-wrap input:focus { border-color: var(--olive); }
+
+    .food-list {
+      list-style: none;
+      flex: 1; min-height: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+      padding: 4px 20px 20px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .food {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--cream-card);
+      border: 1px solid var(--line);
+      border-radius: var(--r-md);
+      padding: 12px 14px;
+    }
+    .food.picked { border-color: var(--olive); background: #F3F5EC; }
+    .food .fe {
+      width: 38px; height: 38px; border-radius: 11px; background: var(--cream);
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+      flex-shrink: 0;
+    }
+    .food .fb { flex: 1; min-width: 0; }
+    .food .fb .ft { font-weight: 600; font-size: 15px; color: var(--ink);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .food .fb .fs { font-size: 12.5px; color: var(--muted); margin-top: 1px; }
+
+    /* Botón añadir / stepper */
+    .food .pick {
+      border: none; background: var(--forest); color: var(--cream);
+      width: 32px; height: 32px; border-radius: 50%;
+      font-size: 20px; font-weight: 300; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0;
+    }
+    .stepper {
+      display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+    }
+    .stepper button {
+      border: none; width: 30px; height: 30px; border-radius: 50%;
+      background: var(--forest); color: var(--cream);
+      font-size: 18px; line-height: 1; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .stepper button.minus { background: var(--cream); color: var(--forest); border: 1px solid var(--line); }
+    .stepper .qty {
+      font-family: var(--serif); font-size: 17px; font-weight: 500;
+      color: var(--forest); min-width: 18px; text-align: center;
+    }
+
+    .sheet-foot {
+      flex-shrink: 0;
+      padding: 12px 20px calc(env(safe-area-inset-bottom) + 14px);
+      border-top: 1px solid var(--line);
+      background: var(--cream);
+    }
+    .confirm {
+      width: 100%;
+      border: none;
+      background: var(--terracotta);
+      color: var(--cream);
+      border-radius: var(--r-md);
+      padding: 16px;
+      font-family: var(--sans); font-size: 16px; font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s ease, transform 0.12s ease;
+    }
+    .confirm:active { transform: scale(0.98); }
+    .confirm:disabled { background: var(--line); color: var(--muted); cursor: default; }
   </style>
 </head>
 <body>
+
+ <div class="app" id="app">
 
   <header class="topbar">
     <div class="greeting">
@@ -299,7 +462,38 @@
   </div>
   <ul class="meals" id="meals"></ul>
 
-  <button class="add" aria-label="Añadir comida">+</button>
+ </div><!-- /.app -->
+
+  <button class="add" id="addBtn" aria-label="Añadir comida">+</button>
+
+  <!-- ===================== Pantalla Añadir comida ===================== -->
+  <section class="sheet" id="sheet" aria-hidden="true">
+    <div class="sheet-grip"></div>
+    <header class="sheet-head">
+      <button class="sheet-close" id="sheetClose">Cerrar</button>
+      <h2>Añadir comida</h2>
+      <span class="sheet-spacer"></span>
+    </header>
+
+    <div class="meal-tabs" id="mealTabs">
+      <button data-meal="Desayuno">Desayuno</button>
+      <button data-meal="Comida">Comida</button>
+      <button data-meal="Cena">Cena</button>
+      <button data-meal="Snack">Snack</button>
+    </div>
+
+    <div class="search-wrap">
+      <span class="search-ico">🔍</span>
+      <input id="search" type="search" placeholder="Buscar alimento…"
+             autocomplete="off" autocorrect="off" autocapitalize="none">
+    </div>
+
+    <ul class="food-list" id="foodList"></ul>
+
+    <div class="sheet-foot" id="sheetFoot">
+      <button class="confirm" id="confirmAdd" disabled>Selecciona alimentos</button>
+    </div>
+  </section>
 
   <script>
     /* Detección modo app vs Safari */
@@ -347,6 +541,30 @@
       roquefort:       { name: "Queso Roquefort",    emoji: "🧀", ration: "100 g", kcal: 364, protein: 19,   carbs: 0.5,  fat: 32 },
       bowl_salmon:     { name: "Bowl salmón y arroz", emoji: "🐟", ration: "400 g", kcal: 628, protein: 38.4, carbs: 48,  fat: 30 }
     };
+
+    /* =========================================================
+       PERSISTENCIA  —  el registro del día aguanta recargas (localStorage)
+       ========================================================= */
+    const STORE_KEY = "verde.log.v1";
+    const todayKey = () => {
+      const d = new Date();
+      return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+    };
+    function loadLog() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(STORE_KEY));
+        if (raw && raw.date === todayKey() && Array.isArray(raw.meals)) {
+          DATA.meals = raw.meals;            // mismo día → recuperar
+        } else if (raw && raw.date !== todayKey()) {
+          DATA.meals = [];                   // día nuevo → empezar vacío
+        }
+      } catch (e) { /* sin almacenamiento, seguimos con los datos por defecto */ }
+    }
+    function saveLog() {
+      try {
+        localStorage.setItem(STORE_KEY, JSON.stringify({ date: todayKey(), meals: DATA.meals }));
+      } catch (e) {}
+    }
 
     /* =========================================================
        RENDER
@@ -444,6 +662,121 @@
       });
     }
 
+    /* =========================================================
+       PANTALLA AÑADIR COMIDA
+       ========================================================= */
+    const sheet = $("sheet");
+    let activeMeal = "Desayuno";
+    let draft = {};                 // claveAlimento -> nº de raciones a añadir
+
+    function defaultMeal() {
+      const h = new Date().getHours();
+      if (h < 11) return "Desayuno";
+      if (h < 16) return "Comida";
+      if (h < 19) return "Snack";
+      return "Cena";
+    }
+
+    function openSheet() {
+      activeMeal = defaultMeal();
+      draft = {};
+      $("search").value = "";
+      syncTabs();
+      renderFoodList();
+      updateFoot();
+      sheet.classList.add("open");
+      sheet.setAttribute("aria-hidden", "false");
+      $("addBtn").classList.add("hidden");
+    }
+    function closeSheet() {
+      sheet.classList.remove("open");
+      sheet.setAttribute("aria-hidden", "true");
+      $("addBtn").classList.remove("hidden");
+    }
+
+    function syncTabs() {
+      $("mealTabs").querySelectorAll("button").forEach(b =>
+        b.classList.toggle("active", b.dataset.meal === activeMeal));
+    }
+
+    function renderFoodList() {
+      const q = $("search").value.trim().toLowerCase();
+      const entries = Object.entries(FOODS).filter(([, f]) =>
+        !q || f.name.toLowerCase().includes(q));
+      const list = $("foodList");
+      if (!entries.length) {
+        list.innerHTML = `<li class="food" style="justify-content:center;color:var(--muted)">Sin resultados</li>`;
+        return;
+      }
+      list.innerHTML = entries.map(([k, f]) => {
+        const picked = draft[k] > 0;
+        const control = picked
+          ? `<div class="stepper">
+               <button class="minus" data-dec="${k}" aria-label="Quitar">−</button>
+               <span class="qty">${draft[k]}</span>
+               <button data-inc="${k}" aria-label="Añadir">+</button>
+             </div>`
+          : `<button class="pick" data-inc="${k}" aria-label="Añadir">+</button>`;
+        return `
+          <li class="food ${picked ? "picked" : ""}">
+            <div class="fe">${f.emoji}</div>
+            <div class="fb">
+              <div class="ft">${f.name}</div>
+              <div class="fs">${f.ration} · ${f.kcal} kcal</div>
+            </div>
+            ${control}
+          </li>`;
+      }).join("");
+    }
+
+    function updateFoot() {
+      const keys = Object.keys(draft).filter(k => draft[k] > 0);
+      const btn = $("confirmAdd");
+      if (!keys.length) {
+        btn.disabled = true;
+        btn.textContent = "Selecciona alimentos";
+        return;
+      }
+      let kcal = 0;
+      keys.forEach(k => { kcal += FOODS[k].kcal * draft[k]; });
+      btn.disabled = false;
+      btn.textContent = `Añadir a ${activeMeal} · ${Math.round(kcal)} kcal`;
+    }
+
+    // Eventos
+    $("addBtn").addEventListener("click", openSheet);
+    $("sheetClose").addEventListener("click", closeSheet);
+    $("search").addEventListener("input", renderFoodList);
+
+    $("mealTabs").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-meal]");
+      if (!b) return;
+      activeMeal = b.dataset.meal;
+      syncTabs();
+      updateFoot();
+    });
+
+    $("foodList").addEventListener("click", (e) => {
+      const inc = e.target.closest("[data-inc]");
+      const dec = e.target.closest("[data-dec]");
+      if (inc) { const k = inc.dataset.inc; draft[k] = (draft[k] || 0) + 1; }
+      else if (dec) { const k = dec.dataset.dec; draft[k] = Math.max(0, (draft[k] || 0) - 1); }
+      else return;
+      renderFoodList();
+      updateFoot();
+    });
+
+    $("confirmAdd").addEventListener("click", () => {
+      Object.keys(draft).forEach(k => {
+        if (draft[k] > 0) DATA.meals.push({ food: k, time: activeMeal, qty: draft[k] });
+      });
+      saveLog();
+      closeSheet();
+      render();
+    });
+
+    /* ---------- Arranque ---------- */
+    loadLog();
     render();
   </script>
 </body>
