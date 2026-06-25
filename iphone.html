@@ -24,7 +24,7 @@
       --lime:  #C7F23E;   /* verde lima eléctrico (consumido en la comida) */
       --lime-dim: #7FA22E; /* lima apagado (total del día / resto) */
       --green: #2FA84F;   /* verde check */
-      --red:   #E2483D;   /* eliminar */
+      --red:   #A3271B;   /* rojo oscuro (avisos y eliminar) */
       --muted: #908C81;
       --line:  #E3DFD4;
 
@@ -179,7 +179,7 @@
       letter-spacing: 0.01em; line-height: 1; color: rgba(255,255,255,0.45);
       margin-top: 5px; white-space: nowrap;
     }
-    .hero .remaining { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 11px; }
+    .hero .remaining { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 11px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .hero .remaining b { color: var(--lime); font-weight: 700; }
 
     /* Anillo de progreso (mismos colores que la barra anterior) */
@@ -551,7 +551,7 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.25</div>
+      <div class="avatar" id="version">V.26</div>
     </header>
 
     <section class="hero">
@@ -975,57 +975,47 @@
         b.classList.toggle("active", b.dataset.view === activeView));
 
       // ---- Contador de calorías (hero) ----
+      // La 2ª línea es SIEMPRE "/ XXXX KCAL" (objetivo diario) con tamaño fijo,
+      // para que el cajetín no cambie de tamaño al filtrar y no se mueva la vista.
+      $("kcalGoal").style.display = "";
+      $("kcalGoal").style.fontSize = "";
+      $("kcalGoal").textContent = "/ " + goal.toLocaleString("es-ES") + " KCAL";
+
       let kSel, kRest = 0;
       if (foodSel && activeMacro) {
         // alimento + macro: el aporte de ese macro de ese alimento
         const mm = MACROS[activeMacro];
         const mGrams = foodSel.n[mm.prop];
         const mKcal = Math.round(mGrams * mm.f);
-        const share = dayKcal > 0 ? Math.round(mKcal / dayKcal * 100) : 0;
         $("kcalNow").textContent = mKcal.toLocaleString("es-ES");
         $("kcalNow").classList.remove("over");
-        $("kcalGoal").style.display = "";
-        $("kcalGoal").style.fontSize = "16px";
-        $("kcalGoal").textContent = "KCAL";
         $("kcalSub").innerHTML = "<b>" + mGrams + " g</b> de " + mm.name + " · " + FOODS[foodSel.food].name;
-        kSel = Math.min(100, share);
-        $("kcalRingPct").textContent = share + "%";
+        var pctG = goal > 0 ? Math.round(mKcal / goal * 100) : 0;
+        kSel = Math.min(100, pctG); $("kcalRingPct").textContent = pctG + "%";
       } else if (foodSel) {
         const fn = foodSel.n;
         $("kcalNow").textContent = fn.kcal.toLocaleString("es-ES");
         $("kcalNow").classList.remove("over");
-        $("kcalGoal").style.display = "";
-        $("kcalGoal").style.fontSize = "16px";
-        $("kcalGoal").textContent = "KCAL";
         $("kcalSub").innerHTML = "<b>" + FOODS[foodSel.food].name + "</b> · " + foodSel.grams + " g";
-        const share = dayKcal > 0 ? Math.round(fn.kcal / dayKcal * 100) : 0;
-        kSel = Math.min(100, share);
-        $("kcalRingPct").textContent = share + "%";
+        var pctG = goal > 0 ? Math.round(fn.kcal / goal * 100) : 0;
+        kSel = Math.min(100, pctG); $("kcalRingPct").textContent = pctG + "%";
       } else if (activeMacro) {
         const mm = MACROS[activeMacro];
         const mGrams = view[mm.prop];
         const mKcal = Math.round(mGrams * mm.f);
-        const share = view.kcal > 0 ? Math.round(mKcal / view.kcal * 100) : 0;
         $("kcalNow").textContent = mKcal.toLocaleString("es-ES");
         $("kcalNow").classList.remove("over");
-        $("kcalGoal").style.display = "";
-        $("kcalGoal").style.fontSize = "16px";
-        $("kcalGoal").textContent = "KCAL";
         $("kcalSub").innerHTML = "<b>" + mGrams + " g</b> de " + mm.name;
-        kSel = Math.min(100, share);
-        $("kcalRingPct").textContent = share + "%";
+        var pctG = goal > 0 ? Math.round(mKcal / goal * 100) : 0;
+        kSel = Math.min(100, pctG); $("kcalRingPct").textContent = pctG + "%";
       } else {
         $("kcalNow").textContent = view.kcal.toLocaleString("es-ES");
         $("kcalNow").classList.toggle("over", view.kcal > goal);   // rojo si te pasas
         if (isDay) {
           const leftK = Math.max(0, goal - sum.kcal);
-          $("kcalGoal").textContent = "/ " + goal.toLocaleString("es-ES") + " KCAL";
-          $("kcalGoal").style.display = "";
           $("kcalSub").innerHTML = "<b>" + leftK.toLocaleString("es-ES") + " kcal</b> para objetivo";
         } else {
           const pctDay = dayKcal > 0 ? Math.round(view.kcal / dayKcal * 100) : 0;
-          $("kcalGoal").textContent = "";
-          $("kcalGoal").style.display = "none";
           $("kcalSub").innerHTML = "<b>" + pctDay + "%</b> de las " + dayKcal.toLocaleString("es-ES") + " kcal de hoy";
         }
         const realPct = goal > 0 ? Math.round(view.kcal / goal * 100) : 0;
@@ -1038,7 +1028,6 @@
         $("kcalRingRest").style.strokeDashoffset = -kSel;
         $("kcalRingRest").style.strokeDasharray = kRest + " 100";
         $("kcalRingSel").style.strokeDasharray = kSel + " 100";
-        if (!activeMacro && !foodSel && isDay) fitGoalWidth();
       });
 
       // ---- Macros (clic = filtrar; el seleccionado se resalta en negro) ----
@@ -1266,7 +1255,7 @@
       el.addEventListener("touchmove", (e) => {
         if (!tracking || startY === null) return;
         if (window.scrollY > 0) { tracking = false; return; }
-        if (e.touches[0].clientY - startY > 120) { tracking = false; startY = null; dismiss(); }
+        if (e.touches[0].clientY - startY > 160) { tracking = false; startY = null; dismiss(); }
       }, { passive: true });
       el.addEventListener("touchend", () => { tracking = false; startY = null; });
     }
@@ -1468,7 +1457,7 @@
           <div class="si-grams"><button data-act="minus">−</button><span>${it.grams} g</span><button data-act="plus">+</button></div>
           <button class="si-del" data-act="del" aria-label="Quitar">✕</button>
         </div>`;
-      }).join("") : `<div class="sim-empty">Sin alimentos todavía</div>`;
+      }).join("") : "";
 
       requestAnimationFrame(() => {
         $("simRingSel").style.strokeDasharray = Math.min(100, pct) + " 100";
@@ -1540,7 +1529,7 @@
     });
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.25";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.26";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadLog();
     render();
