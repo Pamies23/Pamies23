@@ -23,7 +23,6 @@
       --ink:   #131311;   /* casi negro */
       --lime:  #C7F23E;   /* verde lima eléctrico (consumido en la comida) */
       --lime-dim: #7FA22E; /* lima apagado (total del día / resto) */
-      --track: #23231F;   /* vía oscura de las barras/anillo (lima resalta igual que en calorías) */
       --green: #2FA84F;   /* verde check */
       --red:   #E2483D;   /* eliminar */
       --muted: #908C81;
@@ -218,8 +217,8 @@
     }
     .macro .val span { font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
     .macro .val .pct { color: var(--ink); font-weight: 700; }
-    /* Mismo tratamiento que la barra de calorías: vía oscura → el lima resalta idéntico */
-    .macro .mini { position: relative; height: 12px; border-radius: 99px; background: var(--track); overflow: hidden; display: flex; }
+    /* Vía sombreada clara (como antes) */
+    .macro .mini { height: 12px; border-radius: 99px; background: rgba(19,19,17,0.14); overflow: hidden; display: flex; }
     .macro .mini .seg { height: 100%; background: var(--lime); width: 0; transition: width 0.7s cubic-bezier(.22,.61,.36,1); }
     .macro .mini .seg.rest { background: var(--lime-dim); }
     /* Si te pasas del objetivo, el número se pone en rojo como aviso */
@@ -446,7 +445,7 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.6</div>
+      <div class="avatar" id="version">V.7</div>
     </header>
 
     <div class="view-tabs" id="viewTabs">
@@ -1003,7 +1002,7 @@
     });
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.6";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.7";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadLog();
     render();
