@@ -460,6 +460,43 @@
     .modal-actions .m-cancel { background: var(--card); color: var(--ink); }
     .modal-actions .m-delete { background: var(--red); color: #fff; flex: 0 0 auto; padding: 16px 22px; }
     .modal-actions .m-save { background: var(--ink); color: #fff; }
+
+    /* ---------- Simulador de recetas ---------- */
+    .sim { z-index: 60; }
+    .sim-pick { z-index: 70; }
+    .sim-body { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 6px 18px 22px; }
+    .sim-body .hero { margin-top: 6px; }
+    .sim-body .macros { margin-bottom: 14px; }
+    .confirm:disabled { opacity: 0.4; }
+
+    .sim-name {
+      width: 100%; border: none; background: var(--card); border-radius: var(--r-md);
+      padding: 14px 16px; font-family: var(--disp); font-weight: 700; font-size: 16px;
+      color: var(--ink); outline: none; -webkit-appearance: none; margin: 2px 0 10px;
+    }
+    .sim-name:focus { box-shadow: inset 0 0 0 2px var(--ink); }
+    .sim-cat { padding: 0 0 14px; overflow: visible; }
+    .sim-cat button { flex: 1 0 auto; }
+
+    .sim-items { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+    .sim-empty { background: var(--card); border-radius: var(--r-md); padding: 20px; text-align: center; color: var(--muted); font-size: 14px; font-weight: 500; }
+    .sim-item { display: flex; align-items: center; gap: 10px; background: var(--card); border-radius: var(--r-md); padding: 9px 11px; }
+    .si-emoji { width: 36px; height: 36px; border-radius: 10px; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; }
+    .si-main { flex: 1; min-width: 0; }
+    .si-name { font-family: var(--disp); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.01em; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .si-kcal { font-size: 12px; color: var(--muted); font-weight: 500; margin-top: 1px; }
+    .si-grams { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .si-grams button { width: 26px; height: 26px; border-radius: 50%; border: none; background: var(--ink); color: #fff; font-size: 17px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .si-grams span { font-family: var(--disp); font-weight: 700; font-size: 12px; color: var(--ink); min-width: 40px; text-align: center; }
+    .si-del { border: none; background: none; color: var(--muted); font-size: 15px; cursor: pointer; flex-shrink: 0; padding: 4px; }
+    .sim-add {
+      width: 100%; border: 1.5px dashed var(--line); background: var(--bg); color: var(--ink);
+      border-radius: var(--r-md); padding: 14px; font-family: var(--disp); font-weight: 700;
+      font-size: 14px; text-transform: uppercase; letter-spacing: 0.02em; cursor: pointer;
+    }
+    /* Tarjeta "Crear receta" en la lista de Recetas */
+    .addf-new .addf-top { background: var(--ink); }
+    .addf-new .addf-emoji { color: var(--lime); }
   </style>
 </head>
 <body>
@@ -469,7 +506,7 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.8</div>
+      <div class="avatar" id="version">V.9</div>
     </header>
 
     <div class="view-tabs" id="viewTabs">
@@ -591,6 +628,70 @@
     </div>
   </div>
 
+  <!-- ===================== Simulador de recetas ===================== -->
+  <section class="sheet sim" id="sim" aria-hidden="true">
+    <header class="sheet-head">
+      <button class="sheet-close" id="simClose">Cerrar</button>
+      <h2>Crear receta</h2>
+      <span class="sheet-spacer"></span>
+    </header>
+
+    <div class="sim-body" id="simBody">
+      <!-- Resumen en vivo del plato vs objetivo diario -->
+      <section class="hero">
+        <div class="hero-left">
+          <div class="now" id="simNow">0</div>
+          <div class="goal" id="simGoal">/ 0 KCAL</div>
+          <div class="remaining" id="simSub">Añade alimentos para empezar</div>
+        </div>
+        <div class="ring-wrap">
+          <svg class="ring" viewBox="0 0 36 36" aria-hidden="true">
+            <circle class="ring-track" cx="18" cy="18" r="15.915"></circle>
+            <circle class="ring-sel" id="simRingSel" cx="18" cy="18" r="15.915"></circle>
+          </svg>
+          <span class="ring-pct" id="simRingPct">0%</span>
+        </div>
+      </section>
+      <section class="macros" id="simMacros"></section>
+
+      <!-- Nombre y categoría del plato -->
+      <input class="sim-name" id="simName" type="text" placeholder="Nombre del plato"
+             autocomplete="off" maxlength="40">
+      <div class="cat-tabs sim-cat" id="simCat">
+        <button data-cat="salado" class="active">Salado</button>
+        <button data-cat="dulce">Dulce</button>
+      </div>
+
+      <!-- Ingredientes del plato -->
+      <div class="sim-items" id="simItems"></div>
+      <button class="sim-add" id="simAddFood">＋ Añadir alimento</button>
+    </div>
+
+    <div class="sheet-foot">
+      <button class="confirm" id="simSave" disabled>Guardar receta</button>
+    </div>
+  </section>
+
+  <!-- Selector de alimentos del simulador -->
+  <section class="sheet sim-pick" id="simPick" aria-hidden="true">
+    <header class="sheet-head">
+      <button class="sheet-close" id="simPickClose">Cerrar</button>
+      <h2>Elegir alimento</h2>
+      <span class="sheet-spacer"></span>
+    </header>
+    <div class="cat-tabs" id="simPickCat">
+      <button data-cat="todos" class="active">Todos</button>
+      <button data-cat="salado">Salado</button>
+      <button data-cat="dulce">Dulce</button>
+    </div>
+    <div class="search-wrap">
+      <span class="search-ico">🔍</span>
+      <input id="simSearch" type="search" placeholder="Buscar alimento…"
+             autocomplete="off" autocorrect="off" autocapitalize="none">
+    </div>
+    <ul class="food-list" id="simPickList"></ul>
+  </section>
+
   <script>
     /* Detección modo app vs Safari */
     if (navigator.standalone === true ||
@@ -665,19 +766,27 @@
        ========================================================= */
     const RECIPES = {
       bowl_salmon: {
-        name: "Bowl de salmón y arroz", emoji: "🐟",
+        name: "Bowl de salmón y arroz", emoji: "🐟", cat: "salado",
         items: [ { food: "salmon", grams: 180 }, { food: "arroz", grams: 150 }, { food: "rucula", grams: 40 } ]
       },
       pollo_roquefort: {
-        name: "Pollo, roquefort y rúcula", emoji: "🍗",
+        name: "Pollo, roquefort y rúcula", emoji: "🍗", cat: "salado",
         items: [ { food: "pollo_solomillo", grams: 300 }, { food: "roquefort", grams: 30 }, { food: "rucula", grams: 50 } ]
       }
     };
 
+    // Recetas creadas por el usuario (persisten en localStorage)
+    const RECIPES_KEY = "verde.recipes.v1";
+    function loadRecipes() { try { return JSON.parse(localStorage.getItem(RECIPES_KEY)) || {}; } catch (e) { return {}; } }
+    function saveRecipes() { try { localStorage.setItem(RECIPES_KEY, JSON.stringify(userRecipes)); } catch (e) {} }
+    let userRecipes = loadRecipes();
+    const getRecipe = (key) => RECIPES[key] || userRecipes[key];
+
     // Nutrición total de una receta (suma de sus ingredientes)
     function recipeNutri(recipeKey) {
       const sum = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
-      RECIPES[recipeKey].items.forEach(it => {
+      getRecipe(recipeKey).items.forEach(it => {
+        if (!FOODS[it.food]) return;
         const n = nutri(it.food, it.grams);
         sum.kcal += n.kcal; sum.protein += n.protein; sum.carbs += n.carbs; sum.fat += n.fat;
       });
@@ -949,7 +1058,6 @@
         b.classList.toggle("active", b.dataset.type === activeType));
       $("catTabs").querySelectorAll("button").forEach(b =>
         b.classList.toggle("active", b.dataset.cat === activeCat));
-      $("catTabs").classList.toggle("hidden", activeType !== "alimentos");
       $("search").placeholder = activeType === "recetas" ? "Buscar receta…" : "Buscar alimento…";
     }
 
@@ -969,10 +1077,22 @@
       const list = $("foodList");
 
       if (activeType === "recetas") {
-        const entries = Object.entries(RECIPES).filter(([, r]) => !q || r.name.toLowerCase().includes(q));
-        list.innerHTML = entries.length
+        const all = Object.assign({}, RECIPES, userRecipes);
+        const entries = Object.entries(all).filter(([, r]) =>
+          (activeCat === "todos" || r.cat === activeCat) &&
+          (!q || r.name.toLowerCase().includes(q)));
+        const createCard = `
+          <li class="addf addf-new" data-newrecipe="1">
+            <div class="addf-top"><span class="addf-emoji">＋</span></div>
+            <div class="addf-info">
+              <div class="addf-name">Crear receta</div>
+              <div class="addf-sub">Monta tu plato</div>
+              <div class="addf-kcal">Simulador</div>
+            </div>
+          </li>`;
+        list.innerHTML = createCard + (entries.length
           ? entries.map(([k, r]) => cardHTML(k, "data-recipe", r.emoji, r.name, r.items.length + " ingredientes", recipeNutri(k).kcal)).join("")
-          : `<li class="food-empty">Sin recetas</li>`;
+          : "");
         return;
       }
 
@@ -999,6 +1119,7 @@
     });
 
     $("foodList").addEventListener("click", (e) => {
+      if (e.target.closest("[data-newrecipe]")) { openSim(); return; }
       const food = e.target.closest("[data-add]");
       if (food) { openAdd(food.dataset.add); return; }
       const rec = e.target.closest("[data-recipe]");
@@ -1020,11 +1141,12 @@
       const isRecipe = modalState.mode === "recipe";
       $("mGramsField").style.display = isRecipe ? "none" : "";
       if (isRecipe) {
-        const r = RECIPES[modalState.recipeKey];
+        const r = getRecipe(modalState.recipeKey);
         $("mEmoji").textContent = r.emoji;
         $("mTitle").textContent = r.name;
-        $("mRef").textContent = r.items.map(it => FOODS[it.food].name + " " + it.grams + " g").join(" · ");
-        $("mDelete").hidden = true;
+        $("mRef").textContent = r.items.filter(it => FOODS[it.food]).map(it => FOODS[it.food].name + " " + it.grams + " g").join(" · ");
+        $("mDelete").hidden = !r.user;          // solo recetas propias se pueden borrar
+        $("mDelete").textContent = "Eliminar";
         $("mSave").textContent = "Añadir receta";
       } else {
         const f = FOODS[modalState.foodKey];
@@ -1051,6 +1173,7 @@
       showModal();
     }
     function openRecipe(recipeKey) {
+      if (!getRecipe(recipeKey)) return;
       modalState = { mode: "recipe", recipeKey, time: defaultMeal() };
       showModal();
     }
@@ -1093,8 +1216,9 @@
 
     $("mSave").addEventListener("click", () => {
       if (modalState.mode === "recipe") {
-        RECIPES[modalState.recipeKey].items.forEach(it =>
-          DATA.meals.push({ food: it.food, time: modalState.time, grams: it.grams }));
+        getRecipe(modalState.recipeKey).items.forEach(it => {
+          if (FOODS[it.food]) DATA.meals.push({ food: it.food, time: modalState.time, grams: it.grams });
+        });
       } else if (modalState.mode === "add") {
         DATA.meals.push({ food: modalState.foodKey, time: modalState.time, grams: Math.max(1, currentGrams()) });
       } else {
@@ -1111,12 +1235,142 @@
         DATA.meals.splice(modalState.idx, 1);
         saveLog();
         render();
+      } else if (modalState.mode === "recipe" && userRecipes[modalState.recipeKey]) {
+        delete userRecipes[modalState.recipeKey];
+        saveRecipes();
+        renderFoodList();
       }
       closeModal();
     });
 
+    /* =========================================================
+       SIMULADOR DE RECETAS  (crear tu propio plato y guardarlo)
+       ========================================================= */
+    let simItems = [];          // [{ food, grams }]
+    let simCat = "salado";
+
+    function openSim() {
+      simItems = []; simCat = "salado";
+      $("simName").value = "";
+      $("simCat").querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.cat === simCat));
+      simRender();
+      $("sim").classList.add("open"); $("sim").setAttribute("aria-hidden", "false");
+    }
+    function closeSim() { $("sim").classList.remove("open"); $("sim").setAttribute("aria-hidden", "true"); }
+
+    function simRender() {
+      const goal = DATA.goal;
+      const sum = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+      simItems.forEach(it => {
+        const n = nutri(it.food, it.grams);
+        sum.kcal += n.kcal; sum.protein += n.protein; sum.carbs += n.carbs; sum.fat += n.fat;
+      });
+      sum.protein = Math.round(sum.protein); sum.carbs = Math.round(sum.carbs); sum.fat = Math.round(sum.fat);
+
+      $("simNow").textContent = sum.kcal.toLocaleString("es-ES");
+      $("simNow").classList.toggle("over", sum.kcal > goal.kcal);
+      $("simGoal").textContent = "/ " + goal.kcal.toLocaleString("es-ES") + " KCAL";
+      const pct = goal.kcal > 0 ? Math.round(sum.kcal / goal.kcal * 100) : 0;
+      $("simSub").innerHTML = simItems.length ? ("<b>" + pct + "%</b> del objetivo diario") : "Añade alimentos para empezar";
+      $("simRingPct").textContent = pct + "%";
+
+      const macros = [
+        { name: "Proteínas", v: sum.protein, g: goal.protein },
+        { name: "Carbohidratos", v: sum.carbs, g: goal.carbs },
+        { name: "Grasas", v: sum.fat, g: goal.fat }
+      ];
+      $("simMacros").innerHTML = macros.map(m => {
+        const sp = Math.min(100, Math.round(m.v / m.g * 100));
+        const over = m.v > m.g;
+        return `<div class="macro"><div class="top"><div class="name">${m.name}</div>
+          <div class="val${over ? " over" : ""}">${m.v}<span> / ${m.g} g</span></div></div>
+          <div class="mini"><span class="seg" data-w="${sp}"></span></div></div>`;
+      }).join("");
+
+      $("simItems").innerHTML = simItems.length ? simItems.map((it, i) => {
+        const f = FOODS[it.food]; const n = nutri(it.food, it.grams);
+        return `<div class="sim-item" data-i="${i}">
+          <div class="si-emoji">${f.emoji}</div>
+          <div class="si-main"><div class="si-name">${f.name}</div><div class="si-kcal">${n.kcal} kcal</div></div>
+          <div class="si-grams"><button data-act="minus">−</button><span>${it.grams} g</span><button data-act="plus">+</button></div>
+          <button class="si-del" data-act="del" aria-label="Quitar">✕</button>
+        </div>`;
+      }).join("") : `<div class="sim-empty">Sin alimentos todavía</div>`;
+
+      requestAnimationFrame(() => {
+        $("simRingSel").style.strokeDasharray = Math.min(100, pct) + " 100";
+        document.querySelectorAll('#simMacros .mini .seg').forEach(s => s.style.width = s.dataset.w + "%");
+      });
+
+      $("simSave").disabled = !(simItems.length && $("simName").value.trim());
+    }
+
+    $("simClose").addEventListener("click", closeSim);
+    $("simName").addEventListener("input", () => { $("simSave").disabled = !(simItems.length && $("simName").value.trim()); });
+    $("simCat").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-cat]"); if (!b) return;
+      simCat = b.dataset.cat;
+      $("simCat").querySelectorAll("button").forEach(x => x.classList.toggle("active", x === b));
+    });
+    $("simItems").addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-act]"); if (!btn) return;
+      const row = e.target.closest(".sim-item"); const i = parseInt(row.dataset.i, 10);
+      const act = btn.dataset.act;
+      if (act === "plus") simItems[i].grams += 10;
+      else if (act === "minus") simItems[i].grams = Math.max(5, simItems[i].grams - 10);
+      else if (act === "del") simItems.splice(i, 1);
+      simRender();
+    });
+
+    $("simSave").addEventListener("click", () => {
+      const name = $("simName").value.trim();
+      if (!name || !simItems.length) return;
+      const id = "u" + Date.now();
+      userRecipes[id] = {
+        name, cat: simCat, user: true,
+        emoji: FOODS[simItems[0].food].emoji,
+        items: simItems.map(it => ({ food: it.food, grams: it.grams }))
+      };
+      saveRecipes();
+      closeSim();
+      activeType = "recetas"; activeCat = "todos"; syncSheetTabs(); renderFoodList();
+    });
+
+    /* ---- Selector de alimentos del simulador ---- */
+    let simPickCat = "todos";
+    function openSimPick() {
+      simPickCat = "todos"; $("simSearch").value = "";
+      $("simPickCat").querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.cat === "todos"));
+      renderSimPick();
+      $("simPick").classList.add("open"); $("simPick").setAttribute("aria-hidden", "false");
+    }
+    function closeSimPick() { $("simPick").classList.remove("open"); $("simPick").setAttribute("aria-hidden", "true"); }
+    function renderSimPick() {
+      const q = $("simSearch").value.trim().toLowerCase();
+      const entries = Object.entries(FOODS).filter(([, f]) =>
+        (simPickCat === "todos" || f.cat === simPickCat) && (!q || f.name.toLowerCase().includes(q)));
+      $("simPickList").innerHTML = entries.length
+        ? entries.map(([k, f]) => cardHTML(k, "data-pick", f.emoji, f.name, f.ration, f.kcal)).join("")
+        : `<li class="food-empty">Sin resultados</li>`;
+    }
+    $("simAddFood").addEventListener("click", openSimPick);
+    $("simPickClose").addEventListener("click", closeSimPick);
+    $("simSearch").addEventListener("input", renderSimPick);
+    $("simPickCat").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-cat]"); if (!b) return;
+      simPickCat = b.dataset.cat;
+      $("simPickCat").querySelectorAll("button").forEach(x => x.classList.toggle("active", x === b));
+      renderSimPick();
+    });
+    $("simPickList").addEventListener("click", (e) => {
+      const li = e.target.closest("[data-pick]"); if (!li) return;
+      simItems.push({ food: li.dataset.pick, grams: FOODS[li.dataset.pick].base });
+      closeSimPick();
+      simRender();
+    });
+
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.8";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.9";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadLog();
     render();
