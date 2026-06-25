@@ -155,46 +155,51 @@
       transition: width 0.9s cubic-bezier(.22,.61,.36,1);
     }
 
-    /* ---------- Macros ---------- */
+    /* ---------- Macros (cajetines rectangulares a lo ancho) ---------- */
     .macros {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      display: flex;
+      flex-direction: column;
       gap: 10px;
-      margin-bottom: 26px;
+      margin-bottom: 28px;
     }
     .macro {
       background: var(--cream-card);
       border: 1px solid var(--line);
       border-radius: var(--r-md);
-      padding: 14px;
+      padding: 14px 16px;
+    }
+    .macro .top {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 10px;
     }
     .macro .name {
       font-size: 12px;
       font-weight: 600;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
       color: var(--muted);
     }
     .macro .val {
       font-family: var(--serif);
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 500;
       color: var(--forest);
-      margin: 4px 0 10px;
     }
     .macro .val span { font-size: 13px; color: var(--muted); font-family: var(--sans); }
     .macro .mini {
-      height: 6px;
+      height: 8px;
       border-radius: 99px;
       background: var(--line);
       overflow: hidden;
     }
-    .macro .mini > span { display: block; height: 100%; border-radius: 99px; width: 0; transition: width 0.9s ease; }
+    .macro .mini > span { display: block; height: 100%; border-radius: 99px; width: 0; transition: width 0.9s cubic-bezier(.22,.61,.36,1); }
     .macro.p .mini > span { background: var(--olive); }
     .macro.c .mini > span { background: var(--lime); }
     .macro.f .mini > span { background: var(--terracotta); }
 
-    /* ---------- Sección comidas ---------- */
+    /* ---------- Sección comidas (desplegables) ---------- */
     .section-head {
       display: flex;
       align-items: baseline;
@@ -207,59 +212,77 @@
       font-size: 22px;
       color: var(--forest);
     }
-    .section-head .link {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--terracotta);
-    }
 
-    .meals { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-    .meal {
+    .meal-groups { display: flex; flex-direction: column; gap: 10px; }
+
+    .mgroup {
       background: var(--cream-card);
       border: 1px solid var(--line);
       border-radius: var(--r-md);
-      padding: 16px 18px;
+      overflow: hidden;
+    }
+    .mg-head {
+      width: 100%;
+      background: none;
+      border: none;
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 13px;
+      padding: 15px 16px;
+      cursor: pointer;
+      font-family: var(--sans);
+      text-align: left;
     }
-    .meal .emoji {
-      width: 42px; height: 42px;
+    .mg-emoji {
+      width: 40px; height: 40px;
       border-radius: 12px;
       background: var(--cream);
       display: flex; align-items: center; justify-content: center;
-      font-size: 20px;
+      font-size: 19px;
       flex-shrink: 0;
     }
-    .meal .body { flex: 1; min-width: 0; }
-    .meal .body .t {
-      font-weight: 600;
-      font-size: 16px;
-      color: var(--ink);
+    .mg-info { flex: 1; min-width: 0; }
+    .mg-name { font-weight: 600; font-size: 16px; color: var(--ink); }
+    .mg-sub { font-size: 13px; color: var(--muted); margin-top: 1px; }
+    .mg-kcal {
+      font-family: var(--serif); font-size: 18px; font-weight: 500;
+      color: var(--forest); flex-shrink: 0;
     }
-    .meal .body .s {
-      font-size: 13px;
-      color: var(--muted);
-      margin-top: 2px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .mg-kcal span { font-size: 11px; color: var(--muted); font-family: var(--sans); font-weight: 500; }
+    .mg-chev {
+      font-size: 13px; color: var(--olive); flex-shrink: 0; width: 14px; text-align: center;
+      transition: transform 0.28s ease;
     }
-    .meal .kcal {
-      font-family: var(--serif);
-      font-size: 18px;
-      font-weight: 500;
-      color: var(--forest);
-      flex-shrink: 0;
-    }
-    .meal .kcal span { font-size: 11px; color: var(--muted); font-family: var(--sans); display: block; text-align: right; font-weight: 500; }
+    .mgroup.open .mg-chev { transform: rotate(180deg); }
 
-    .meal.empty {
-      justify-content: center;
+    .mg-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.32s ease;
+    }
+    .mgroup.open .mg-body { max-height: 1200px; }
+    .mg-list { list-style: none; padding: 0 16px 8px; }
+    .mg-food {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 0;
+      border-top: 1px solid var(--line);
+      cursor: pointer;
+    }
+    .mgf-emoji { font-size: 17px; flex-shrink: 0; width: 22px; text-align: center; }
+    .mgf-body { flex: 1; min-width: 0; }
+    .mgf-name { font-size: 15px; font-weight: 500; color: var(--ink); }
+    .mgf-grams { font-size: 12.5px; color: var(--muted); margin-top: 1px; }
+    .mgf-kcal { font-size: 14px; font-weight: 600; color: var(--olive); flex-shrink: 0; }
+    .mgf-edit { font-size: 14px; color: var(--muted); flex-shrink: 0; opacity: 0.5; }
+
+    .meal-empty {
+      background: var(--cream-card);
+      border: 1px dashed var(--line);
+      border-radius: var(--r-md);
+      padding: 22px;
+      text-align: center;
       color: var(--muted);
       font-size: 14px;
-      border-style: dashed;
-      padding: 22px;
     }
 
     /* ---------- Botón añadir ---------- */
@@ -429,6 +452,76 @@
     }
     .confirm:active { transform: scale(0.98); }
     .confirm:disabled { background: var(--line); color: var(--muted); cursor: default; }
+
+    /* ---------- Modal de gramos (añadir / editar) ---------- */
+    .modal {
+      position: fixed; inset: 0; z-index: 80;
+      display: flex; align-items: flex-end; justify-content: center;
+      background: rgba(34, 36, 31, 0);
+      visibility: hidden;
+      transition: background 0.25s ease, visibility 0.25s ease;
+    }
+    .modal.open { visibility: visible; background: rgba(34, 36, 31, 0.45); }
+    .modal-card {
+      width: 100%; max-width: 460px;
+      background: var(--cream);
+      border-radius: 26px 26px 0 0;
+      padding: 22px 22px calc(env(safe-area-inset-bottom) + 22px);
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(.22,.61,.36,1);
+    }
+    .modal.open .modal-card { transform: translateY(0); }
+
+    .modal-top { display: flex; align-items: center; gap: 13px; margin-bottom: 16px; }
+    .modal-emoji {
+      width: 46px; height: 46px; border-radius: 13px; background: var(--cream-card);
+      border: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;
+    }
+    .modal-title { flex: 1; min-width: 0; }
+    .modal-title h3 { font-family: var(--serif); font-weight: 500; font-size: 20px; color: var(--forest); }
+    .modal-ref { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+    .grams-field {
+      display: flex; align-items: center; gap: 14px;
+      background: var(--cream-card); border: 1px solid var(--line);
+      border-radius: var(--r-md);
+      padding: 10px 14px; margin-bottom: 14px;
+    }
+    .grams-field button {
+      border: none; width: 40px; height: 40px; border-radius: 50%;
+      background: var(--forest); color: var(--cream);
+      font-size: 22px; line-height: 1; cursor: pointer; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .grams-field .gminus { background: var(--cream); color: var(--forest); border: 1px solid var(--line); }
+    .grams-field .gwrap { flex: 1; text-align: center; }
+    .grams-field input {
+      width: 100%; border: none; background: none; outline: none;
+      font-family: var(--serif); font-weight: 500; font-size: 32px; color: var(--forest);
+      text-align: center; -webkit-appearance: none; -moz-appearance: textfield;
+    }
+    .grams-field input::-webkit-outer-spin-button,
+    .grams-field input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .grams-field .gunit { font-size: 13px; color: var(--muted); display: block; margin-top: -4px; }
+
+    .modal-preview {
+      display: flex; justify-content: space-around; text-align: center;
+      background: var(--forest); color: var(--cream);
+      border-radius: var(--r-md); padding: 14px; margin-bottom: 16px;
+    }
+    .modal-preview .pv-n { font-family: var(--serif); font-size: 19px; font-weight: 500; }
+    .modal-preview .pv-l { font-size: 11px; color: rgba(244,241,234,0.6); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
+    .modal-preview .pv-n.kcal { color: var(--lime); }
+
+    .modal-actions { display: flex; gap: 10px; }
+    .modal-actions button {
+      flex: 1; border: none; border-radius: var(--r-md); padding: 15px;
+      font-family: var(--sans); font-size: 15px; font-weight: 700; cursor: pointer;
+    }
+    .modal-actions .m-cancel { background: var(--cream-card); border: 1px solid var(--line); color: var(--olive); }
+    .modal-actions .m-delete { background: #F2E4DF; color: var(--terracotta); flex: 0 0 auto; padding: 15px 20px; }
+    .modal-actions .m-save { background: var(--terracotta); color: var(--cream); }
   </style>
 </head>
 <body>
@@ -458,9 +551,8 @@
 
   <div class="section-head">
     <h2>Comidas de hoy</h2>
-    <span class="link">Ver todo</span>
   </div>
-  <ul class="meals" id="meals"></ul>
+  <div class="meal-groups" id="mealGroups"></div>
 
  </div><!-- /.app -->
 
@@ -491,9 +583,44 @@
     <ul class="food-list" id="foodList"></ul>
 
     <div class="sheet-foot" id="sheetFoot">
-      <button class="confirm" id="confirmAdd" disabled>Selecciona alimentos</button>
+      <button class="confirm" id="sheetDone">Hecho</button>
     </div>
   </section>
+
+  <!-- ===================== Modal de gramos (añadir / editar) ===================== -->
+  <div class="modal" id="modal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-top">
+        <div class="modal-emoji" id="mEmoji">🍽️</div>
+        <div class="modal-title">
+          <h3 id="mTitle">Alimento</h3>
+          <div class="modal-ref" id="mRef">—</div>
+        </div>
+      </div>
+
+      <div class="grams-field">
+        <button class="gminus" id="mMinus" aria-label="Menos">−</button>
+        <div class="gwrap">
+          <input id="mGrams" type="number" inputmode="numeric" min="0" step="1" value="100">
+          <span class="gunit">gramos</span>
+        </div>
+        <button class="gplus" id="mPlus" aria-label="Más">+</button>
+      </div>
+
+      <div class="modal-preview">
+        <div><div class="pv-n kcal" id="pvKcal">0</div><div class="pv-l">kcal</div></div>
+        <div><div class="pv-n" id="pvP">0</div><div class="pv-l">Prot</div></div>
+        <div><div class="pv-n" id="pvC">0</div><div class="pv-l">Carb</div></div>
+        <div><div class="pv-n" id="pvF">0</div><div class="pv-l">Grasa</div></div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="m-delete" id="mDelete" hidden>Eliminar</button>
+        <button class="m-cancel" id="mCancel">Cancelar</button>
+        <button class="m-save" id="mSave">Añadir</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     /* Detección modo app vs Safari */
@@ -508,44 +635,63 @@
        ========================================================= */
     const DATA = {
       user: { name: "Verde", initial: "V" },
-      goal: { kcal: 2000, protein: 140, carbs: 220, fat: 65 }, // objetivos diarios (placeholder)
+      // Objetivos diarios (laborables) — de Vitruvio
+      goal: { kcal: 1176, protein: 140, carbs: 37, fat: 52 },
       meals: [
-        // Comidas registradas hoy. Referencian alimentos del catálogo FOODS por su clave.
-        { food: "claras_huevo", time: "Desayuno", qty: 1 },
-        { food: "arandanos",    time: "Desayuno", qty: 1 },
-        { food: "pollo_solomillo", time: "Comida", qty: 2 },
-        { food: "rucula",       time: "Comida",   qty: 1 },
-        { food: "queso_cottage", time: "Snack",   qty: 1 }
+        // Comidas registradas hoy: { food, time, grams }
+        { food: "claras_huevo",    time: "Desayuno", grams: 150 },
+        { food: "arandanos",       time: "Desayuno", grams: 100 },
+        { food: "pollo_solomillo", time: "Comida",   grams: 200 },
+        { food: "rucula",          time: "Comida",   grams: 100 },
+        { food: "queso_cottage",   time: "Snack",    grams: 100 }
       ]
     };
 
     /* =========================================================
        CATÁLOGO DE ALIMENTOS  —  datos nutricionales (de Vitruvio).
-       Valores POR RACIÓN indicada. Solo info nutricional.
+       Los valores kcal/protein/carbs/fat son POR la ración 'base' (en gramos).
+       'ration' es solo la etiqueta de referencia que se muestra.
        Añade aquí nuevos alimentos y úsalos en DATA.meals por su clave.
        ========================================================= */
     const FOODS = {
-      claras_huevo:    { name: "Claras de huevo",    emoji: "🥚", ration: "150 ml", kcal: 63,  protein: 16.5, carbs: 0.5,  fat: 0.2 },
-      jamon_serrano:   { name: "Jamón serrano",      emoji: "🍖", ration: "50–60 g", kcal: 137, protein: 18.5, carbs: 0.6,  fat: 6.7 },
-      pollo_solomillo: { name: "Solomillo de pollo", emoji: "🍗", ration: "100 g", kcal: 108, protein: 22,   carbs: 0.5,  fat: 1.8 },
-      fajitas:         { name: "Fajitas (sin pan)",  emoji: "🌮", ration: "300 g", kcal: 219, protein: 26.7, carbs: 21.9, fat: 1.8 },
-      queso_cottage:   { name: "Queso Cottage",      emoji: "🧀", ration: "100 g", kcal: 99,  protein: 14,   carbs: 1.7,  fat: 4.0 },
-      champinones:     { name: "Champiñones",        emoji: "🍄", ration: "100 g", kcal: 20,  protein: 2.6,  carbs: 0.8,  fat: 0.6 },
-      rucula:          { name: "Rúcula",             emoji: "🥬", ration: "100 g", kcal: 26,  protein: 3.4,  carbs: 1.0,  fat: 0.4 },
-      arandanos:       { name: "Arándanos",          emoji: "🫐", ration: "100 g", kcal: 57,  protein: 0.7,  carbs: 14,   fat: 0.3 },
-      mermelada0:      { name: "Mermelada 0%",       emoji: "🍓", ration: "25 g",  kcal: 10,  protein: 0.2,  carbs: 2.9,  fat: 0 },
-      platano:         { name: "Plátano",            emoji: "🍌", ration: "120 g", kcal: 107, protein: 1.3,  carbs: 27,   fat: 0.3 },
-      queso_viejo:     { name: "Queso viejo tostado", emoji: "🧀", ration: "100 g", kcal: 474, protein: 27,  carbs: 1.5,  fat: 40 },
-      naranja:         { name: "Naranja",            emoji: "🍊", ration: "150 g", kcal: 70,  protein: 1.4,  carbs: 17,   fat: 0.2 },
-      sandia:          { name: "Sandía",             emoji: "🍉", ration: "300 g", kcal: 90,  protein: 1.8,  carbs: 21,   fat: 0.3 },
-      roquefort:       { name: "Queso Roquefort",    emoji: "🧀", ration: "100 g", kcal: 364, protein: 19,   carbs: 0.5,  fat: 32 },
-      bowl_salmon:     { name: "Bowl salmón y arroz", emoji: "🐟", ration: "400 g", kcal: 628, protein: 38.4, carbs: 48,  fat: 30 }
+      claras_huevo:    { name: "Claras de huevo",     emoji: "🥚", base: 150, ration: "150 ml", kcal: 63,  protein: 16.5, carbs: 0.5,  fat: 0.2 },
+      jamon_serrano:   { name: "Jamón serrano",       emoji: "🍖", base: 55,  ration: "55 g",   kcal: 137, protein: 18.5, carbs: 0.6,  fat: 6.7 },
+      pollo_solomillo: { name: "Solomillo de pollo",  emoji: "🍗", base: 100, ration: "100 g",  kcal: 108, protein: 22,   carbs: 0.5,  fat: 1.8 },
+      fajitas:         { name: "Fajitas (sin pan)",   emoji: "🌮", base: 300, ration: "300 g",  kcal: 219, protein: 26.7, carbs: 21.9, fat: 1.8 },
+      queso_cottage:   { name: "Queso Cottage",       emoji: "🧀", base: 100, ration: "100 g",  kcal: 99,  protein: 14,   carbs: 1.7,  fat: 4.0 },
+      champinones:     { name: "Champiñones",         emoji: "🍄", base: 100, ration: "100 g",  kcal: 20,  protein: 2.6,  carbs: 0.8,  fat: 0.6 },
+      rucula:          { name: "Rúcula",              emoji: "🥬", base: 100, ration: "100 g",  kcal: 26,  protein: 3.4,  carbs: 1.0,  fat: 0.4 },
+      arandanos:       { name: "Arándanos",           emoji: "🫐", base: 100, ration: "100 g",  kcal: 57,  protein: 0.7,  carbs: 14,   fat: 0.3 },
+      mermelada0:      { name: "Mermelada 0%",        emoji: "🍓", base: 25,  ration: "25 g",   kcal: 10,  protein: 0.2,  carbs: 2.9,  fat: 0 },
+      platano:         { name: "Plátano",             emoji: "🍌", base: 120, ration: "120 g",  kcal: 107, protein: 1.3,  carbs: 27,   fat: 0.3 },
+      queso_viejo:     { name: "Queso viejo tostado", emoji: "🧀", base: 100, ration: "100 g",  kcal: 474, protein: 27,   carbs: 1.5,  fat: 40 },
+      naranja:         { name: "Naranja",             emoji: "🍊", base: 150, ration: "150 g",  kcal: 70,  protein: 1.4,  carbs: 17,   fat: 0.2 },
+      sandia:          { name: "Sandía",              emoji: "🍉", base: 300, ration: "300 g",  kcal: 90,  protein: 1.8,  carbs: 21,   fat: 0.3 },
+      roquefort:       { name: "Queso Roquefort",     emoji: "🧀", base: 100, ration: "100 g",  kcal: 364, protein: 19,   carbs: 0.5,  fat: 32 },
+      bowl_salmon:     { name: "Bowl salmón y arroz", emoji: "🐟", base: 400, ration: "400 g",  kcal: 628, protein: 38.4, carbs: 48,   fat: 30 }
     };
+
+    // Momentos del día (orden e icono para la Home)
+    const MEAL_ORDER = ["Desayuno", "Comida", "Cena", "Snack"];
+    const MEAL_ICON  = { Desayuno: "🌅", Comida: "🍽️", Cena: "🌙", Snack: "🍎" };
+
+    // Nutrición de un alimento para una cantidad en gramos
+    const round1 = (n) => Math.round(n * 10) / 10;
+    function nutri(foodKey, grams) {
+      const f = FOODS[foodKey];
+      const r = grams / f.base;
+      return {
+        kcal: Math.round(f.kcal * r),
+        protein: round1(f.protein * r),
+        carbs: round1(f.carbs * r),
+        fat: round1(f.fat * r)
+      };
+    }
 
     /* =========================================================
        PERSISTENCIA  —  el registro del día aguanta recargas (localStorage)
        ========================================================= */
-    const STORE_KEY = "verde.log.v1";
+    const STORE_KEY = "verde.log.v2";
     const todayKey = () => {
       const d = new Date();
       return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
@@ -587,33 +733,19 @@
       $("greeting").textContent = hello() + ", " + DATA.user.name;
       $("avatar").textContent = DATA.user.initial;
 
-      // Resolver comidas desde el catálogo FOODS (cantidad × ración)
-      const round = (n) => Math.round(n * 10) / 10;
-      const items = DATA.meals.map(m => {
-        const f = FOODS[m.food];
-        if (!f) return null;
-        const q = m.qty || 1;
-        return {
-          name: f.name, emoji: f.emoji, time: m.time,
-          kcal: Math.round(f.kcal * q),
-          protein: round(f.protein * q),
-          carbs: round(f.carbs * q),
-          fat: round(f.fat * q)
-        };
+      // Resolver cada comida (con su índice original) y totales del día
+      const sum = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+      const resolved = DATA.meals.map((m, idx) => {
+        if (!FOODS[m.food]) return null;
+        const n = nutri(m.food, m.grams);
+        sum.kcal += n.kcal; sum.protein += n.protein; sum.carbs += n.carbs; sum.fat += n.fat;
+        return { idx, food: m.food, time: m.time, grams: m.grams, n };
       }).filter(Boolean);
-
-      // Totales del día
-      const sum = items.reduce((a, m) => ({
-        kcal: a.kcal + m.kcal,
-        protein: a.protein + m.protein,
-        carbs: a.carbs + m.carbs,
-        fat: a.fat + m.fat
-      }), { kcal: 0, protein: 0, carbs: 0, fat: 0 });
       sum.protein = Math.round(sum.protein);
       sum.carbs = Math.round(sum.carbs);
       sum.fat = Math.round(sum.fat);
 
-      // Contador principal
+      // Contador principal (calorías)
       const goal = DATA.goal.kcal;
       const left = Math.max(0, goal - sum.kcal);
       $("kcalNow").textContent = sum.kcal.toLocaleString("es-ES");
@@ -622,37 +754,56 @@
       const pct = Math.min(100, Math.round((sum.kcal / goal) * 100));
       requestAnimationFrame(() => { $("kcalBar").style.width = pct + "%"; });
 
-      // Macros
+      // Macros (cajetines rectangulares)
       const macros = [
         { key: "p", name: "Proteínas", val: sum.protein, goal: DATA.goal.protein },
-        { key: "c", name: "Carbos",    val: sum.carbs,   goal: DATA.goal.carbs },
-        { key: "f", name: "Grasas",    val: sum.fat,     goal: DATA.goal.fat }
+        { key: "c", name: "Carbohidratos", val: sum.carbs, goal: DATA.goal.carbs },
+        { key: "f", name: "Grasas", val: sum.fat, goal: DATA.goal.fat }
       ];
       $("macros").innerHTML = macros.map(m => {
         const p = Math.min(100, Math.round((m.val / m.goal) * 100));
         return `
           <div class="macro ${m.key}">
-            <div class="name">${m.name}</div>
-            <div class="val">${m.val}<span> /${m.goal}g</span></div>
+            <div class="top">
+              <div class="name">${m.name}</div>
+              <div class="val">${m.val}<span> / ${m.goal} g</span></div>
+            </div>
             <div class="mini"><span data-w="${p}"></span></div>
           </div>`;
       }).join("");
 
-      // Comidas
-      const list = $("meals");
-      if (!items.length) {
-        list.innerHTML = `<li class="meal empty">Aún no has registrado nada hoy</li>`;
-      } else {
-        list.innerHTML = items.map(m => `
-          <li class="meal">
-            <div class="emoji">${m.emoji || "🍽️"}</div>
-            <div class="body">
-              <div class="t">${m.name}</div>
-              <div class="s">${m.time}</div>
+      // Comidas agrupadas por momento del día (desplegables)
+      const groups = $("mealGroups");
+      const blocks = MEAL_ORDER.map(time => {
+        const its = resolved.filter(r => r.time === time);
+        if (!its.length) return "";
+        const tot = its.reduce((a, r) => a + r.n.kcal, 0);
+        const open = openMeals.has(time);
+        const rows = its.map(r => `
+          <li class="mg-food" data-idx="${r.idx}">
+            <span class="mgf-emoji">${FOODS[r.food].emoji}</span>
+            <div class="mgf-body">
+              <div class="mgf-name">${FOODS[r.food].name}</div>
+              <div class="mgf-grams">${r.grams} g</div>
             </div>
-            <div class="kcal">${m.kcal}<span>kcal</span></div>
+            <span class="mgf-kcal">${r.n.kcal} kcal</span>
+            <span class="mgf-edit">✎</span>
           </li>`).join("");
-      }
+        return `
+          <div class="mgroup ${open ? "open" : ""}" data-meal="${time}">
+            <button class="mg-head" data-toggle="${time}">
+              <div class="mg-emoji">${MEAL_ICON[time]}</div>
+              <div class="mg-info">
+                <div class="mg-name">${time}</div>
+                <div class="mg-sub">${its.length} ${its.length === 1 ? "alimento" : "alimentos"}</div>
+              </div>
+              <div class="mg-kcal">${tot} <span>kcal</span></div>
+              <div class="mg-chev">▾</div>
+            </button>
+            <div class="mg-body"><ul class="mg-list">${rows}</ul></div>
+          </div>`;
+      }).join("");
+      groups.innerHTML = blocks || `<div class="meal-empty">Aún no has registrado nada hoy</div>`;
 
       // Animar mini-barras de macros
       requestAnimationFrame(() => {
@@ -663,11 +814,28 @@
     }
 
     /* =========================================================
-       PANTALLA AÑADIR COMIDA
+       ACORDEÓN DE COMIDAS EN LA HOME (desplegar / plegar + editar)
+       ========================================================= */
+    const openMeals = new Set(MEAL_ORDER);   // por defecto, todas desplegadas
+
+    $("mealGroups").addEventListener("click", (e) => {
+      const toggle = e.target.closest("[data-toggle]");
+      if (toggle) {
+        const time = toggle.dataset.toggle;
+        const grp = toggle.closest(".mgroup");
+        const nowOpen = grp.classList.toggle("open");
+        nowOpen ? openMeals.add(time) : openMeals.delete(time);
+        return;
+      }
+      const row = e.target.closest(".mg-food");
+      if (row) openEdit(parseInt(row.dataset.idx, 10));   // editar / eliminar
+    });
+
+    /* =========================================================
+       PANTALLA AÑADIR COMIDA (sheet)
        ========================================================= */
     const sheet = $("sheet");
     let activeMeal = "Desayuno";
-    let draft = {};                 // claveAlimento -> nº de raciones a añadir
 
     function defaultMeal() {
       const h = new Date().getHours();
@@ -679,11 +847,9 @@
 
     function openSheet() {
       activeMeal = defaultMeal();
-      draft = {};
       $("search").value = "";
       syncTabs();
       renderFoodList();
-      updateFoot();
       sheet.classList.add("open");
       sheet.setAttribute("aria-hidden", "false");
       $("addBtn").classList.add("hidden");
@@ -693,7 +859,6 @@
       sheet.setAttribute("aria-hidden", "true");
       $("addBtn").classList.remove("hidden");
     }
-
     function syncTabs() {
       $("mealTabs").querySelectorAll("button").forEach(b =>
         b.classList.toggle("active", b.dataset.meal === activeMeal));
@@ -708,44 +873,20 @@
         list.innerHTML = `<li class="food" style="justify-content:center;color:var(--muted)">Sin resultados</li>`;
         return;
       }
-      list.innerHTML = entries.map(([k, f]) => {
-        const picked = draft[k] > 0;
-        const control = picked
-          ? `<div class="stepper">
-               <button class="minus" data-dec="${k}" aria-label="Quitar">−</button>
-               <span class="qty">${draft[k]}</span>
-               <button data-inc="${k}" aria-label="Añadir">+</button>
-             </div>`
-          : `<button class="pick" data-inc="${k}" aria-label="Añadir">+</button>`;
-        return `
-          <li class="food ${picked ? "picked" : ""}">
-            <div class="fe">${f.emoji}</div>
-            <div class="fb">
-              <div class="ft">${f.name}</div>
-              <div class="fs">${f.ration} · ${f.kcal} kcal</div>
-            </div>
-            ${control}
-          </li>`;
-      }).join("");
+      list.innerHTML = entries.map(([k, f]) => `
+        <li class="food" data-add="${k}">
+          <div class="fe">${f.emoji}</div>
+          <div class="fb">
+            <div class="ft">${f.name}</div>
+            <div class="fs">${f.ration} · ${f.kcal} kcal</div>
+          </div>
+          <button class="pick" aria-label="Añadir">+</button>
+        </li>`).join("");
     }
 
-    function updateFoot() {
-      const keys = Object.keys(draft).filter(k => draft[k] > 0);
-      const btn = $("confirmAdd");
-      if (!keys.length) {
-        btn.disabled = true;
-        btn.textContent = "Selecciona alimentos";
-        return;
-      }
-      let kcal = 0;
-      keys.forEach(k => { kcal += FOODS[k].kcal * draft[k]; });
-      btn.disabled = false;
-      btn.textContent = `Añadir a ${activeMeal} · ${Math.round(kcal)} kcal`;
-    }
-
-    // Eventos
     $("addBtn").addEventListener("click", openSheet);
     $("sheetClose").addEventListener("click", closeSheet);
+    $("sheetDone").addEventListener("click", closeSheet);
     $("search").addEventListener("input", renderFoodList);
 
     $("mealTabs").addEventListener("click", (e) => {
@@ -753,26 +894,90 @@
       if (!b) return;
       activeMeal = b.dataset.meal;
       syncTabs();
-      updateFoot();
     });
 
     $("foodList").addEventListener("click", (e) => {
-      const inc = e.target.closest("[data-inc]");
-      const dec = e.target.closest("[data-dec]");
-      if (inc) { const k = inc.dataset.inc; draft[k] = (draft[k] || 0) + 1; }
-      else if (dec) { const k = dec.dataset.dec; draft[k] = Math.max(0, (draft[k] || 0) - 1); }
-      else return;
-      renderFoodList();
-      updateFoot();
+      const li = e.target.closest("[data-add]");
+      if (li) openAdd(li.dataset.add, activeMeal);
     });
 
-    $("confirmAdd").addEventListener("click", () => {
-      Object.keys(draft).forEach(k => {
-        if (draft[k] > 0) DATA.meals.push({ food: k, time: activeMeal, qty: draft[k] });
-      });
+    /* =========================================================
+       MODAL DE GRAMOS  (sirve para añadir y para editar/eliminar)
+       ========================================================= */
+    const modal = $("modal");
+    let modalState = null;   // { mode:'add'|'edit', foodKey, time, idx }
+
+    function showModal() {
+      const f = FOODS[modalState.foodKey];
+      $("mEmoji").textContent = f.emoji;
+      $("mTitle").textContent = f.name;
+      $("mRef").textContent = "Referencia: " + f.ration + " · " + f.kcal + " kcal";
+      $("mDelete").hidden = modalState.mode !== "edit";
+      $("mSave").textContent = modalState.mode === "edit" ? "Guardar" : "Añadir";
+      updatePreview();
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden", "false");
+    }
+    function closeModal() {
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+      modalState = null;
+    }
+
+    function openAdd(foodKey, time) {
+      modalState = { mode: "add", foodKey, time };
+      $("mGrams").value = FOODS[foodKey].base;
+      showModal();
+    }
+    function openEdit(idx) {
+      const meal = DATA.meals[idx];
+      if (!meal || !FOODS[meal.food]) return;
+      modalState = { mode: "edit", foodKey: meal.food, idx };
+      $("mGrams").value = meal.grams;
+      showModal();
+    }
+
+    function currentGrams() {
+      const v = parseInt($("mGrams").value, 10);
+      return isNaN(v) ? 0 : Math.max(0, v);
+    }
+    function setGrams(v) {
+      $("mGrams").value = Math.max(0, v);
+      updatePreview();
+    }
+    function updatePreview() {
+      const n = nutri(modalState.foodKey, currentGrams());
+      $("pvKcal").textContent = n.kcal;
+      $("pvP").textContent = n.protein;
+      $("pvC").textContent = n.carbs;
+      $("pvF").textContent = n.fat;
+    }
+
+    $("mGrams").addEventListener("input", updatePreview);
+    $("mPlus").addEventListener("click", () => setGrams(currentGrams() + 10));
+    $("mMinus").addEventListener("click", () => setGrams(currentGrams() - 10));
+    $("mCancel").addEventListener("click", closeModal);
+    modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+
+    $("mSave").addEventListener("click", () => {
+      const g = Math.max(1, currentGrams());
+      if (modalState.mode === "add") {
+        DATA.meals.push({ food: modalState.foodKey, time: modalState.time, grams: g });
+      } else {
+        DATA.meals[modalState.idx].grams = g;
+      }
       saveLog();
-      closeSheet();
       render();
+      closeModal();
+    });
+
+    $("mDelete").addEventListener("click", () => {
+      if (modalState.mode === "edit") {
+        DATA.meals.splice(modalState.idx, 1);
+        saveLog();
+        render();
+      }
+      closeModal();
     });
 
     /* ---------- Arranque ---------- */
