@@ -132,10 +132,10 @@
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
 
-    /* ---------- Selector de vista (pills sombreadas) ---------- */
+    /* ---------- Selector de vista (pills, debajo de los macros) ---------- */
     .view-tabs {
       display: flex; gap: 8px; overflow-x: auto;
-      margin: 0 -18px 20px; padding: 0 18px 2px;
+      margin: 14px -18px 0; padding: 0 18px 2px;
       scrollbar-width: none;
     }
     .view-tabs::-webkit-scrollbar { display: none; }
@@ -208,7 +208,9 @@
     .macro {
       background: var(--bg); border-radius: var(--r-md); padding: 15px 17px;
       box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      cursor: pointer; transition: background 0.18s ease;
     }
+    .macro:active { transform: scale(0.995); }
     .macro .top { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 11px; }
     .macro .name {
       font-family: var(--disp); font-size: 12px; font-weight: 700;
@@ -219,6 +221,13 @@
     }
     .macro .val span { font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
     .macro .val .pct { color: var(--ink); font-weight: 700; }
+    /* Macro seleccionado: se resalta en negro como el cajetín de calorías */
+    .macro.sel { background: var(--ink); }
+    .macro.sel .name { color: rgba(255,255,255,0.55); }
+    .macro.sel .val { color: #fff; }
+    .macro.sel .val span, .macro.sel .val .pct { color: rgba(255,255,255,0.5); }
+    .macro.sel .val.over { color: var(--red); }
+    .macro.sel .mini { background: rgba(255,255,255,0.16); }
     /* Vía sombreada clara (como antes) */
     .macro .mini { height: 12px; border-radius: 99px; background: rgba(19,19,17,0.14); overflow: hidden; display: flex; }
     .macro .mini .seg { height: 100%; background: var(--lime); width: 0; transition: width 0.7s cubic-bezier(.22,.61,.36,1); }
@@ -235,13 +244,14 @@
     }
     .section-head .sh-meta { font-family: var(--disp); font-size: 13px; font-weight: 700; color: var(--muted); }
 
+    /* Etiquetas de cada comida (tan grandes como "Comidas de hoy") */
     .log-sub {
-      display: flex; align-items: center; gap: 8px;
-      font-family: var(--disp); font-size: 12px; font-weight: 700;
-      letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
-      margin: 18px 2px 9px;
+      display: flex; align-items: baseline; gap: 9px;
+      font-family: var(--exp); font-size: 22px; font-weight: 800;
+      letter-spacing: -0.01em; text-transform: uppercase; color: var(--ink);
+      margin: 22px 2px 12px;
     }
-    .log-sub .ls-kcal { margin-left: auto; color: var(--ink); }
+    .log-sub .ls-kcal { margin-left: auto; font-family: var(--disp); font-size: 13px; font-weight: 700; color: var(--muted); }
     .log-list { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
     /* Tarjeta de alimento (cuadrícula, estilo producto) */
@@ -515,15 +525,8 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.12</div>
+      <div class="avatar" id="version">V.13</div>
     </header>
-
-    <div class="view-tabs" id="viewTabs">
-      <button data-view="Desayuno">Desayuno</button>
-      <button data-view="Comida">Comida</button>
-      <button data-view="Cena">Cena</button>
-      <button data-view="Snack">Snack</button>
-    </div>
 
     <section class="hero">
       <div class="hero-left">
@@ -542,6 +545,14 @@
     </section>
 
     <section class="macros" id="macros"></section>
+
+    <!-- Filtros (debajo de los macros) -->
+    <div class="view-tabs" id="viewTabs">
+      <button data-view="Desayuno">Desayuno</button>
+      <button data-view="Comida">Comida</button>
+      <button data-view="Cena">Cena</button>
+      <button data-view="Snack">Snack</button>
+    </div>
   </div><!-- /.top-region -->
 
   <div class="section-head">
@@ -843,6 +854,13 @@
 
     // Vista activa para el filtro de estadísticas: "dia" o un momento del día
     let activeView = "dia";
+    // Macro seleccionado como filtro: null | "p" | "c" | "f"
+    let activeMacro = null;
+    const MACROS = {
+      p: { prop: "protein", f: 4, name: "Proteínas",     short: "prot" },
+      c: { prop: "carbs",   f: 4, name: "Carbohidratos", short: "carb" },
+      f: { prop: "fat",     f: 9, name: "Grasas",        short: "grasa" }
+    };
 
     // Relanza la animación de llenado de barras y anillo (p.ej. al cerrar el splash,
     // para que el "dibujado" se vea al entrar y no quede oculto detrás del splash)
@@ -916,31 +934,47 @@
         b.classList.toggle("active", b.dataset.view === activeView));
 
       // ---- Contador de calorías (hero) ----
-      $("kcalNow").textContent = view.kcal.toLocaleString("es-ES");
-      if (isDay) {
-        const leftK = Math.max(0, goal - sum.kcal);
-        $("kcalGoal").textContent = "/ " + goal.toLocaleString("es-ES") + " KCAL";
+      let kSel, kRest = 0;
+      if (activeMacro) {
+        const mm = MACROS[activeMacro];
+        const mGrams = view[mm.prop];
+        const mKcal = Math.round(mGrams * mm.f);
+        const share = view.kcal > 0 ? Math.round(mKcal / view.kcal * 100) : 0;
+        $("kcalNow").textContent = mKcal.toLocaleString("es-ES");
+        $("kcalNow").classList.remove("over");
         $("kcalGoal").style.display = "";
-        $("kcalSub").innerHTML = "<b>" + leftK.toLocaleString("es-ES") + " kcal</b> para objetivo";
+        $("kcalGoal").style.fontSize = "16px";
+        $("kcalGoal").textContent = "KCAL";
+        $("kcalSub").innerHTML = "<b>" + mGrams + " g</b> de " + mm.name + " · <b>" + share + "%</b> de tus kcal";
+        kSel = Math.min(100, share);
+        $("kcalRingPct").textContent = share + "%";
       } else {
-        const pctDay = dayKcal > 0 ? Math.round(view.kcal / dayKcal * 100) : 0;
-        $("kcalGoal").textContent = "";
-        $("kcalGoal").style.display = "none";
-        $("kcalSub").innerHTML = "<b>" + pctDay + "%</b> de las " + dayKcal.toLocaleString("es-ES") + " kcal de hoy";
+        $("kcalNow").textContent = view.kcal.toLocaleString("es-ES");
+        $("kcalNow").classList.toggle("over", view.kcal > goal);   // rojo si te pasas
+        if (isDay) {
+          const leftK = Math.max(0, goal - sum.kcal);
+          $("kcalGoal").textContent = "/ " + goal.toLocaleString("es-ES") + " KCAL";
+          $("kcalGoal").style.display = "";
+          $("kcalSub").innerHTML = "<b>" + leftK.toLocaleString("es-ES") + " kcal</b> para objetivo";
+        } else {
+          const pctDay = dayKcal > 0 ? Math.round(view.kcal / dayKcal * 100) : 0;
+          $("kcalGoal").textContent = "";
+          $("kcalGoal").style.display = "none";
+          $("kcalSub").innerHTML = "<b>" + pctDay + "%</b> de las " + dayKcal.toLocaleString("es-ES") + " kcal de hoy";
+        }
+        kSel = Math.min(100, Math.round(view.kcal / goal * 100));
+        kRest = isDay ? 0 : Math.min(100 - kSel, Math.round(Math.max(0, dayKcal - view.kcal) / goal * 100));
+        $("kcalRingPct").textContent = kSel + "%";
       }
-      const kSel = Math.min(100, Math.round(view.kcal / goal * 100));
-      const kRest = isDay ? 0 : Math.min(100 - kSel, Math.round(Math.max(0, dayKcal - view.kcal) / goal * 100));
-      $("kcalRingPct").textContent = kSel + "%";
-      $("kcalNow").classList.toggle("over", view.kcal > goal);   // rojo si te pasas
       requestAnimationFrame(() => {
         // animación de "dibujado" del anillo (como el llenado de las barras)
         $("kcalRingRest").style.strokeDashoffset = -kSel;
         $("kcalRingRest").style.strokeDasharray = kRest + " 100";
         $("kcalRingSel").style.strokeDasharray = kSel + " 100";
-        if (isDay) fitGoalWidth();
+        if (!activeMacro && isDay) fitGoalWidth();
       });
 
-      // ---- Macros (con resaltado tipo Power BI) ----
+      // ---- Macros (clic = filtrar; el seleccionado se resalta en negro) ----
       const macros = [
         { key: "p", name: "Proteínas",     vVal: view.protein, dVal: sum.protein, goal: DATA.goal.protein },
         { key: "c", name: "Carbohidratos", vVal: view.carbs,   dVal: sum.carbs,   goal: DATA.goal.carbs },
@@ -954,7 +988,7 @@
           ? `${m.vVal}<span> / ${m.goal} g</span>`
           : `${m.vVal}<span> g · <span class="pct">${m.dVal > 0 ? Math.round(m.vVal / m.dVal * 100) : 0}%</span> del día</span>`;
         return `
-          <div class="macro ${m.key}">
+          <div class="macro ${m.key}${activeMacro === m.key ? " sel" : ""}" data-macro="${m.key}">
             <div class="top">
               <div class="name">${m.name}</div>
               <div class="val${over ? " over" : ""}">${valText}</div>
@@ -966,36 +1000,52 @@
           </div>`;
       }).join("");
 
-      // ---- Log de alimentos (según vista, con swipe para eliminar) ----
-      $("logTitle").textContent = isDay ? "Comidas de hoy" : activeView;
-      $("logMeta").textContent = view.kcal ? view.kcal.toLocaleString("es-ES") + " kcal" : "";
-
-      const rowHTML = (r) => `
-        <li class="logf" data-idx="${r.idx}">
-          <div class="logf-main">
-            <div class="logf-top"><span class="logf-emoji">${FOODS[r.food].emoji}</span></div>
-            <div class="logf-info">
-              <div class="logf-name">${FOODS[r.food].name}</div>
-              <div class="logf-grams">${r.grams} g</div>
-              <div class="logf-kcal">${r.n.kcal} <span>kcal</span></div>
+      // ---- Log de alimentos ----
+      const rowHTML = (r, macro) => {
+        const mainVal = macro
+          ? `${r.n[MACROS[macro].prop]} <span>g ${MACROS[macro].short}</span>`
+          : `${r.n.kcal} <span>kcal</span>`;
+        return `
+          <li class="logf" data-idx="${r.idx}">
+            <div class="logf-main">
+              <div class="logf-top"><span class="logf-emoji">${FOODS[r.food].emoji}</span></div>
+              <div class="logf-info">
+                <div class="logf-name">${FOODS[r.food].name}</div>
+                <div class="logf-grams">${r.grams} g</div>
+                <div class="logf-kcal">${mainVal}</div>
+              </div>
             </div>
-          </div>
-        </li>`;
+          </li>`;
+      };
 
       const log = $("foodLog");
-      if (isDay) {
+      if (activeMacro) {
+        // Ordena los alimentos de la vista por cuánto aportan de ese macro
+        const mm = MACROS[activeMacro];
+        const items = (isDay ? resolved : byMeal[activeView].items)
+          .slice().sort((a, b) => b.n[mm.prop] - a.n[mm.prop]);
+        $("logTitle").textContent = "Top " + mm.name.toLowerCase();
+        $("logMeta").textContent = view[mm.prop] + " g";
+        log.innerHTML = items.length
+          ? `<ul class="log-list">${items.map(r => rowHTML(r, activeMacro)).join("")}</ul>`
+          : `<div class="meal-empty">Sin alimentos</div>`;
+      } else if (isDay) {
+        $("logTitle").textContent = "Comidas de hoy";
+        $("logMeta").textContent = view.kcal ? view.kcal.toLocaleString("es-ES") + " kcal" : "";
         const blocks = MEAL_ORDER.map(t => {
           const b = byMeal[t];
           if (!b.items.length) return "";
           return `
             <div class="log-sub">${MEAL_ICON[t]} ${t}<span class="ls-kcal">${b.kcal} kcal</span></div>
-            <ul class="log-list">${b.items.map(rowHTML).join("")}</ul>`;
+            <ul class="log-list">${b.items.map(r => rowHTML(r)).join("")}</ul>`;
         }).join("");
         log.innerHTML = blocks || `<div class="meal-empty">Aún no has registrado nada hoy</div>`;
       } else {
+        $("logTitle").textContent = activeView;
+        $("logMeta").textContent = view.kcal ? view.kcal.toLocaleString("es-ES") + " kcal" : "";
         const b = byMeal[activeView];
         log.innerHTML = b.items.length
-          ? `<ul class="log-list">${b.items.map(rowHTML).join("")}</ul>`
+          ? `<ul class="log-list">${b.items.map(r => rowHTML(r)).join("")}</ul>`
           : `<div class="meal-empty">No has registrado nada en ${activeView}</div>`;
       }
 
@@ -1013,6 +1063,14 @@
       if (!b) return;
       // Tocar el chip activo lo deselecciona → vuelve a "día completo" (sin filtro)
       activeView = (activeView === b.dataset.view) ? "dia" : b.dataset.view;
+      render();
+    });
+
+    // Tocar un cajetín de macro lo selecciona como filtro (otra vez = quitar)
+    $("macros").addEventListener("click", (e) => {
+      const m = e.target.closest("[data-macro]");
+      if (!m) return;
+      activeMacro = (activeMacro === m.dataset.macro) ? null : m.dataset.macro;
       render();
     });
 
@@ -1378,7 +1436,7 @@
     });
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.12";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.13";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadLog();
     render();
