@@ -343,7 +343,7 @@
       padding: 26px; text-align: center; color: var(--muted); font-size: 14px; font-weight: 500;
     }
 
-    .sheet-foot { flex-shrink: 0; padding: 12px 18px calc(env(safe-area-inset-bottom) + 14px); border-top: 1px solid var(--line); background: var(--bg); }
+    .sheet-foot { flex-shrink: 0; padding: 12px 18px max(12px, calc(env(safe-area-inset-bottom) - 8px)); border-top: 1px solid var(--line); background: var(--bg); }
     .confirm {
       width: 100%; border: none; background: var(--ink); color: #fff;
       border-radius: 99px; padding: 17px;
