@@ -51,6 +51,9 @@
     html { background: var(--bg); }
     body { background: var(--bg); min-height: 100%; overflow-x: hidden; overscroll-behavior-y: none; }
     html.splashing, html.splashing body { background: #79908B; }
+    /* Con un panel abierto (sheet/simulador/modal) se bloquea el scroll del fondo
+       para que no aparezca la barra ni se mueva la Home por detrás. */
+    html.locked, html.locked body { overflow: hidden; height: 100%; }
 
     /* Scroll NATURAL del documento (sin contenedor de posición fija). Es lo que
        de verdad llega hasta los bordes en standalone iOS y evita que falte
@@ -116,11 +119,10 @@
       gap: 12px; margin-bottom: 20px;
     }
     .topbar h1 {
-      flex: 1; min-width: 0; white-space: nowrap;
-      overflow: hidden; text-overflow: ellipsis;
+      flex: 1; min-width: 0;
       font-family: var(--exp);
-      font-weight: 800; font-size: 19px; line-height: 1;
-      letter-spacing: -0.01em; text-transform: uppercase; color: var(--ink);
+      font-weight: 800; font-size: 30px; line-height: 0.95;
+      letter-spacing: -0.015em; text-transform: uppercase; color: var(--ink);
     }
     /* El círculo del perfil ahora muestra la versión (mismo estilo de antes) */
     .avatar {
@@ -462,9 +464,16 @@
     .modal-actions .m-save { background: var(--ink); color: #fff; }
 
     /* ---------- Simulador de recetas ---------- */
-    .sim { z-index: 60; }
+    .sim {
+      z-index: 60;
+      background-color: #BFE3DE;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.42), rgba(255,255,255,0.42)),
+        url("recipe-bg.jpg");
+      background-size: cover; background-position: center;
+    }
     .sim-pick { z-index: 70; }
-    .sim-body { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 6px 18px 22px; }
+    .sim-body { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 6px 18px 22px; }
     .sim-body .hero { margin-top: 6px; }
     .sim-body .macros { margin-bottom: 14px; }
     .confirm:disabled { opacity: 0.4; }
@@ -506,7 +515,7 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.9</div>
+      <div class="avatar" id="version">V.10</div>
     </header>
 
     <div class="view-tabs" id="viewTabs">
@@ -840,6 +849,13 @@
        ========================================================= */
     const $ = (id) => document.getElementById(id);
 
+    // Bloquea el scroll del documento cuando hay algún panel abierto
+    function updateScrollLock() {
+      const open = ["sheet", "sim", "simPick"].some(id => $(id).classList.contains("open"))
+                || $("modal").classList.contains("open");
+      document.documentElement.classList.toggle("locked", open);
+    }
+
     // Vista activa para el filtro de estadísticas: "dia" o un momento del día
     let activeView = "dia";
 
@@ -1047,11 +1063,13 @@
       sheet.classList.add("open");
       sheet.setAttribute("aria-hidden", "false");
       $("addBtn").classList.add("hidden");
+      updateScrollLock();
     }
     function closeSheet() {
       sheet.classList.remove("open");
       sheet.setAttribute("aria-hidden", "true");
       $("addBtn").classList.remove("hidden");
+      updateScrollLock();
     }
     function syncSheetTabs() {
       $("typeTabs").querySelectorAll("button").forEach(b =>
@@ -1160,11 +1178,13 @@
       updatePreview();
       modal.classList.add("open");
       modal.setAttribute("aria-hidden", "false");
+      updateScrollLock();
     }
     function closeModal() {
       modal.classList.remove("open");
       modal.setAttribute("aria-hidden", "true");
       modalState = null;
+      updateScrollLock();
     }
 
     function openAdd(foodKey) {
@@ -1255,8 +1275,9 @@
       $("simCat").querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.cat === simCat));
       simRender();
       $("sim").classList.add("open"); $("sim").setAttribute("aria-hidden", "false");
+      updateScrollLock();
     }
-    function closeSim() { $("sim").classList.remove("open"); $("sim").setAttribute("aria-hidden", "true"); }
+    function closeSim() { $("sim").classList.remove("open"); $("sim").setAttribute("aria-hidden", "true"); updateScrollLock(); }
 
     function simRender() {
       const goal = DATA.goal;
@@ -1343,8 +1364,9 @@
       $("simPickCat").querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.cat === "todos"));
       renderSimPick();
       $("simPick").classList.add("open"); $("simPick").setAttribute("aria-hidden", "false");
+      updateScrollLock();
     }
-    function closeSimPick() { $("simPick").classList.remove("open"); $("simPick").setAttribute("aria-hidden", "true"); }
+    function closeSimPick() { $("simPick").classList.remove("open"); $("simPick").setAttribute("aria-hidden", "true"); updateScrollLock(); }
     function renderSimPick() {
       const q = $("simSearch").value.trim().toLowerCase();
       const entries = Object.entries(FOODS).filter(([, f]) =>
@@ -1370,7 +1392,7 @@
     });
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.9";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.10";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadLog();
     render();
