@@ -193,7 +193,7 @@
       transform: rotate(-90deg);             /* el progreso arranca arriba */
     }
     .ring circle { fill: none; stroke-width: 3.4; }
-    .ring-track { stroke: rgba(255,255,255,0.14); }
+    .ring-track { stroke: transparent; }   /* la vía no se sombrea: solo se ve el arco lima */
     /* Se animan con stroke-dasharray, igual que las barras */
     .ring-rest {
       stroke: var(--lime-dim); stroke-dasharray: 0 100;
@@ -486,7 +486,7 @@
     .pv-ring { position: relative; width: 40px; height: 40px; margin-top: 9px; display: flex; align-items: center; justify-content: center; }
     .pv-ring svg { width: 40px; height: 40px; transform: rotate(-90deg); }
     .pv-ring circle { fill: none; stroke-width: 4; }
-    .pvr-track { stroke: rgba(255,255,255,0.16); }
+    .pvr-track { stroke: transparent; }   /* vía invisible: solo el arco lima */
     .pvr-sel { stroke: var(--lime); stroke-linecap: round; stroke-dasharray: 0 100; transition: stroke-dasharray 0.5s cubic-bezier(.22,.61,.36,1); }
     .pv-pct { display: none; }   /* solo el anillo, sin número */
 
@@ -551,7 +551,7 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.26</div>
+      <div class="avatar" id="version">V.27</div>
     </header>
 
     <section class="hero">
@@ -1529,7 +1529,7 @@
     });
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.26";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.27";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadLog();
     render();
