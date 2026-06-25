@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#11182e">
+  <title>Mundo Prehistórico</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+    body {
+      background: radial-gradient(circle at 50% 0%, #2a3d6b, #11182e 70%);
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 14px;
+      color: #fff;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    h1 {
+      font-size: 1.6rem;
+      letter-spacing: 1px;
+      font-weight: 800;
+      background: linear-gradient(#fff1c4, #ffce6b);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 3px 10px rgba(0,0,0,0.4);
+    }
+    canvas {
+      border-radius: 18px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5), inset 0 0 0 3px rgba(255,255,255,0.12);
+      touch-action: none;
+      display: block;
+    }
+    .hint { font-size: 0.85rem; opacity: 0.85; text-shadow: 0 1px 3px rgba(0,0,0,0.5); text-align: center; }
+
+    /* ---- Controles táctiles (semitransparentes) ---- */
+    #touch {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;     /* solo los botones capturan el toque */
+      display: none;            /* se activa en dispositivos táctiles */
+      z-index: 10;
+    }
+    .pad {
+      position: absolute;
+      bottom: calc(18px + env(safe-area-inset-bottom));
+      display: flex;
+      gap: 16px;
+      pointer-events: none;
+    }
+    .pad.right { right: calc(18px + env(safe-area-inset-right)); }
+    .tbtn {
+      pointer-events: auto;
+      width: 74px; height: 74px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.14);
+      border: 2px solid rgba(255,255,255,0.28);
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+      color: rgba(255,255,255,0.85);
+      font-size: 30px;
+      font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+      transition: transform .05s, background .05s;
+    }
+    .tbtn:active, .tbtn.pressed {
+      background: rgba(255,255,255,0.34);
+      transform: scale(0.92);
+    }
+    .tbtn.jump { width: 92px; height: 92px; font-size: 26px; }
+
+    /* Zona izquierda que invoca el joystick flotante */
+    #joyZone {
+      position: absolute;
+      left: 0; top: 0;
+      width: 55%; height: 100%;
+      pointer-events: auto;
+    }
+    #joyWrap { position: absolute; inset: 0; pointer-events: none; display: none; }
+    #joyBase, #joyKnob {
+      position: absolute;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+    }
+    #joyBase {
+      width: 122px; height: 122px;
+      background: rgba(255,255,255,0.10);
+      border: 2px solid rgba(255,255,255,0.22);
+    }
+    #joyKnob {
+      width: 56px; height: 56px;
+      background: rgba(255,255,255,0.30);
+      border: 2px solid rgba(255,255,255,0.45);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    }
+    #btnReset {
+      pointer-events: auto;
+      position: absolute;
+      top: calc(12px + env(safe-area-inset-top));
+      right: calc(14px + env(safe-area-inset-right));
+      padding: 8px 14px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.12);
+      border: 1.5px solid rgba(255,255,255,0.25);
+      color: rgba(255,255,255,0.8);
+      font-size: 14px; font-weight: 700;
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+    }
+
+    /* Aviso para girar el móvil a horizontal */
+    #rotate {
+      position: fixed; inset: 0; z-index: 50;
+      display: none;
+      align-items: center; justify-content: center;
+      flex-direction: column; gap: 14px;
+      background: #11182e; color: #fff; text-align: center; padding: 24px;
+    }
+    #rotate .ico { font-size: 56px; animation: spin 2s ease-in-out infinite; }
+    @keyframes spin { 0%,100%{transform:rotate(-12deg)} 50%{transform:rotate(78deg)} }
+
+    /* En táctil mostramos los controles */
+    @media (pointer: coarse) { #touch { display: block; } }
+
+    /* En móvil horizontal: el juego a pantalla completa, sin títulos */
+    @media (pointer: coarse) and (orientation: landscape) {
+      body { padding: 0; gap: 0; }
+      h1, .hint { display: none; }
+      canvas { width: auto; height: 100vh; height: 100dvh; max-width: 100vw; border-radius: 0; }
+    }
+    /* En móvil vertical: pedir que giren */
+    @media (pointer: coarse) and (orientation: portrait) {
+      #rotate { display: flex; }
+    }
+  </style>
+</head>
+<body>
+  <h1>🦴 MUNDO PREHISTÓRICO</h1>
+  <canvas id="game"></canvas>
+  <p class="hint">← → o A/D para moverte · ↑ / W / Espacio para saltar · Salta sobre los dinos · R para reiniciar</p>
+
+  <!-- Controles táctiles semitransparentes -->
+  <div id="touch">
+    <button id="btnReset" aria-label="Reiniciar">⟳</button>
+    <div id="joyZone"></div>
+    <div id="joyWrap">
+      <div id="joyBase"></div>
+      <div id="joyKnob"></div>
+    </div>
+    <div class="pad right">
+      <div class="tbtn jump" id="btnJump" aria-label="Saltar">⤒</div>
+    </div>
+  </div>
+
+  <!-- Aviso de rotación -->
+  <div id="rotate">
+    <div class="ico">📱</div>
+    <div style="font-size:1.1rem;font-weight:700">Gira el móvil en horizontal</div>
+    <div style="opacity:.7">Para jugar a pantalla completa</div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    // --- Resolución responsive: llena toda la pantalla sin deformar ---
+    const VIEW_H = 400;
+    let VIEW_W = 800;
+    const DPR = Math.min(2, window.devicePixelRatio || 1) * 1.5;
+
+    function resize() {
+      const coarse = matchMedia('(pointer: coarse)').matches;
+      const landscape = window.innerWidth >= window.innerHeight;
+      let cssW, cssH;
+      if (coarse && landscape) {
+        // Móvil horizontal: ocupa el 100% de la pantalla
+        cssW = window.innerWidth;
+        cssH = window.innerHeight;
+        canvas.style.borderRadius = '0';
+        canvas.style.boxShadow = 'none';
+      } else {
+        // Escritorio / vertical: marco 2:1
+        cssH = Math.min(window.innerHeight * 0.82, (window.innerWidth * 0.94) / 2);
+        cssW = cssH * 2;
+        canvas.style.borderRadius = '18px';
+        canvas.style.boxShadow = '0 24px 60px rgba(0,0,0,0.5), inset 0 0 0 3px rgba(255,255,255,0.12)';
+      }
+      // El ancho de mundo visible se ajusta a la proporción real de la pantalla
+      VIEW_W = Math.round(VIEW_H * (cssW / cssH));
+      canvas.style.width = cssW + 'px';
+      canvas.style.height = cssH + 'px';
+      canvas.width = Math.round(VIEW_W * DPR);
+      canvas.height = Math.round(VIEW_H * DPR);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+    }
+    window.addEventListener('resize', resize);
+    window.addEventListener('orientationchange', resize);
+    resize();
+
+    // --- Constantes del mundo ---
+    const GRAVITY = 0.8;
+    const MOVE_SPEED = 4;
+    const JUMP_FORCE = 15;
+    const GROUND_Y = 360;
+    const LEVEL_WIDTH = 3000;
+
+    // --- Plataformas (suelo + escaleras suaves y alcanzables) ---
+    const platforms = [
+      { x: 0,    y: 360, w: 700,  h: 40 },
+      { x: 760,  y: 360, w: 900,  h: 40 },
+      { x: 1720, y: 360, w: 1280, h: 40 },
+      // Sección 1: escalera ascendente
+      { x: 250,  y: 285, w: 110, h: 20 },
+      { x: 430,  y: 240, w: 110, h: 20 },
+      { x: 600,  y: 200, w: 100, h: 20 },
+      // Sección 2: sube y baja
+      { x: 880,  y: 270, w: 120, h: 20 },
+      { x: 1080, y: 230, w: 120, h: 20 },
+      { x: 1300, y: 255, w: 120, h: 20 },
+      { x: 1500, y: 215, w: 120, h: 20 },
+      // Sección 3: tramo final
+      { x: 1850, y: 265, w: 130, h: 20 },
+      { x: 2080, y: 220, w: 120, h: 20 },
+      { x: 2320, y: 255, w: 120, h: 20 },
+      { x: 2560, y: 215, w: 120, h: 20 }
+    ];
+
+    // --- Rocas "?" flotando POR ENCIMA de la cabeza (se golpean saltando desde el suelo) ---
+    const blocksData = [
+      { x: 150,  y: 250, w: 32, h: 32, used: false },
+      { x: 1030, y: 250, w: 32, h: 32, used: false },
+      { x: 1240, y: 250, w: 32, h: 32, used: false },
+      { x: 2000, y: 250, w: 32, h: 32, used: false },
+      { x: 2730, y: 250, w: 32, h: 32, used: false }
+    ];
+
+    // --- Huesos: rastro que guía el recorrido (arcos y sobre plataformas) ---
+    const coinsData = [
+      // pista sobre cada roca "?"
+      { x: 156, y: 205 }, { x: 1036, y: 205 }, { x: 1246, y: 205 },
+      { x: 2006, y: 205 }, { x: 2736, y: 205 },
+      // escalera de la sección 1
+      { x: 295, y: 250 }, { x: 470, y: 205 }, { x: 635, y: 165 },
+      // arco sobre el primer hueco
+      { x: 705, y: 300 }, { x: 730, y: 285 },
+      // sección 2 sobre las plataformas
+      { x: 935, y: 235 }, { x: 1135, y: 195 }, { x: 1355, y: 220 }, { x: 1555, y: 180 },
+      // arco sobre el segundo hueco
+      { x: 1672, y: 300 }, { x: 1697, y: 285 },
+      // sección 3
+      { x: 1910, y: 230 }, { x: 2135, y: 185 }, { x: 2375, y: 220 }, { x: 2615, y: 180 }
+    ].map(c => ({ ...c, w: 18, h: 18, taken: false }));
+
+    // --- Dinos: patrullan tramos llanos con rangos razonables ---
+    const goombasData = [
+      { x: 470,  y: GROUND_Y - 28, dir: 1,  minX: 380,  maxX: 660 },
+      { x: 900,  y: GROUND_Y - 28, dir: -1, minX: 800,  maxX: 1060 },
+      { x: 1380, y: GROUND_Y - 28, dir: 1,  minX: 1260, maxX: 1600 },
+      { x: 1840, y: GROUND_Y - 28, dir: -1, minX: 1760, maxX: 2040 },
+      { x: 2400, y: GROUND_Y - 28, dir: 1,  minX: 2250, maxX: 2600 }
+    ];
+
+    // Meta (tótem)
+    const goal = { x: 2850, y: GROUND_Y - 160, w: 12, h: 160 };
+
+    // --- Vegetación decorativa (mundo) — pocas y en zonas despejadas para no tapar al jugador ---
+    const cycads = [120, 1000, 2000, 2780];
+    const farFerns = [60, 420, 900, 1400, 2000, 2600];
+
+    // --- Estado mutable ---
+    const player = { x: 60, y: 0, w: 28, h: 36, vx: 0, vy: 0, onGround: false, facing: 1, anim: 0, prevOnGround: true };
+    let blocks, coins, goombas;
+    let cameraX = 0, score = 0, lives = 3, won = false, dead = false, invuln = 0;
+    let t = 0;
+    const particles = [];
+    const spores = Array.from({ length: 26 }, () => ({
+      x: Math.random() * VIEW_W, y: Math.random() * VIEW_H,
+      r: 1 + Math.random() * 2.5, sp: 0.2 + Math.random() * 0.5, ph: Math.random() * 6.3
+    }));
+    const birds = Array.from({ length: 5 }, () => ({
+      x: Math.random() * VIEW_W, y: 40 + Math.random() * 90,
+      sp: 0.3 + Math.random() * 0.45, ph: Math.random() * 6.3, s: 0.8 + Math.random() * 0.7
+    }));
+
+    function spawnParticles(x, y, color, n, spread, opts = {}) {
+      for (let i = 0; i < n; i++) {
+        particles.push({
+          x, y,
+          vx: (Math.random() - 0.5) * spread,
+          vy: -Math.random() * 4 - (opts.up || 1),
+          life: 1, color,
+          r: (opts.r || 2) + Math.random() * 3,
+          star: opts.star || false,
+          grav: opts.grav == null ? 0.2 : opts.grav
+        });
+      }
+    }
+
+    const keys = {};
+    document.addEventListener('keydown', e => {
+      keys[e.key.toLowerCase()] = true;
+      if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(e.key.toLowerCase())) e.preventDefault();
+      if (e.key.toLowerCase() === 'r') fullReset();
+    });
+    document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+    // --- Controles táctiles (mantener pulsado) ---
+    function holdButton(id, key) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const press = e => { e.preventDefault(); keys[key] = true; el.classList.add('pressed'); };
+      const release = e => { if (e) e.preventDefault(); keys[key] = false; el.classList.remove('pressed'); };
+      el.addEventListener('pointerdown', press);
+      el.addEventListener('pointerup', release);
+      el.addEventListener('pointercancel', release);
+      el.addEventListener('pointerleave', release);
+      el.addEventListener('contextmenu', e => e.preventDefault());
+    }
+    holdButton('btnJump', ' ');
+    const resetBtn = document.getElementById('btnReset');
+    if (resetBtn) resetBtn.addEventListener('pointerdown', e => { e.preventDefault(); fullReset(); });
+
+    // --- Joystick flotante: aparece donde tocas, desaparece al soltar ---
+    const joyZone = document.getElementById('joyZone');
+    const joyWrap = document.getElementById('joyWrap');
+    const joyBase = document.getElementById('joyBase');
+    const joyKnob = document.getElementById('joyKnob');
+    let joyId = null, joyCx = 0, joyCy = 0;
+    const JOY_R = 46;        // recorrido máximo del knob
+    const DEAD = 12;         // zona muerta para empezar a moverse
+
+    function joyPlace(el, x, y) { el.style.left = x + 'px'; el.style.top = y + 'px'; }
+
+    if (joyZone) {
+      joyZone.addEventListener('pointerdown', e => {
+        if (joyId !== null) return;
+        joyId = e.pointerId;
+        joyCx = e.clientX; joyCy = e.clientY;
+        joyPlace(joyBase, joyCx, joyCy);
+        joyPlace(joyKnob, joyCx, joyCy);
+        joyWrap.style.display = 'block';
+        if (joyZone.setPointerCapture) joyZone.setPointerCapture(e.pointerId);
+        e.preventDefault();
+      });
+      joyZone.addEventListener('pointermove', e => {
+        if (e.pointerId !== joyId) return;
+        const dx = e.clientX - joyCx, dy = e.clientY - joyCy;
+        const dist = Math.hypot(dx, dy);
+        const m = Math.min(dist, JOY_R);
+        const ang = Math.atan2(dy, dx);
+        joyPlace(joyKnob, joyCx + Math.cos(ang) * m, joyCy + Math.sin(ang) * m);
+        keys['arrowleft']  = dx < -DEAD;
+        keys['arrowright'] = dx >  DEAD;
+        e.preventDefault();
+      });
+      const joyEnd = e => {
+        if (e.pointerId !== joyId) return;
+        joyId = null;
+        joyWrap.style.display = 'none';
+        keys['arrowleft'] = false;
+        keys['arrowright'] = false;
+        e.preventDefault();
+      };
+      joyZone.addEventListener('pointerup', joyEnd);
+      joyZone.addEventListener('pointercancel', joyEnd);
+    }
+
+    function resetPlayer() {
+      player.x = 60; player.y = 0; player.vx = 0; player.vy = 0;
+      cameraX = 0; invuln = 90;
+    }
+
+    function fullReset() {
+      blocks = blocksData.map(b => ({ ...b, used: false, pop: 0 }));
+      coins = coinsData.map(c => ({ ...c, taken: false }));
+      goombas = goombasData.map(g => ({ ...g, w: 30, h: 28, vx: 1.2, alive: true, squashT: 0, blink: Math.random() * 200 }));
+      score = 0; lives = 3; won = false; dead = false;
+      resetPlayer();
+    }
+
+    function loseLife() {
+      lives--;
+      spawnParticles(player.x + player.w / 2, player.y + player.h / 2, '#ff7a7a', 16, 7, { up: 3 });
+      if (lives <= 0) { dead = true; }
+      else { resetPlayer(); }
+    }
+
+    function rectsOverlap(a, b) {
+      return a.x < b.x + b.w && a.x + a.w > b.x &&
+             a.y < b.y + b.h && a.y + a.h > b.y;
+    }
+
+    function solids() { return platforms.concat(blocks); }
+
+    // ===================== FÍSICA (sin cambios de jugabilidad) =====================
+    function update() {
+      if (won || dead) return;
+      if (invuln > 0) invuln--;
+
+      player.vx = 0;
+      if (keys['arrowleft'] || keys['a']) { player.vx = -MOVE_SPEED; player.facing = -1; }
+      if (keys['arrowright'] || keys['d']) { player.vx = MOVE_SPEED; player.facing = 1; }
+
+      if ((keys['arrowup'] || keys['w'] || keys[' ']) && player.onGround) {
+        player.vy = -JUMP_FORCE;
+        player.onGround = false;
+        spawnParticles(player.x + player.w / 2, player.y + player.h, '#e8c9a0', 6, 3, { up: 0, grav: 0.05, r: 2 });
+      }
+
+      player.vy += GRAVITY;
+
+      // Colisión X
+      player.x += player.vx;
+      for (const p of solids()) {
+        if (rectsOverlap(player, p)) {
+          if (player.vx > 0) player.x = p.x - player.w;
+          else if (player.vx < 0) player.x = p.x + p.w;
+        }
+      }
+      if (player.x < 0) player.x = 0;
+      if (player.x + player.w > LEVEL_WIDTH) player.x = LEVEL_WIDTH - player.w;
+
+      // Colisión Y
+      player.prevOnGround = player.onGround;
+      player.y += player.vy;
+      player.onGround = false;
+      for (const p of solids()) {
+        if (rectsOverlap(player, p)) {
+          if (player.vy > 0) {
+            player.y = p.y - player.h;
+            player.vy = 0;
+            player.onGround = true;
+          } else if (player.vy < 0) {
+            player.y = p.y + p.h;
+            player.vy = 0;
+            if (p.used === false && p.hasOwnProperty('used')) {
+              p.used = true; p.pop = 1;
+              score += 100;
+              spawnParticles(p.x + p.w / 2, p.y, '#d8c7b0', 12, 5);
+            }
+          }
+        }
+      }
+
+      // Polvo al aterrizar
+      if (player.onGround && !player.prevOnGround) {
+        spawnParticles(player.x + player.w / 2, player.y + player.h, '#e8c9a0', 8, 4, { up: 0, grav: 0.05, r: 2 });
+      }
+
+      if (player.y > VIEW_H + 200) loseLife();
+
+      // Caminar
+      if (Math.abs(player.vx) > 0 && player.onGround) player.anim += 0.25;
+      else player.anim *= 0.6;
+
+      // Huesos
+      for (const c of coins) {
+        if (!c.taken && rectsOverlap(player, c)) {
+          c.taken = true; score += 50;
+          spawnParticles(c.x + c.w / 2, c.y + c.h / 2, '#fff3d0', 12, 4, { star: true, up: 2, grav: 0.08 });
+        }
+      }
+
+      // Dinos
+      for (const g of goombas) {
+        if (!g.alive) { if (g.squashT > 0) g.squashT--; continue; }
+        g.x += g.vx * g.dir;
+        if (g.x <= g.minX) { g.x = g.minX; g.dir = 1; }
+        if (g.x + g.w >= g.maxX) { g.x = g.maxX - g.w; g.dir = -1; }
+
+        if (rectsOverlap(player, g)) {
+          const cayendoSobre = player.vy > 0 && (player.y + player.h) - g.y < 20;
+          if (cayendoSobre) {
+            g.alive = false; g.squashT = 30;
+            player.vy = -JUMP_FORCE * 0.6;
+            score += 200;
+            spawnParticles(g.x + g.w / 2, g.y + g.h / 2, '#8fe06a', 14, 6, { star: true });
+          } else if (invuln === 0) {
+            loseLife();
+          }
+        }
+      }
+
+      if (rectsOverlap(player, goal)) {
+        if (!won) spawnParticles(goal.x, goal.y, '#ffe08a', 40, 9, { star: true, up: 4, grav: 0.15 });
+        won = true;
+      }
+
+      cameraX = player.x + player.w / 2 - VIEW_W / 2;
+      cameraX = Math.max(0, Math.min(cameraX, LEVEL_WIDTH - VIEW_W));
+    }
+
+    // ===================== HELPERS DE DIBUJO =====================
+    function roundRect(x, y, w, h, r) {
+      r = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+    function dropShadow(cx, groundY, w, a = 0.22) {
+      ctx.fillStyle = 'rgba(40,30,15,' + a + ')';
+      ctx.beginPath();
+      ctx.ellipse(cx, groundY, w * 0.55, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    function star(cx, cy, r, rot) {
+      ctx.beginPath();
+      for (let i = 0; i < 8; i++) {
+        const ang = rot + i * Math.PI / 4;
+        const rr = i % 2 === 0 ? r : r * 0.42;
+        ctx[i === 0 ? 'moveTo' : 'lineTo'](cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr);
+      }
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // ===================== RENDER =====================
+    function draw() {
+      drawSky();
+      drawBirds();
+      drawFarLayer();
+      drawCanopy();
+      drawMidLayer();
+
+      // Nubes y esporas en espacio de pantalla (parallax suave)
+      for (let i = 0; i < 7; i++) {
+        const cx = (i * 470 - cameraX * 0.35) % (LEVEL_WIDTH);
+        drawCloud(((cx % (VIEW_W + 200)) + (VIEW_W + 200)) % (VIEW_W + 200) - 100, 50 + (i % 3) * 40, 0.9 - (i % 3) * 0.18);
+      }
+      drawSpores();
+
+      ctx.save();
+      ctx.translate(-cameraX, 0);
+
+      // Vegetación de fondo (detrás de plataformas)
+      for (const x of cycads) drawCycad(x, GROUND_Y, 1);
+
+      for (const p of platforms) drawPlatform(p);
+      for (const b of blocks) drawRock(b);
+
+      for (const c of coins) {
+        if (c.taken) continue;
+        const bob = Math.sin((t + c.x) * 0.08) * 3;
+        drawBone(c.x, c.y + bob, c.w, c.h, true);
+      }
+
+      for (const g of goombas) {
+        if (!g.alive) {
+          if (g.squashT > 0) {
+            ctx.save();
+            ctx.globalAlpha = g.squashT / 30;
+            const grd = ctx.createLinearGradient(0, g.y + g.h - 8, 0, g.y + g.h);
+            grd.addColorStop(0, '#7fd45a'); grd.addColorStop(1, '#3f7d2c');
+            ctx.fillStyle = grd;
+            roundRect(g.x, g.y + g.h - 8, g.w, 8, 4); ctx.fill();
+            ctx.restore();
+          }
+          continue;
+        }
+        drawDino(g);
+      }
+
+      drawTotem();
+
+      // Partículas
+      for (const pa of particles) {
+        ctx.globalAlpha = Math.max(0, pa.life);
+        ctx.fillStyle = pa.color;
+        if (pa.star) star(pa.x, pa.y, pa.r + 1.5, pa.life * 6);
+        else { ctx.beginPath(); ctx.arc(pa.x, pa.y, pa.r, 0, Math.PI * 2); ctx.fill(); }
+      }
+      ctx.globalAlpha = 1;
+
+      if (!(invuln > 0 && Math.floor(invuln / 5) % 2 === 0)) drawPlayer();
+
+      ctx.restore();
+
+      drawLightingAndVignette();
+      drawHUD();
+
+      if (won) overlay('¡Nivel completado!', 'Pulsa R para volver a jugar', '#ffe08a');
+      if (dead) overlay('GAME OVER', 'Pulsa R para reiniciar', '#ff9a9a');
+    }
+
+    function drawSky() {
+      const sky = ctx.createLinearGradient(0, 0, 0, VIEW_H);
+      sky.addColorStop(0,   '#1f93d8');
+      sky.addColorStop(0.35,'#56c2e6');
+      sky.addColorStop(0.62,'#9fe2d4');
+      sky.addColorStop(0.8, '#d9f0c2');
+      sky.addColorStop(1,   '#ffe6a8');
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+      // Resplandor cálido del horizonte
+      const glow = ctx.createRadialGradient(VIEW_W * 0.5, VIEW_H * 0.95, 40, VIEW_W * 0.5, VIEW_H * 0.95, 380);
+      glow.addColorStop(0, 'rgba(255,228,150,0.55)');
+      glow.addColorStop(1, 'rgba(255,228,150,0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, VIEW_H * 0.5, VIEW_W, VIEW_H * 0.5);
+
+      // Sol con halo
+      const sx = 150, sy = 80;
+      const halo = ctx.createRadialGradient(sx, sy, 10, sx, sy, 120);
+      halo.addColorStop(0, 'rgba(255,250,224,0.95)');
+      halo.addColorStop(1, 'rgba(255,250,224,0)');
+      ctx.fillStyle = halo;
+      ctx.fillRect(sx - 130, sy - 130, 260, 260);
+
+      // Rayos de sol (god rays)
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.translate(sx, sy);
+      ctx.rotate(t * 0.0015);
+      for (let i = 0; i < 7; i++) {
+        ctx.rotate(Math.PI * 2 / 7);
+        const rg = ctx.createLinearGradient(0, 0, 300, 0);
+        rg.addColorStop(0, 'rgba(255,246,205,0.10)');
+        rg.addColorStop(1, 'rgba(255,246,205,0)');
+        ctx.fillStyle = rg;
+        ctx.beginPath();
+        ctx.moveTo(0, -10); ctx.lineTo(300, -34); ctx.lineTo(300, 34); ctx.lineTo(0, 10);
+        ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+
+      ctx.fillStyle = '#fff6d8';
+      ctx.beginPath(); ctx.arc(sx, sy, 31, 0, Math.PI * 2); ctx.fill();
+    }
+
+    function drawBirds() {
+      ctx.strokeStyle = 'rgba(45,60,75,0.5)';
+      ctx.lineWidth = 2; ctx.lineCap = 'round';
+      for (const b of birds) {
+        b.x -= b.sp;
+        if (b.x < -24) { b.x = VIEW_W + 24; b.y = 40 + Math.random() * 90; }
+        const flap = 4 + Math.sin(t * 0.16 + b.ph) * 5;
+        ctx.save();
+        ctx.translate(b.x, b.y); ctx.scale(b.s, b.s);
+        // pterodáctilo: alas puntiagudas + cresta
+        ctx.beginPath();
+        ctx.moveTo(-11, 0);
+        ctx.quadraticCurveTo(-5, -flap, 0, -2);
+        ctx.quadraticCurveTo(5, -flap, 11, 0);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, -2); ctx.lineTo(3, 3);          // cuerpo
+        ctx.moveTo(3, 3); ctx.lineTo(6, 1);            // pico
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    function drawFarLayer() {
+      // Montañas brumosas lejanas (capa más lejana, azulada)
+      let off = cameraX * 0.07;
+      let grd = ctx.createLinearGradient(0, 150, 0, 320);
+      grd.addColorStop(0, '#8fb6c8'); grd.addColorStop(1, '#b7d4d6');
+      ctx.fillStyle = grd;
+      for (let i = -1; i < 8; i++) {
+        const mx = i * 420 - (off % 420);
+        ctx.beginPath();
+        ctx.moveTo(mx, 330);
+        ctx.quadraticCurveTo(mx + 210, 130, mx + 420, 330);
+        ctx.fill();
+      }
+
+      // Volcán lejano humeante
+      const vx = 560 - ((cameraX * 0.07) % 1600);
+      const vg = ctx.createLinearGradient(0, 120, 0, 330);
+      vg.addColorStop(0, '#6f8f96'); vg.addColorStop(1, '#9fbcae');
+      ctx.fillStyle = vg;
+      ctx.beginPath();
+      ctx.moveTo(vx - 10, 330); ctx.lineTo(vx + 80, 120);
+      ctx.lineTo(vx + 120, 120); ctx.lineTo(vx + 210, 330); ctx.fill();
+      // capa de nieve/roca clara en la cima
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.beginPath();
+      ctx.moveTo(vx + 70, 145); ctx.lineTo(vx + 90, 118);
+      ctx.lineTo(vx + 110, 118); ctx.lineTo(vx + 130, 145);
+      ctx.quadraticCurveTo(vx + 100, 132, vx + 70, 145); ctx.fill();
+      const lava = ctx.createLinearGradient(0, 116, 0, 150);
+      lava.addColorStop(0, '#ffd34d'); lava.addColorStop(1, '#ff6a2b');
+      ctx.fillStyle = lava;
+      roundRect(vx + 82, 116, 38, 12, 5); ctx.fill();
+      for (let i = 0; i < 3; i++) {
+        const p = (t * 0.35 + i * 45) % 130;
+        ctx.fillStyle = 'rgba(210,210,210,' + (0.3 - p / 460) + ')';
+        ctx.beginPath();
+        ctx.arc(vx + 100 + Math.sin(p * 0.05) * 14, 112 - p, 10 + p * 0.14, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Segunda cordillera (más cerca, verdosa)
+      off = cameraX * 0.12;
+      grd = ctx.createLinearGradient(0, 200, 0, 340);
+      grd.addColorStop(0, '#7fb88f'); grd.addColorStop(1, '#a3d2a6');
+      ctx.fillStyle = grd;
+      for (let i = -1; i < 8; i++) {
+        const mx = i * 340 - (off % 340) + 120;
+        ctx.beginPath();
+        ctx.moveTo(mx, 340);
+        ctx.quadraticCurveTo(mx + 170, 198, mx + 340, 340);
+        ctx.fill();
+      }
+
+      // Niebla atmosférica entre capas
+      const fog = ctx.createLinearGradient(0, 280, 0, 345);
+      fog.addColorStop(0, 'rgba(223,242,228,0)');
+      fog.addColorStop(1, 'rgba(223,242,228,0.55)');
+      ctx.fillStyle = fog;
+      ctx.fillRect(0, 280, VIEW_W, 65);
+
+      // Helechos arbóreos lejanos (silueta clara)
+      ctx.save();
+      ctx.translate(-cameraX * 0.4, 0);
+      for (const x of farFerns) drawTreeFern(x, GROUND_Y - 6, 'rgba(110,160,105,0.45)', 0.85);
+      ctx.restore();
+    }
+
+    // Copas de la jungla (capa intermedia entre montañas y colinas)
+    function drawCanopy() {
+      const off = cameraX * 0.18;
+      const grd = ctx.createLinearGradient(0, 250, 0, 360);
+      grd.addColorStop(0, '#4fa23f'); grd.addColorStop(1, '#357f2c');
+      for (let i = -1; i < 12; i++) {
+        const x = i * 130 - (off % 130);
+        const r = 40 + (i % 3) * 10;
+        const y = 322 - (i % 2) * 8;
+        ctx.fillStyle = grd;
+        ctx.beginPath(); ctx.arc(x + 50, y, r, Math.PI, 0); ctx.fill();
+        // toque de luz superior
+        ctx.fillStyle = 'rgba(255,255,255,0.07)';
+        ctx.beginPath(); ctx.arc(x + 40, y - r * 0.5, r * 0.35, 0, Math.PI * 2); ctx.fill();
+      }
+      // bruma sobre la copa
+      ctx.fillStyle = 'rgba(210,238,200,0.30)';
+      ctx.fillRect(0, 320, VIEW_W, 30);
+    }
+
+    function drawMidLayer() {
+      // Colinas verdes redondeadas
+      const off = cameraX * 0.25;
+      const grd = ctx.createLinearGradient(0, 250, 0, 400);
+      grd.addColorStop(0, '#74c24a');
+      grd.addColorStop(1, '#4e9b34');
+      ctx.fillStyle = grd;
+      for (let i = -1; i < 7; i++) {
+        const mx = i * 300 - (off % 300);
+        ctx.beginPath();
+        ctx.moveTo(mx, 400);
+        ctx.quadraticCurveTo(mx + 150, 250, mx + 300, 400);
+        ctx.fill();
+      }
+    }
+
+    function drawCloud(x, y, alpha) {
+      ctx.save();
+      // sombra inferior suave
+      ctx.fillStyle = 'rgba(180,210,230,' + (alpha * 0.5) + ')';
+      blob(x, y + 4, alpha);
+      ctx.fillStyle = 'rgba(255,255,255,' + alpha + ')';
+      blob(x, y, alpha);
+      ctx.restore();
+    }
+    function blob(x, y) {
+      ctx.beginPath();
+      ctx.arc(x, y, 16, 0, Math.PI * 2);
+      ctx.arc(x + 20, y + 5, 22, 0, Math.PI * 2);
+      ctx.arc(x + 46, y + 2, 18, 0, Math.PI * 2);
+      ctx.arc(x + 26, y - 9, 15, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawSpores() {
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      for (const s of spores) {
+        s.x -= s.sp;
+        if (s.x < -5) s.x = VIEW_W + 5;
+        const yy = s.y + Math.sin(t * 0.03 + s.ph) * 8;
+        ctx.globalAlpha = 0.4 + Math.sin(t * 0.05 + s.ph) * 0.3;
+        ctx.beginPath();
+        ctx.arc(s.x, yy, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // Cícada (planta prehistórica frondosa). Más baja para no tapar al jugador.
+    function drawCycad(x, baseY, sc) {
+      ctx.save();
+      ctx.translate(x, baseY);
+      ctx.scale(0.7, 0.7);
+      // tronco bulboso
+      const tg = ctx.createLinearGradient(-10, -40, 10, 0);
+      tg.addColorStop(0, '#8a6a3e'); tg.addColorStop(1, '#6b4a26');
+      ctx.fillStyle = tg;
+      roundRect(-9, -40, 18, 42, 6); ctx.fill();
+      ctx.fillStyle = 'rgba(0,0,0,0.12)';
+      for (let i = 0; i < 3; i++) roundRect(-9, -34 + i * 12, 18, 4, 2), ctx.fill();
+      // corona de hojas
+      const fronds = 7;
+      for (let i = 0; i < fronds; i++) {
+        const ang = -Math.PI + (i / (fronds - 1)) * Math.PI;
+        const sway = Math.sin(t * 0.03 + i) * 0.05;
+        ctx.save();
+        ctx.translate(0, -38);
+        ctx.rotate(ang * 0.62 + sway);
+        const lg = ctx.createLinearGradient(0, 0, 0, -64);
+        lg.addColorStop(0, '#3f9e4a'); lg.addColorStop(1, '#6fce5e');
+        ctx.fillStyle = lg;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(10, -36, 3, -66);
+        ctx.quadraticCurveTo(-3, -36, 0, 0);
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    // Helecho arbóreo de fondo (silueta)
+    function drawTreeFern(x, baseY, color, sc) {
+      ctx.save();
+      ctx.translate(x, baseY);
+      ctx.scale(sc, sc);
+      ctx.fillStyle = color;
+      roundRect(-6, -90, 12, 92, 4); ctx.fill();
+      for (let i = 0; i < 6; i++) {
+        const ang = -Math.PI + (i / 5) * Math.PI;
+        ctx.save();
+        ctx.translate(0, -88);
+        ctx.rotate(ang * 0.7);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(16, -30, 6, -60);
+        ctx.quadraticCurveTo(-4, -30, 0, 0);
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    function drawPlatform(p) {
+      const isGround = p.y === GROUND_Y;
+      const h = isGround ? (VIEW_H - p.y + 60) : p.h;
+      // Tierra con degradado
+      const g = ctx.createLinearGradient(0, p.y, 0, p.y + h);
+      g.addColorStop(0, '#b07b46');
+      g.addColorStop(0.4, '#8a5a30');
+      g.addColorStop(1, '#623f22');
+      ctx.fillStyle = g;
+      roundRect(p.x, p.y, p.w, h, isGround ? 10 : 10); ctx.fill();
+      // motas de tierra
+      ctx.fillStyle = 'rgba(0,0,0,0.10)';
+      for (let i = 0; i < p.w; i += 26) {
+        ctx.beginPath();
+        ctx.arc(p.x + 10 + i, p.y + 24 + ((i * 7) % 30), 2.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Césped con borde ondulado
+      ctx.save();
+      const gg = ctx.createLinearGradient(0, p.y - 4, 0, p.y + 16);
+      gg.addColorStop(0, '#86d84e'); gg.addColorStop(1, '#5cae33');
+      ctx.fillStyle = gg;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y + 14);
+      let x = p.x;
+      const r = 7;
+      for (; x < p.x + p.w; x += r * 2) {
+        ctx.arc(x + r, p.y + 6, r, Math.PI, 0);
+      }
+      ctx.lineTo(p.x + p.w, p.y + 14);
+      ctx.closePath();
+      ctx.fill();
+      // brillo del césped
+      ctx.fillStyle = 'rgba(255,255,255,0.18)';
+      ctx.fillRect(p.x + 4, p.y + 2, p.w - 8, 2.5);
+      ctx.restore();
+
+      // Briznas y flores encima (densidad baja para mantener limpia la zona del jugador)
+      for (let gx = p.x + 20; gx < p.x + p.w - 10; gx += 64) {
+        ctx.strokeStyle = '#4f9a2a';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(gx, p.y + 4);
+        ctx.lineTo(gx + Math.sin((t + gx) * 0.05) * 2, p.y - 6);
+        ctx.stroke();
+        if ((gx % 192) < 64) drawFlower(gx + 16, p.y - 2, (gx % 384 < 192) ? '#ff8fb0' : '#ffd24a');
+      }
+      // Arbustos decorativos, espaciados y solo en el suelo
+      if (isGround) {
+        for (let bx = p.x + 90; bx < p.x + p.w - 60; bx += 460) drawBush(bx, p.y + 2);
+      }
+    }
+
+    function drawFlower(x, y, color) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.fillStyle = color;
+      for (let i = 0; i < 5; i++) {
+        ctx.rotate(Math.PI * 2 / 5);
+        ctx.beginPath();
+        ctx.ellipse(0, -4, 2.4, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#fff3a0';
+      ctx.beginPath(); ctx.arc(0, 0, 2.2, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    function drawBush(x, y) {
+      const g = ctx.createLinearGradient(0, y - 26, 0, y);
+      g.addColorStop(0, '#5fb83c'); g.addColorStop(1, '#3f8f28');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y - 8, 16, Math.PI, 0);
+      ctx.arc(x + 18, y - 12, 20, Math.PI, 0);
+      ctx.arc(x + 38, y - 8, 15, Math.PI, 0);
+      ctx.lineTo(x + 38, y); ctx.lineTo(x - 16, y);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      ctx.beginPath(); ctx.arc(x + 14, y - 22, 6, 0, Math.PI * 2); ctx.fill();
+    }
+
+    function drawRock(b) {
+      const pop = b.pop > 0 ? (b.pop -= 0.08, Math.sin(b.pop * Math.PI) * 4) : 0;
+      const y = b.y - pop;
+      const g = ctx.createLinearGradient(0, y, 0, y + b.h);
+      g.addColorStop(0, b.used ? '#9a8d7e' : '#c8b7a4');
+      g.addColorStop(1, b.used ? '#6b6056' : '#94836f');
+      ctx.fillStyle = g;
+      roundRect(b.x, y, b.w, b.h, 9); ctx.fill();
+      // sombreado interno
+      ctx.fillStyle = 'rgba(255,255,255,0.22)';
+      roundRect(b.x + 3, y + 3, b.w - 6, 8, 5); ctx.fill();
+      ctx.strokeStyle = 'rgba(60,50,42,0.45)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(b.x + 9, y + 9); ctx.lineTo(b.x + 15, y + 18); ctx.lineTo(b.x + 10, y + 26);
+      ctx.stroke();
+      if (!b.used) {
+        const pulse = 0.55 + Math.sin(t * 0.12) * 0.45;
+        ctx.fillStyle = 'rgba(255,228,120,' + pulse + ')';
+        star(b.x + b.w / 2, y + b.h / 2, 8, t * 0.04);
+      }
+    }
+
+    function drawTotem() {
+      const x = goal.x, y = goal.y, w = goal.w + 18;
+      const g = ctx.createLinearGradient(x - 9, 0, x + w - 9, 0);
+      g.addColorStop(0, '#8a7d6f'); g.addColorStop(0.5, '#b0a395'); g.addColorStop(1, '#7a6d5f');
+      ctx.fillStyle = g;
+      roundRect(x - 9, y, w, goal.h, 9); ctx.fill();
+      // musgo
+      ctx.fillStyle = 'rgba(95,150,47,0.65)';
+      roundRect(x - 9, y + 52, 6, 44, 3); ctx.fill();
+      roundRect(x + w - 15, y + 96, 6, 32, 3); ctx.fill();
+      // caras talladas (dos)
+      ctx.fillStyle = '#3a332c';
+      for (const oy of [28, 96]) {
+        ctx.beginPath(); ctx.arc(x, y + oy, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x + goal.w, y + oy, 4, 0, Math.PI * 2); ctx.fill();
+        roundRect(x - 4, y + oy + 14, goal.w + 8, 5, 2); ctx.fill();
+      }
+      // plumas
+      const sway = Math.sin(t * 0.05) * 0.15;
+      for (const s of [-1, 1]) {
+        ctx.save();
+        ctx.translate(x + goal.w / 2 + s * 7, y - 4);
+        ctx.rotate(s * 0.4 + sway);
+        ctx.fillStyle = s < 0 ? '#e0584a' : '#f0a93b';
+        ctx.beginPath(); ctx.ellipse(0, -8, 4, 12, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // Hueso (recolectable o icono HUD)
+    function drawBone(x, y, w, h, sparkle) {
+      const cy = y + h / 2;
+      ctx.save();
+      if (sparkle) {
+        const s = 0.5 + Math.sin(t * 0.1 + x) * 0.5;
+        ctx.fillStyle = 'rgba(255,245,200,' + (0.25 * s) + ')';
+        ctx.beginPath(); ctx.arc(x + w / 2, cy, w * 0.9, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.fillStyle = '#fff7e4';
+      roundRect(x + 4, cy - 2.6, w - 8, 5.2, 2.6); ctx.fill();
+      const knob = (kx, ky) => { ctx.beginPath(); ctx.arc(kx, ky, 3.3, 0, Math.PI * 2); ctx.fill(); };
+      knob(x + 4, cy - 3); knob(x + 4, cy + 3);
+      knob(x + w - 4, cy - 3); knob(x + w - 4, cy + 3);
+      ctx.fillStyle = 'rgba(150,130,95,0.25)';
+      knob(x + 4, cy + 3.5); knob(x + w - 4, cy + 3.5);
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.fillRect(x + 6, cy - 1.6, w - 12, 1.4);
+      // destello
+      if (sparkle) {
+        const tw = (Math.sin(t * 0.15 + x) + 1) / 2;
+        ctx.fillStyle = 'rgba(255,255,255,' + tw + ')';
+        star(x + w - 3, cy - 4, 2 + tw * 1.5, t * 0.1);
+      }
+      ctx.restore();
+    }
+
+    // Dino: redondo, expresivo, con parpadeo y contoneo
+    function drawDino(g) {
+      const d = g.dir;
+      const cx = g.x + g.w / 2, cy = g.y + g.h / 2;
+      const wob = Math.sin(t * 0.18 + g.x) * 1.6;
+      const step = Math.sin(t * 0.3 + g.x) * 2;
+      const isBlink = (t + g.blink) % 200 < 8;
+      dropShadow(cx, g.y + g.h + 2, g.w);
+
+      ctx.save();
+      // cola
+      ctx.fillStyle = '#3f8f2c';
+      ctx.beginPath();
+      ctx.moveTo(cx - d * g.w * 0.35, cy + 5);
+      ctx.quadraticCurveTo(cx - d * g.w * 0.8, cy - 4 + wob, cx - d * g.w * 0.5, cy - 8 + wob);
+      ctx.quadraticCurveTo(cx - d * g.w * 0.55, cy + 4, cx - d * g.w * 0.35, cy + 11);
+      ctx.fill();
+
+      // patitas
+      ctx.fillStyle = '#2f6b1f';
+      roundRect(g.x + 6, g.y + g.h - 4, 8, 6 + step, 3); ctx.fill();
+      roundRect(g.x + g.w - 14, g.y + g.h - 4, 8, 6 - step, 3); ctx.fill();
+
+      // cuerpo
+      const body = ctx.createRadialGradient(cx - 4, cy - 4, 4, cx, cy, g.w * 0.7);
+      body.addColorStop(0, '#8fe06a');
+      body.addColorStop(1, '#4fa838');
+      ctx.fillStyle = body;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 2, g.w / 2, g.h / 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // panza
+      ctx.fillStyle = 'rgba(238,248,200,0.7)';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 8, g.w / 3.2, g.h / 3.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // púas redondeadas
+      ctx.fillStyle = '#2f7d22';
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.arc(g.x + 9 + i * 6, g.y + 3, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // ojos grandes (estilo Wonder)
+      const ex = cx + d * 5;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(ex, g.y + 6, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(ex - d * 9, g.y + 7, 5, 0, Math.PI * 2); ctx.fill();
+      if (isBlink) {
+        ctx.strokeStyle = '#256019'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(ex - 5, g.y + 6); ctx.lineTo(ex + 5, g.y + 6);
+        ctx.moveTo(ex - d * 9 - 4, g.y + 7); ctx.lineTo(ex - d * 9 + 4, g.y + 7); ctx.stroke();
+      } else {
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath(); ctx.arc(ex + d * 1.5, g.y + 6, 2.6, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(ex - d * 9 + d * 1, g.y + 7, 2.2, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(ex + d * 1.5 + 1, g.y + 5, 0.9, 0, Math.PI * 2); ctx.fill();
+      }
+      // sonrisa
+      ctx.strokeStyle = '#256019'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.arc(ex - d * 4, g.y + 13, 4, 0.1, Math.PI - 0.1); ctx.stroke();
+      ctx.restore();
+    }
+
+    // Cavernícola: redondo, expresivo, con squash & stretch y garrote
+    function drawPlayer() {
+      const { x, y, w, h } = player;
+      const cx = x + w / 2;
+      const swing = Math.sin(player.anim) * 4;
+      const air = !player.onGround;
+      const sx = air ? 1.08 : 1 + Math.sin(t * 0.1) * 0.01;   // estira en el aire
+      const sy = air ? 0.94 : 1;
+      dropShadow(cx, y + h + 2, w, air ? 0.12 : 0.22);
+
+      ctx.save();
+      ctx.translate(cx, y + h);
+      ctx.scale(sx, sy);
+      ctx.translate(-cx, -(y + h));
+
+      // piernas
+      ctx.fillStyle = '#cf9a62';
+      roundRect(x + 5, y + h * 0.74, 8, h * 0.26 + swing * 0.3, 4); ctx.fill();
+      roundRect(x + w - 13, y + h * 0.74, 8, h * 0.26 - swing * 0.3, 4); ctx.fill();
+      // pies
+      ctx.fillStyle = '#a06b38';
+      roundRect(x + 4 + (player.facing > 0 ? 2 : 0), y + h - 4 + swing * 0.3, 11, 5, 3); ctx.fill();
+      roundRect(x + w - 14, y + h - 4 - swing * 0.3, 11, 5, 3); ctx.fill();
+
+      // taparrabos con degradado y manchas
+      const fur = ctx.createLinearGradient(0, y + h * 0.5, 0, y + h * 0.82);
+      fur.addColorStop(0, '#a9692c'); fur.addColorStop(1, '#7c4a1c');
+      ctx.fillStyle = fur;
+      ctx.beginPath();
+      ctx.moveTo(x, y + h * 0.52);
+      ctx.lineTo(x + w, y + h * 0.52);
+      ctx.lineTo(x + w - 2, y + h * 0.74);
+      ctx.lineTo(x + w / 2, y + h * 0.82);
+      ctx.lineTo(x + 2, y + h * 0.74);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#4f2f12';
+      ctx.beginPath(); ctx.arc(x + 9, y + h * 0.64, 2.4, 0, 6.3); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + w - 10, y + h * 0.68, 2.4, 0, 6.3); ctx.fill();
+
+      // torso (piel con sombreado radial)
+      const skin = ctx.createRadialGradient(cx - 4, y + h * 0.4, 3, cx, y + h * 0.44, w * 0.7);
+      skin.addColorStop(0, '#f4b87a'); skin.addColorStop(1, '#d2925a');
+      ctx.fillStyle = skin;
+      roundRect(x + 2, y + h * 0.3, w - 4, h * 0.3, 8); ctx.fill();
+
+      // cabeza grande y redonda
+      const hy = y + h * 0.2;
+      ctx.fillStyle = '#f0b079';
+      ctx.beginPath(); ctx.arc(cx, hy, w * 0.46, 0, Math.PI * 2); ctx.fill();
+      // mejilla sonrosada
+      ctx.fillStyle = 'rgba(232,120,90,0.5)';
+      ctx.beginPath(); ctx.arc(cx + player.facing * 7, hy + 5, 3.2, 0, Math.PI * 2); ctx.fill();
+      // melena
+      ctx.fillStyle = '#3a2410';
+      ctx.beginPath(); ctx.arc(cx, hy - 3, w * 0.48, Math.PI, 0); ctx.fill();
+      ctx.fillRect(cx - w * 0.48, hy - 3, 5, 13);
+      ctx.fillRect(cx + w * 0.48 - 5, hy - 3, 5, 13);
+      // mechones
+      for (let i = -1; i <= 1; i++) {
+        ctx.beginPath();
+        ctx.moveTo(cx + i * 7, hy - w * 0.42);
+        ctx.lineTo(cx + i * 7 + 3, hy - w * 0.6);
+        ctx.lineTo(cx + i * 7 + 6, hy - w * 0.42);
+        ctx.fill();
+      }
+      // ceja prominente
+      ctx.fillStyle = '#caa06a';
+      roundRect(cx - 9, hy - 1, 18, 3.5, 2); ctx.fill();
+      // ojo grande
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(cx + player.facing * 4, hy + 5, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#1a1a1a';
+      ctx.beginPath(); ctx.arc(cx + player.facing * 5, hy + 5, 2.1, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(cx + player.facing * 6, hy + 4, 0.8, 0, Math.PI * 2); ctx.fill();
+      // sonrisa
+      ctx.strokeStyle = '#7a4a1e'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.arc(cx + player.facing * 3, hy + 10, 3.5, 0.1, Math.PI - 0.1); ctx.stroke();
+
+      // brazo + garrote
+      ctx.strokeStyle = '#d99a63'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+      const gx = cx + player.facing * 13, gyTop = y + h * 0.3;
+      ctx.beginPath();
+      ctx.moveTo(cx + player.facing * 5, y + h * 0.46);
+      ctx.lineTo(gx, gyTop);
+      ctx.stroke();
+      ctx.strokeStyle = '#7a4a1e'; ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(gx, gyTop);
+      ctx.lineTo(gx + player.facing * 4, gyTop - 12);
+      ctx.stroke();
+      const club = ctx.createRadialGradient(gx + player.facing * 4, gyTop - 14, 1, gx + player.facing * 4, gyTop - 14, 8);
+      club.addColorStop(0, '#a06a34'); club.addColorStop(1, '#7a4a1e');
+      ctx.fillStyle = club;
+      ctx.beginPath(); ctx.arc(gx + player.facing * 5, gyTop - 15, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#5e3613';
+      ctx.beginPath(); ctx.arc(gx + player.facing * 3, gyTop - 17, 1.4, 0, 6.3); ctx.fill();
+      ctx.restore();
+    }
+
+    function drawLightingAndVignette() {
+      // luz ambiental cálida desde arriba
+      const lg = ctx.createLinearGradient(0, 0, 0, VIEW_H);
+      lg.addColorStop(0, 'rgba(255,240,200,0.12)');
+      lg.addColorStop(0.5, 'rgba(255,240,200,0)');
+      ctx.fillStyle = lg;
+      ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+      // viñeta
+      const vig = ctx.createRadialGradient(VIEW_W/2, VIEW_H/2, 220, VIEW_W/2, VIEW_H/2, 540);
+      vig.addColorStop(0, 'rgba(0,0,0,0)');
+      vig.addColorStop(1, 'rgba(20,10,30,0.28)');
+      ctx.fillStyle = vig;
+      ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    }
+
+    function drawHUD() {
+      ctx.save();
+      // panel "glass"
+      ctx.fillStyle = 'rgba(20,14,8,0.42)';
+      roundRect(12, 12, 196, 42, 14); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1.5;
+      roundRect(12, 12, 196, 42, 14); ctx.stroke();
+      // hueso animado + puntuación
+      const bob = Math.sin(t * 0.1) * 1.5;
+      drawBone(26, 25 + bob, 20, 14, false);
+      ctx.fillStyle = '#fff';
+      ctx.font = '800 21px system-ui';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText(score, 56, 34);
+      // corazones con leve latido
+      for (let i = 0; i < 3; i++) {
+        const beat = i < lives ? 1 + Math.sin(t * 0.12 + i) * 0.06 : 1;
+        drawHeart(128 + i * 26, 33, 9 * beat, i < lives);
+      }
+      ctx.restore();
+      ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+    }
+
+    function drawHeart(cx, cy, s, filled) {
+      ctx.save();
+      ctx.fillStyle = filled ? '#ff5a6e' : 'rgba(255,255,255,0.22)';
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + s * 0.3);
+      ctx.bezierCurveTo(cx, cy, cx - s, cy - s * 0.5, cx - s, cy - s * 0.1);
+      ctx.bezierCurveTo(cx - s, cy + s * 0.5, cx, cy + s * 0.7, cx, cy + s);
+      ctx.bezierCurveTo(cx, cy + s * 0.7, cx + s, cy + s * 0.5, cx + s, cy - s * 0.1);
+      ctx.bezierCurveTo(cx + s, cy - s * 0.5, cx, cy, cx, cy + s * 0.3);
+      ctx.fill();
+      if (filled) {
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.beginPath(); ctx.arc(cx - s * 0.35, cy - s * 0.1, s * 0.2, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function overlay(title, sub, color) {
+      ctx.fillStyle = 'rgba(10,6,20,0.6)';
+      ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = color;
+      ctx.font = '800 46px system-ui';
+      ctx.fillText(title, VIEW_W / 2, VIEW_H / 2 - 10);
+      ctx.fillStyle = '#fff';
+      ctx.font = '20px system-ui';
+      ctx.fillText(sub, VIEW_W / 2, VIEW_H / 2 + 26);
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.font = '16px system-ui';
+      ctx.fillText('Puntuación: ' + score, VIEW_W / 2, VIEW_H / 2 + 56);
+      ctx.textAlign = 'left';
+    }
+
+    function updateParticles() {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx; p.y += p.vy; p.vy += p.grav; p.life -= 0.022;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+    }
+
+    function loop() {
+      t++;
+      update();
+      updateParticles();
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    fullReset();
+    loop();
+  </script>
+</body>
+</html>

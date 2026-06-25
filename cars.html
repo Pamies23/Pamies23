@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#3a1f14">
+  <title>Rayo - Carreras</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+    body {
+      background: radial-gradient(circle at 50% 0%, #6b3a22, #2a160d 70%);
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 12px; padding: 14px; color: #fff;
+      touch-action: none; user-select: none; -webkit-user-select: none;
+    }
+    h1 {
+      font-size: 1.6rem; letter-spacing: 1px; font-weight: 800;
+      background: linear-gradient(#ffe6a0, #ff9f3f);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      text-shadow: 0 3px 10px rgba(0,0,0,0.4);
+    }
+    canvas {
+      border-radius: 18px; display: block;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5), inset 0 0 0 3px rgba(255,255,255,0.12);
+      touch-action: none;
+    }
+    .hint { font-size: 0.85rem; opacity: 0.85; text-shadow: 0 1px 3px rgba(0,0,0,0.5); text-align: center; }
+
+    #touch { position: fixed; inset: 0; pointer-events: none; display: none; z-index: 20; }
+    .arrow {
+      position: absolute;
+      bottom: calc(22px + env(safe-area-inset-bottom));
+      width: 92px; height: 92px; border-radius: 26px;
+      background: rgba(255,255,255,0.13);
+      border: 2px solid rgba(255,255,255,0.30);
+      backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+      color: rgba(255,255,255,0.85); font-size: 46px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.28);
+      pointer-events: auto; transition: transform .05s, background .05s;
+    }
+    .arrow.left  { left:  calc(18px + env(safe-area-inset-left)); }
+    .arrow.right { right: calc(18px + env(safe-area-inset-right)); }
+    .arrow.pressed, .arrow:active { background: rgba(255,255,255,0.32); transform: scale(0.94); }
+
+    #rotate {
+      position: fixed; inset: 0; z-index: 50; display: none;
+      align-items: center; justify-content: center; flex-direction: column; gap: 14px;
+      background: #2a160d; color: #fff; text-align: center; padding: 24px;
+    }
+    #rotate .ico { font-size: 56px; animation: spin 2s ease-in-out infinite; }
+    @keyframes spin { 0%,100%{transform:rotate(-12deg)} 50%{transform:rotate(78deg)} }
+
+    @media (pointer: coarse) { #touch { display: block; } }
+    @media (pointer: coarse) and (orientation: landscape) {
+      body { padding: 0; gap: 0; }
+      h1, .hint { display: none; }
+      canvas { position: fixed; inset: 0; border-radius: 0; }
+    }
+    @media (pointer: coarse) and (orientation: portrait) {
+      #rotate { display: flex; }
+    }
+
+    /* ---- Menús (1 jugador / 2 jugadores online) ---- */
+    .screen {
+      position: fixed; inset: 0; z-index: 40;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 14px; padding: 24px; text-align: center;
+      background: rgba(20,12,6,0.74);
+      -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+    }
+    .screen.hidden { display: none; }
+    .screen h2 {
+      font-size: 1.7rem; font-weight: 800; margin-bottom: 4px;
+      background: linear-gradient(#ffe6a0, #ff9f3f);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .btn {
+      min-width: 240px; padding: 15px 22px; border-radius: 16px;
+      border: 2px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.12);
+      color: #fff; font-size: 1.1rem; font-weight: 800; cursor: pointer;
+      pointer-events: auto;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn.red  { background: #e23a2a; border-color: #ff7a5a; }
+    .btn.blue { background: #2f6fe0; border-color: #6aa6ff; }
+    .btn.small { min-width: 0; padding: 11px 16px; font-size: 0.95rem; }
+    .code {
+      font-size: 2.4rem; font-weight: 900; letter-spacing: 6px; color: #ffd23f;
+      background: rgba(0,0,0,0.3); padding: 8px 20px; border-radius: 12px;
+    }
+    .row { display: flex; gap: 10px; align-items: center; }
+    input.codein {
+      font-size: 1.4rem; letter-spacing: 4px; text-transform: uppercase;
+      width: 160px; text-align: center; padding: 11px; border-radius: 12px;
+      border: 2px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: #fff;
+    }
+    .status { opacity: 0.9; min-height: 1.2em; font-weight: 600; }
+    .muted { opacity: 0.65; font-size: 0.82rem; max-width: 320px; }
+  </style>
+</head>
+<body>
+  <h1>⚡ RAYO — RUTA DEL DESIERTO</h1>
+  <canvas id="game"></canvas>
+  <p class="hint">Usa las flechas de los lados para mover a Rayo · Recoge Copas 🏆 · Esquiva tractores y conos</p>
+
+  <div id="touch">
+    <div class="arrow left"  id="btnLeft"  aria-label="Izquierda">‹</div>
+    <div class="arrow right" id="btnRight" aria-label="Derecha">›</div>
+  </div>
+
+  <div id="rotate">
+    <div class="ico">📱</div>
+    <div style="font-size:1.1rem;font-weight:700">Gira el móvil en horizontal</div>
+    <div style="opacity:.7">Para jugar a pantalla completa</div>
+  </div>
+
+  <!-- Menú principal -->
+  <div class="screen" id="menu">
+    <h2>⚡ RAYO — CARRERAS</h2>
+    <button class="btn red" id="btn1p">🏎️ 1 JUGADOR</button>
+    <button class="btn blue" id="btn2p">👥 2 JUGADORES</button>
+    <div class="muted">2 jugadores: cada uno en su móvil, conectando por un código (hace falta internet en ambos).</div>
+  </div>
+
+  <!-- Menú multijugador -->
+  <div class="screen hidden" id="mp">
+    <h2>2 JUGADORES</h2>
+    <button class="btn red" id="btnCreate">CREAR PARTIDA (Rayo rojo)</button>
+    <div class="muted">o únete a la partida de tu hermano:</div>
+    <div class="row">
+      <input class="codein" id="codeInput" placeholder="CÓDIGO" maxlength="5" autocomplete="off" autocapitalize="characters">
+      <button class="btn blue small" id="btnJoin">UNIRSE 🚀</button>
+    </div>
+    <div class="code hidden" id="codeBox">----</div>
+    <div class="status" id="mpStatus"></div>
+    <button class="btn small" id="btnBack">← Volver</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script>window.Peer || document.write('<scr' + 'ipt src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></scr' + 'ipt>');</script>
+  <script>window.Peer || document.write('<scr' + 'ipt src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></scr' + 'ipt>');</script>
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    // --- Resolución responsive (llena toda la pantalla) ---
+    const VIEW_H = 400;
+    let VIEW_W = 800;
+    const DPR = Math.min(2, window.devicePixelRatio || 1) * 1.5;
+
+    function resize() {
+      const coarse = matchMedia('(pointer: coarse)').matches;
+      const landscape = window.innerWidth >= window.innerHeight;
+      let cssW, cssH;
+      if (coarse && landscape) {
+        cssW = window.innerWidth; cssH = window.innerHeight;
+        canvas.style.borderRadius = '0'; canvas.style.boxShadow = 'none';
+      } else {
+        cssH = Math.min(window.innerHeight * 0.82, (window.innerWidth * 0.94) / 2);
+        cssW = cssH * 2;
+        canvas.style.borderRadius = '18px';
+        canvas.style.boxShadow = '0 24px 60px rgba(0,0,0,0.5), inset 0 0 0 3px rgba(255,255,255,0.12)';
+      }
+      VIEW_W = Math.round(VIEW_H * (cssW / cssH));
+      canvas.style.width = cssW + 'px';
+      canvas.style.height = cssH + 'px';
+      canvas.width = Math.round(VIEW_W * DPR);
+      canvas.height = Math.round(VIEW_H * DPR);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+    }
+    window.addEventListener('resize', resize);
+    window.addEventListener('orientationchange', resize);
+    resize();
+
+    // --- Perspectiva + curvas ---
+    const HORIZON = VIEW_H * 0.38;
+    const HALF_HORIZON = 10;
+    let curveNow = 0;                       // curvatura actual (-1..1)
+    function CX() { return VIEW_W / 2; }
+    function halfBottom() { return VIEW_W * 0.42; }
+    function fPersp(d) { return 1 / (1 + Math.max(d, 0) * 6); }
+    function projY(d) { return HORIZON + (VIEW_H - HORIZON) * fPersp(d); }
+    function halfRoad(d) { return HALF_HORIZON + (halfBottom() - HALF_HORIZON) * fPersp(d); }
+    function curveAt(d) { return curveNow * Math.pow(1 - fPersp(d), 2) * VIEW_W * 0.30; }
+    function projX(lane, d) { return CX() + curveAt(d) + lane * halfRoad(d); }
+
+    // --- Estado ---
+    const car = { w: 94, h: 70, lane: 0, targetLane: 0, wobble: 0, tilt: 0, crash: 0, crashDur: 1, spins: 0 };
+    let roadScroll = 0, speed = 3, cups = 0, started = false, t = 0, shake = 0;
+    let meters = 0, lives = 5, gameover = false;
+    // --- Multijugador ---
+    let mode = 'solo';          // 'solo' | 'mp'
+    let myCar = 'red', oppCar = 'blue';
+    const opp = { lane: 0, meters: 0, cups: 0, alive: true, present: false };
+    let peer = null, conn = null, netT = 0;
+    function carPreset(kind) {
+      if (kind === 'blue') return { g: ['#5ab0ff', '#2f6fe0', '#16489c'], roof: '#2f6fe0', num: '1', rocket: true };
+      return { g: ['#ff4c34', '#e62a18', '#a01506'], roof: '#d4250f', num: '95', rocket: false };
+    }
+    const items = [];        // copas/conos
+    const traffic = [];      // coches a esquivar
+    const props = [];        // cactus/rocas
+    const particles = [];
+    const floats = [];
+    let spawnTimer = 0, propTimer = 0, trafficTimer = 150;
+    const clouds = Array.from({ length: 4 }, (_, i) => ({ x: i * 240, y: 34 + (i % 2) * 22 }));
+    // Colores de tractores (sin verde, para no confundir con el rival)
+    const TRAFFIC_COLORS = ['#c0392b', '#2d6cdf', '#e08a1e', '#d4a017', '#b5651d', '#d94f86'];
+    // Rival que compite contra Rayo (coche verde). Chocar con él NO es trompo, solo un empujón.
+    const rival = { lane: 0, depth: 1.0, bumpCd: 0 };
+    let rivalLead = 1.3;       // distancia que te saca (baja al coger copas, sube con el tiempo)
+    let rivalAhead = false;    // ¿vas tú primero?
+
+    // --- Sonido ---
+    let actx = null;
+    function ensureAudio() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } }
+    function beep(freq, dur, type, vol) {
+      if (!actx) return;
+      try {
+        const o = actx.createOscillator(), g = actx.createGain();
+        o.type = type || 'sine'; o.frequency.value = freq;
+        g.gain.value = vol || 0.08; o.connect(g); g.connect(actx.destination);
+        const now = actx.currentTime;
+        g.gain.setValueAtTime(g.gain.value, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+        o.start(now); o.stop(now + dur);
+      } catch (e) {}
+    }
+    function happySound() { beep(660, 0.12, 'triangle', 0.09); setTimeout(() => beep(990, 0.14, 'triangle', 0.09), 90); }
+    function crashSound() { beep(240, 0.12, 'square', 0.07); setTimeout(() => beep(150, 0.16, 'sawtooth', 0.07), 80); }
+
+    // --- Entrada ---
+    const keys = {};
+    function holdButton(id, key) {
+      const el = document.getElementById(id); if (!el) return;
+      const press = e => { e.preventDefault(); keys[key] = true; if (gameover) resetGame(); started = true; ensureAudio(); el.classList.add('pressed'); };
+      const release = e => { if (e) e.preventDefault(); keys[key] = false; el.classList.remove('pressed'); };
+      el.addEventListener('pointerdown', press);
+      el.addEventListener('pointerup', release);
+      el.addEventListener('pointercancel', release);
+      el.addEventListener('pointerleave', release);
+      el.addEventListener('contextmenu', e => e.preventDefault());
+    }
+    holdButton('btnLeft', 'arrowleft');
+    holdButton('btnRight', 'arrowright');
+    canvas.addEventListener('pointerdown', e => { if (gameover) resetGame(); started = true; ensureAudio(); e.preventDefault(); });
+    document.addEventListener('keydown', e => {
+      keys[e.key.toLowerCase()] = true; if (gameover) resetGame(); started = true; ensureAudio();
+      if (['arrowleft','arrowright','arrowup','arrowdown',' '].includes(e.key.toLowerCase())) e.preventDefault();
+    });
+    document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+    // --- Mando (gamepad) ---
+    let gamepadActive = false;
+    function setGamepadUI(on) {
+      gamepadActive = on;
+      const tp = document.getElementById('touch');
+      if (tp) tp.style.display = on ? 'none' : '';     // al enganchar un mando, fuera los botones
+    }
+    window.addEventListener('gamepadconnected', () => setGamepadUI(true));
+    window.addEventListener('gamepaddisconnected', () => {
+      const pads = (navigator.getGamepads && navigator.getGamepads()) || [];
+      let any = false; for (const p of pads) if (p) any = true;
+      if (!any) setGamepadUI(false);
+    });
+    function pollGamepad() {
+      if (typeof navigator === 'undefined' || !navigator.getGamepads) return;
+      const pads = navigator.getGamepads(); let gp = null;
+      for (const p of pads) { if (p) { gp = p; break; } }
+      if (!gp) return;
+      if (!gamepadActive) setGamepadUI(true);
+      const ax = (gp.axes && gp.axes.length) ? (gp.axes[0] || 0) : 0;
+      const bL = gp.buttons[14] && gp.buttons[14].pressed;
+      const bR = gp.buttons[15] && gp.buttons[15].pressed;
+      keys['arrowleft'] = bL || ax < -0.35;
+      keys['arrowright'] = bR || ax > 0.35;
+      for (const b of gp.buttons) { if (b && b.pressed) { if (gameover) resetGame(); started = true; ensureAudio(); break; } }
+    }
+
+    function spawnParticles(x, y, color, n, sp) {
+      for (let i = 0; i < n; i++) particles.push({
+        x, y, vx: (Math.random() - 0.5) * (sp || 6), vy: -Math.random() * 5 - 1,
+        life: 1, color, r: 2 + Math.random() * 3, star: Math.random() < 0.4
+      });
+    }
+
+    // ===================== MENÚS + RED (multijugador) =====================
+    const $ = id => document.getElementById(id);
+    function show(el) { el.classList.remove('hidden'); }
+    function hide(el) { el.classList.add('hidden'); }
+    function genCode() {
+      const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let s = ''; for (let i = 0; i < 4; i++) s += A[Math.floor(Math.random() * A.length)];
+      return s;
+    }
+    function netSend() {
+      if (mode === 'mp' && conn && conn.open && (++netT % 3 === 0)) {
+        try { conn.send({ l: car.lane, m: meters, c: cups, a: !gameover }); } catch (e) {}
+      }
+    }
+    let netTimeout = null;
+    function status(m) { const e = $('mpStatus'); if (e) e.textContent = m; }
+    function clearNetTimeout() { if (netTimeout) { clearTimeout(netTimeout); netTimeout = null; } }
+    function wireConn() {
+      conn.on('open', () => { clearNetTimeout(); opp.present = true; hide($('mp')); hide($('menu')); mode = 'mp'; resetGame(); });
+      conn.on('data', d => { if (d) { opp.lane = d.l || 0; opp.meters = d.m || 0; opp.cups = d.c || 0; opp.alive = !!d.a; } });
+      conn.on('close', () => { opp.present = false; status('Tu hermano se desconectó'); });
+      conn.on('error', () => { status('Conexión perdida, reintenta'); });
+    }
+    function cleanupNet() {
+      clearNetTimeout();
+      try { if (conn) conn.close(); } catch (e) {}
+      try { if (peer) peer.destroy(); } catch (e) {}
+      conn = null; peer = null; opp.present = false;
+    }
+    function pid(code) { return 'rayocars' + code.toLowerCase(); }   // sin guion (IDs más fiables)
+
+    // Espera a que la librería de red (PeerJS) termine de cargar desde el CDN
+    function withPeer(go) {
+      if (typeof Peer !== 'undefined') { go(); return; }
+      status('Cargando conexión…');
+      let waited = 0;
+      const iv = setInterval(() => {
+        if (typeof Peer !== 'undefined') { clearInterval(iv); go(); }
+        else if ((waited += 300) > 20000) {
+          clearInterval(iv);
+          status('No carga la conexión. Prueba con datos móviles o abre el enlace en Safari/Chrome.');
+        }
+      }, 300);
+    }
+    function createGame() {
+      withPeer(() => {
+        ensureAudio(); cleanupNet();
+        myCar = 'red'; oppCar = 'blue';
+        hide($('codeBox'));
+        tryHost(0);
+      });
+    }
+    function tryHost(attempt) {
+      if (attempt > 6) { status('No se pudo crear la sala. Pulsa CREAR otra vez.'); return; }
+      const code = genCode();
+      status('Creando sala…');
+      let opened = false;
+      try { peer = new Peer(pid(code), { debug: 0 }); }
+      catch (e) { status('No se pudo iniciar la conexión'); return; }
+      clearNetTimeout();
+      netTimeout = setTimeout(() => {
+        if (!opened) { try { peer.destroy(); } catch (e) {} status('El servidor tarda, reintentando…'); tryHost(attempt + 1); }
+      }, 9000);
+      peer.on('open', () => {
+        opened = true; clearNetTimeout();
+        $('codeBox').textContent = code; show($('codeBox'));
+        status('Comparte el código. Esperando a tu hermano…');
+      });
+      peer.on('connection', c => { conn = c; wireConn(); });
+      peer.on('error', err => {
+        const ty = (err && err.type) || '';
+        if (!opened && (ty === 'unavailable-id' || ty === 'network' || ty === 'server-error')) {
+          clearNetTimeout(); try { peer.destroy(); } catch (e) {} tryHost(attempt + 1); return;
+        }
+        clearNetTimeout(); status('Error (' + (ty || '?') + '). Pulsa CREAR otra vez.');
+      });
+    }
+    function joinGame() {
+      const code = ($('codeInput').value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (code.length < 3) { status('Escribe el código'); return; }
+      withPeer(() => doJoin(code));
+    }
+    function doJoin(code) {
+      ensureAudio(); cleanupNet();
+      myCar = 'blue'; oppCar = 'red';
+      status('Conectando…');
+      try { peer = new Peer({ debug: 0 }); }
+      catch (e) { status('No se pudo iniciar la conexión'); return; }
+      clearNetTimeout();
+      netTimeout = setTimeout(() => { status('No conecta. Revisa el código y el internet.'); }, 13000);
+      peer.on('open', () => {
+        conn = peer.connect(pid(code), { serialization: 'json' });
+        wireConn();
+      });
+      peer.on('error', err => { clearNetTimeout(); status('No se pudo conectar (' + ((err && err.type) || '?') + ').'); });
+    }
+    if ($('btn1p')) {
+      $('btn1p').onclick = () => { ensureAudio(); mode = 'solo'; myCar = 'red'; opp.present = false; hide($('menu')); resetGame(); };
+      $('btn2p').onclick = () => { ensureAudio(); hide($('menu')); show($('mp')); if (typeof Peer === 'undefined') $('mpStatus').textContent = '⚠️ Necesitas internet para 2 jugadores'; };
+      $('btnCreate').onclick = createGame;
+      $('btnJoin').onclick = joinGame;
+      $('btnBack').onclick = () => { cleanupNet(); hide($('mp')); show($('menu')); $('mpStatus').textContent = ''; hide($('codeBox')); };
+    }
+    function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+
+    function resetGame() {
+      items.length = 0; traffic.length = 0; props.length = 0; particles.length = 0; floats.length = 0;
+      cups = 0; meters = 0; lives = 5; gameover = false;
+      roadScroll = 0; speed = 3; spawnTimer = 0; propTimer = 0; trafficTimer = 150;
+      rivalLead = 1.3; rivalAhead = false; rival.bumpCd = 0; rival.depth = 1.0; rival.lane = 0;
+      car.lane = 0; car.targetLane = 0; car.wobble = 0; car.tilt = 0; car.crash = 0; shake = 0;
+      started = true;
+    }
+
+    function crashCar(px, py, intensity) {
+      if (car.crash > 0) return;
+      car.crashDur = 30 + 26 * intensity;
+      car.crash = car.crashDur;
+      car.spins = intensity >= 1 ? 2 : 1;
+      shake = 7 + 7 * intensity;
+      spawnParticles(px, py, '#ffd23f', 10 + (intensity * 8 | 0), 8);
+      spawnParticles(px, py, '#fff', 6, 7);
+      rivalLead = Math.min(1.8, rivalLead + 0.35 + 0.3 * intensity);   // pierdes tiempo: el rival te alcanza
+      lives--;
+      if (lives <= 0) { lives = 0; gameover = true; }
+      crashSound();
+    }
+
+    // ===================== LÓGICA =====================
+    function update() {
+      t++;
+      pollGamepad();
+      if (started && !gameover) {
+        const crashing = car.crash > 0;
+        if (!crashing) {
+          if (keys['arrowleft'] || keys['a']) car.targetLane = Math.max(-0.9, car.targetLane - 0.035);
+          if (keys['arrowright'] || keys['d']) car.targetLane = Math.min(0.9, car.targetLane + 0.035);
+        }
+        const dl = car.targetLane - car.lane;
+        car.lane += dl * 0.15;
+        car.tilt = Math.max(-0.16, Math.min(0.16, dl * 0.5));
+        if (car.wobble > 0) car.wobble--;
+        if (car.crash > 0) car.crash--;
+
+        // Cada 10 trofeos, TODO va más rápido
+        speed = Math.min(9, 3 + Math.floor(cups / 10) * 0.8);
+        roadScroll += speed * 0.016;
+        meters += speed * 0.2;
+        netSend();
+        // Carretera recta (sin curvas)
+        curveNow = 0;
+
+        const dz = speed * 0.0042;
+
+        // Copas y conos
+        if (--spawnTimer <= 0) {
+          spawnTimer = Math.max(46, 78 - cups);
+          const isCone = Math.random() < 0.24;
+          items.push({ lane: (Math.random() * 1.6 - 0.8), depth: 2.7, type: isCone ? 'cone' : 'cup', bob: Math.random() * 6, done: false });
+        }
+        for (let i = items.length - 1; i >= 0; i--) {
+          const it = items[i];
+          it.depth -= dz;
+          if (it.depth < -0.18) { items.splice(i, 1); continue; }
+          if (!it.done && it.depth < 0.14 && Math.abs(it.lane - car.lane) < 0.26) {
+            it.done = true;
+            const px = projX(it.lane, Math.max(it.depth, 0)), py = projY(Math.max(it.depth, 0));
+            if (it.type === 'cup') {
+              cups++;
+              rivalLead -= 0.13;                 // cada copa te acerca al rival
+              spawnParticles(px, py, '#ffd23f', 14);
+              floats.push({ x: px, y: py, life: 1, txt: pick(['¡BIEN!', '¡GENIAL!', '¡YUJU!', '¡TOMA!', '¡KA-CHOW!']) });
+              happySound();
+            } else if (car.crash <= 0) {
+              crashCar(px, py, 0.55);
+            }
+            items.splice(i, 1);
+          }
+        }
+
+        // Tráfico (pocos coches)
+        if (--trafficTimer <= 0) {
+          trafficTimer = 170 + Math.floor(Math.random() * 120);
+          traffic.push({ lane: (Math.random() * 1.4 - 0.7), depth: 2.7, color: pick(TRAFFIC_COLORS) });
+        }
+        for (let i = traffic.length - 1; i >= 0; i--) {
+          const c = traffic[i];
+          c.depth -= dz * 0.72;                       // van hacia delante: se acercan más despacio
+          if (c.depth < -0.25) { traffic.splice(i, 1); continue; }
+          if (car.crash <= 0 && c.depth < 0.16 && c.depth > -0.08 && Math.abs(c.lane - car.lane) < 0.3) {
+            const px = projX(c.lane, Math.max(c.depth, 0)), py = projY(Math.max(c.depth, 0));
+            crashCar(px, py, 1);
+            spawnParticles(px, py, c.color, 10, 8);
+            traffic.splice(i, 1);
+          }
+        }
+
+        // Rival IA (solo en 1 jugador; en multijugador el rival es tu hermano)
+        if (mode === 'solo') {
+          rivalLead = Math.max(-0.7, Math.min(1.8, rivalLead + 0.0009));
+          rival.lane = Math.sin(roadScroll * 0.5) * 0.6;
+          rival.depth = rivalLead + Math.sin(roadScroll * 0.3) * 0.16;
+          if (!rivalAhead && rivalLead < -0.45) {
+            rivalAhead = true;
+            floats.push({ x: CX(), y: VIEW_H * 0.42, life: 1.6, txt: '¡VAS 1º!' });
+            happySound();
+            for (let k = 0; k < 22; k++) spawnParticles(CX() + (Math.random() - 0.5) * 140, VIEW_H * 0.42, pick(['#ffd23f', '#fff', '#ff6b6b', '#4db8ff', '#37b24d']), 1, 7);
+          }
+          if (rivalLead > 0.25) rivalAhead = false;
+          if (rival.bumpCd > 0) rival.bumpCd--;
+          if (rival.bumpCd <= 0 && rival.depth < 0.22 && rival.depth > -0.1 && Math.abs(rival.lane - car.lane) < 0.3) {
+            const dir = Math.sign(car.lane - rival.lane) || 1;
+            car.lane += dir * 0.1; car.targetLane = Math.max(-0.9, Math.min(0.9, car.targetLane + dir * 0.08));
+            car.wobble = 8; rival.bumpCd = 45;
+            const px = projX(rival.lane, Math.max(rival.depth, 0)), py = projY(Math.max(rival.depth, 0));
+            spawnParticles(px, py, '#fff', 5, 4);
+            beep(300, 0.06, 'sine', 0.05);
+          }
+        }
+
+        // Cactus / rocas / elementos del oeste
+        if (--propTimer <= 0) {
+          propTimer = 30 + Math.floor(Math.random() * 24);
+          const side = Math.random() < 0.5 ? -1 : 1;
+          props.push({ lane: side * (1.22 + Math.random() * 0.5), depth: 2.7, kind: Math.floor(Math.random() * 5) });
+        }
+        for (let i = props.length - 1; i >= 0; i--) {
+          props[i].depth -= dz;
+          if (props[i].depth < -0.25) props.splice(i, 1);
+        }
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx; p.y += p.vy; p.vy += 0.25; p.life -= 0.022;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+      for (let i = floats.length - 1; i >= 0; i--) {
+        floats[i].y -= 1.1; floats[i].life -= 0.02;
+        if (floats[i].life <= 0) floats.splice(i, 1);
+      }
+      if (shake > 0) { shake *= 0.88; if (shake < 0.3) shake = 0; }
+    }
+
+    // ===================== HELPERS =====================
+    function roundRect(x, y, w, h, r) {
+      r = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+    function ell(cx, cy, rx, ry) { ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); }
+    function star(cx, cy, r, rot) {
+      ctx.beginPath();
+      for (let i = 0; i < 8; i++) {
+        const ang = rot + i * Math.PI / 4;
+        const rr = i % 2 === 0 ? r : r * 0.42;
+        ctx[i === 0 ? 'moveTo' : 'lineTo'](cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr);
+      }
+      ctx.closePath(); ctx.fill();
+    }
+    function band(xLF, xRF, yF, xLN, xRN, yN) {
+      ctx.beginPath();
+      ctx.moveTo(xLF, yF); ctx.lineTo(xRF, yF); ctx.lineTo(xRN, yN); ctx.lineTo(xLN, yN);
+      ctx.closePath(); ctx.fill();
+    }
+
+    // ===================== RENDER =====================
+    function draw() {
+      ctx.save();
+      if (shake > 0) ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+
+      drawSky();
+      drawMesas();
+      drawRoad();
+
+      // Escena (cactus + tráfico + objetos) de lejos a cerca
+      const scene = [];
+      for (const p of props) scene.push({ d: p.depth, kind: 'prop', ref: p });
+      for (const c of traffic) scene.push({ d: c.depth, kind: 'traffic', ref: c });
+      for (const it of items) scene.push({ d: it.depth, kind: 'item', ref: it });
+      if (mode === 'solo' && started && rival.depth > -0.06) scene.push({ d: rival.depth, kind: 'rival', ref: rival });
+      if (mode === 'mp' && opp.present) {
+        const od = (opp.meters - meters) * 0.05;
+        if (od > -0.05 && od < 2.7) scene.push({ d: od, kind: 'opp', ref: opp });
+      }
+      scene.sort((a, b) => b.d - a.d);
+      for (const o of scene) {
+        const d = Math.max(o.d, 0);
+        const s = 0.45 + fPersp(d) * 1.15;
+        const x = projX(o.ref.lane, d), y = projY(d);
+        if (o.kind === 'prop') drawProp(x, y, s, o.ref.kind);
+        else if (o.kind === 'traffic') drawTractor(x, y, s, o.ref.color);
+        else if (o.kind === 'rival') drawRivalCar(x, y, Math.min(s, 0.9));
+        else if (o.kind === 'opp') {
+          const p = carPreset(oppCar), s2 = Math.min(s, 0.92);
+          ctx.save(); ctx.translate(x, y); ctx.scale(s2, s2);
+          drawRacerBody(94, 70, p.g[0], p.g[1], p.g[2], p.roof, p.num, p.rocket);
+          ctx.restore();
+        }
+        else if (o.ref.type === 'cup') drawCup(x, y + Math.sin((t + o.ref.bob) * 0.15) * 2, s);
+        else drawCone(x, y, s);
+      }
+
+      drawCar();
+
+      for (const p of particles) {
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.fillStyle = p.color;
+        if (p.star) star(p.x, p.y, p.r + 1.5, p.life * 6);
+        else { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill(); }
+      }
+      ctx.globalAlpha = 1;
+
+      ctx.textAlign = 'center';
+      for (const f of floats) {
+        ctx.globalAlpha = Math.max(0, f.life);
+        ctx.fillStyle = '#fff'; ctx.strokeStyle = '#c0480f'; ctx.lineWidth = 4;
+        ctx.font = '800 26px system-ui';
+        ctx.strokeText(f.txt, f.x, f.y); ctx.fillText(f.txt, f.x, f.y);
+      }
+      ctx.globalAlpha = 1; ctx.textAlign = 'left';
+
+      drawHUD();
+      if (gameover) gameOverScreen();
+      else if (!started) startSplash();
+      ctx.restore();
+    }
+
+    function drawSky() {
+      const sky = ctx.createLinearGradient(0, 0, 0, HORIZON + 40);
+      sky.addColorStop(0, '#7ec3e8'); sky.addColorStop(0.6, '#cfe3e0'); sky.addColorStop(1, '#ffe1ad');
+      ctx.fillStyle = sky; ctx.fillRect(0, 0, VIEW_W, HORIZON + 40);
+      // Sol cálido
+      const sx = VIEW_W * 0.5, sy = 50;
+      const halo = ctx.createRadialGradient(sx, sy, 8, sx, sy, 90);
+      halo.addColorStop(0, 'rgba(255,236,180,0.9)'); halo.addColorStop(1, 'rgba(255,236,180,0)');
+      ctx.fillStyle = halo; ctx.fillRect(sx - 100, sy - 100, 200, 200);
+      ctx.fillStyle = '#fff0c8'; ctx.beginPath(); ctx.arc(sx, sy, 26, 0, Math.PI * 2); ctx.fill();
+      // Nubes finas
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      for (const c of clouds) { c.x -= 0.1; if (c.x < -90) c.x = VIEW_W + 60; cloud(c.x, c.y); }
+    }
+
+    function cloud(x, y) {
+      ctx.beginPath();
+      ctx.arc(x, y, 12, 0, Math.PI * 2);
+      ctx.arc(x + 16, y + 4, 16, 0, Math.PI * 2);
+      ctx.arc(x + 36, y + 2, 13, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Mesas / buttes del desierto en capas (parallax) — pocas, con formación central
+    function drawMesas() {
+      drawLandmark();
+      mesaRow(0.16, 360, ['#caa07e', '#b98b6a'], 46, 78, -0.5);
+      mesaRow(0.30, 320, ['#c2724a', '#a85a37'], 34, 60, 0.3);
+    }
+
+    // Gran formación rocosa central al fondo (la silueta característica del valle)
+    function drawLandmark() {
+      const cxp = CX() + Math.sin(roadScroll * 0.05) * 14;
+      const baseY = HORIZON + 2;
+      const W = Math.min(VIEW_W * 0.46, 380);
+      const top = HORIZON - 118;
+      const g = ctx.createLinearGradient(0, top, 0, baseY);
+      g.addColorStop(0, '#c08274'); g.addColorStop(1, '#9c5d4c');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(cxp - W / 2, baseY);
+      ctx.lineTo(cxp - W * 0.34, HORIZON - 54);
+      ctx.lineTo(cxp - W * 0.26, HORIZON - 52);
+      ctx.lineTo(cxp - W * 0.14, top + 14);          // pico 1
+      ctx.lineTo(cxp - W * 0.05, HORIZON - 66);
+      ctx.lineTo(cxp + W * 0.06, top);               // pico 2 (el más alto)
+      ctx.lineTo(cxp + W * 0.16, HORIZON - 60);
+      ctx.lineTo(cxp + W * 0.26, top + 28);          // pico 3
+      ctx.lineTo(cxp + W * 0.36, HORIZON - 50);
+      ctx.lineTo(cxp + W / 2, baseY);
+      ctx.closePath(); ctx.fill();
+      // estratos
+      ctx.fillStyle = 'rgba(0,0,0,0.07)';
+      ctx.fillRect(cxp - W * 0.4, HORIZON - 40, W * 0.8, 4);
+      ctx.fillRect(cxp - W * 0.34, HORIZON - 20, W * 0.68, 4);
+      // luz cálida en los picos
+      ctx.fillStyle = 'rgba(255,228,180,0.18)';
+      ctx.beginPath();
+      ctx.moveTo(cxp + W * 0.06, top); ctx.lineTo(cxp + W * 0.12, HORIZON - 40); ctx.lineTo(cxp + W * 0.02, HORIZON - 40);
+      ctx.closePath(); ctx.fill();
+      // bruma en la base para fundirla con el fondo
+      const haze = ctx.createLinearGradient(0, HORIZON - 30, 0, baseY);
+      haze.addColorStop(0, 'rgba(255,225,173,0)'); haze.addColorStop(1, 'rgba(255,225,173,0.5)');
+      ctx.fillStyle = haze;
+      ctx.fillRect(cxp - W / 2, HORIZON - 30, W, 32);
+    }
+    function mesaRow(par, spacing, cols, minH, maxH, seedShift) {
+      const off = (roadScroll * 7 * par) % spacing;
+      for (let i = -1; i < Math.ceil(VIEW_W / spacing) + 2; i++) {
+        const bx = i * spacing - off;
+        const r = Math.abs(Math.sin((i + seedShift) * 12.9898) * 43758.5);
+        const hh = minH + (r % 1) * (maxH - minH);
+        const wTop = spacing * (0.34 + (r * 1.7 % 1) * 0.18);
+        const wBot = wTop + 22;
+        const topY = HORIZON - hh, botY = HORIZON + 2;
+        const g = ctx.createLinearGradient(0, topY, 0, botY);
+        g.addColorStop(0, cols[0]); g.addColorStop(1, cols[1]);
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.moveTo(bx - wBot / 2, botY);
+        ctx.lineTo(bx - wTop / 2, topY + 6);
+        ctx.quadraticCurveTo(bx - wTop / 2, topY, bx - wTop / 2 + 6, topY);
+        ctx.lineTo(bx + wTop / 2 - 6, topY);
+        ctx.quadraticCurveTo(bx + wTop / 2, topY, bx + wTop / 2, topY + 6);
+        ctx.lineTo(bx + wBot / 2, botY);
+        ctx.closePath(); ctx.fill();
+        // estratos (líneas horizontales)
+        ctx.fillStyle = 'rgba(0,0,0,0.08)';
+        ctx.fillRect(bx - wTop / 2 + 4, topY + hh * 0.42, wTop - 8, 3);
+        ctx.fillRect(bx - wBot / 2 + 8, topY + hh * 0.68, wBot - 16, 3);
+        // luz cálida en la cara izquierda
+        ctx.fillStyle = 'rgba(255,220,150,0.16)';
+        ctx.fillRect(bx - wTop / 2 + 2, topY + 2, 5, hh - 4);
+      }
+    }
+
+    function drawRoad() {
+      const cx = CX();
+      // Arena del desierto
+      const sand = ctx.createLinearGradient(0, HORIZON, 0, VIEW_H);
+      sand.addColorStop(0, '#e7c489'); sand.addColorStop(1, '#d3a866');
+      ctx.fillStyle = sand;
+      ctx.fillRect(0, HORIZON, VIEW_W, VIEW_H - HORIZON);
+
+      // Bandas en perspectiva (tonos suaves, sin parpadeo)
+      const ROWS = 18, STEP = 0.2;
+      const scrollD = roadScroll * 0.5;
+      for (let i = ROWS; i >= 0; i--) {
+        const dF = (i + 1) * STEP - (scrollD % STEP);
+        const dN = i * STEP - (scrollD % STEP);
+        const yF = projY(Math.max(dF, 0));
+        const yN = projY(Math.max(dN, 0));
+        if (yN <= yF) continue;
+        const parity = (i + Math.floor(scrollD / STEP)) % 2;
+        const hF = halfRoad(Math.max(dF, 0)), hN = halfRoad(Math.max(dN, 0));
+        const cF = cx + curveAt(Math.max(dF, 0)), cN = cx + curveAt(Math.max(dN, 0));
+
+        // arena (dos tonos casi iguales)
+        ctx.fillStyle = parity ? '#e3bf82' : '#dfba7c';
+        ctx.fillRect(0, yF, VIEW_W, yN - yF + 1);
+
+        // rumble lateral (rojo arena / crema)
+        ctx.fillStyle = parity ? '#c96b4f' : '#efe2cb';
+        band(cF - hF * 1.14, cF - hF, yF, cN - hN * 1.14, cN - hN, yN);
+        band(cF + hF, cF + hF * 1.14, yF, cN + hN, cN + hN * 1.14, yN);
+
+        // asfalto (tono único)
+        ctx.fillStyle = '#5b554f';
+        band(cF - hF, cF + hF, yF, cN - hN, cN + hN, yN);
+
+        // línea central discontinua
+        if (parity) {
+          ctx.fillStyle = 'rgba(245,225,150,0.8)';
+          band(cF - hF * 0.035, cF + hF * 0.035, yF, cN - hN * 0.035, cN + hN * 0.035, yN);
+        }
+      }
+    }
+
+    // Ambiente del oeste: cactus, roca, cráneo de vaca y cartel
+    function drawProp(x, y, sc, kind) {
+      ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
+      ctx.fillStyle = 'rgba(0,0,0,0.16)'; ell(0, 2, 15, 4);
+      if (kind === 0 || kind === 1) {
+        // saguaro
+        const g = ctx.createLinearGradient(-8, 0, 8, 0);
+        g.addColorStop(0, '#3f8f3a'); g.addColorStop(0.5, '#5fbf4a'); g.addColorStop(1, '#3f8f3a');
+        ctx.fillStyle = g;
+        roundRect(-6, -52, 12, 54, 6); ctx.fill();
+        roundRect(-22, -34, 9, 22, 5); ctx.fill();
+        roundRect(-21, -50, 9, 18, 5); ctx.fill();
+        roundRect(13, -42, 9, 24, 5); ctx.fill();
+        roundRect(13, -56, 9, 18, 5); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.12)'; roundRect(-4, -50, 3, 48, 2); ctx.fill();
+        ctx.fillStyle = '#ffd23f'; ell(0, -54, 3, 3);
+      } else if (kind === 2) {
+        // roca rojiza
+        const g = ctx.createLinearGradient(0, -26, 0, 2);
+        g.addColorStop(0, '#c8704a'); g.addColorStop(1, '#9a5230');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.moveTo(-18, 2); ctx.lineTo(-12, -18); ctx.lineTo(2, -24);
+        ctx.lineTo(16, -14); ctx.lineTo(18, 2); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = 'rgba(255,220,170,0.18)';
+        ctx.beginPath(); ctx.moveTo(2, -24); ctx.lineTo(16, -14); ctx.lineTo(6, -12); ctx.closePath(); ctx.fill();
+      } else if (kind === 3) {
+        // cráneo de vaca (oeste)
+        ctx.strokeStyle = '#ece3d2'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(-7, -16); ctx.quadraticCurveTo(-19, -20, -22, -9); ctx.stroke();   // cuerno izq
+        ctx.beginPath(); ctx.moveTo(7, -16); ctx.quadraticCurveTo(19, -20, 22, -9); ctx.stroke();       // cuerno der
+        ctx.fillStyle = '#f1ead9';
+        ctx.beginPath();
+        ctx.moveTo(-9, -17); ctx.lineTo(9, -17); ctx.quadraticCurveTo(11, -6, 5, 0);
+        ctx.lineTo(0, 6); ctx.lineTo(-5, 0); ctx.quadraticCurveTo(-11, -6, -9, -17); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#5a4a3a'; ell(-4, -9, 2, 2.6); ell(4, -9, 2, 2.6);
+        ctx.beginPath(); ctx.moveTo(0, -3); ctx.lineTo(-2, 2); ctx.lineTo(2, 2); ctx.closePath(); ctx.fill();
+      } else {
+        // cartel de madera del oeste
+        ctx.fillStyle = '#6e4a28'; roundRect(-3, -30, 6, 32, 2); ctx.fill();
+        const g = ctx.createLinearGradient(0, -30, 0, -14);
+        g.addColorStop(0, '#a9763f'); g.addColorStop(1, '#8a5e30');
+        ctx.fillStyle = g; roundRect(-17, -30, 34, 15, 2); ctx.fill();
+        ctx.fillStyle = 'rgba(60,40,20,0.5)';
+        ctx.fillRect(-12, -25, 24, 2); ctx.fillRect(-12, -21, 17, 2);
+        ctx.fillStyle = '#5a3c1e'; ell(-13, -27, 1, 1); ell(13, -27, 1, 1);
+      }
+      ctx.restore();
+    }
+
+    function drawCup(x, y, sc) {
+      ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
+      const tw = 0.5 + Math.sin(t * 0.1 + x) * 0.5;
+      ctx.fillStyle = 'rgba(255,240,160,' + (0.3 * tw) + ')'; ell(0, 0, 20, 20);
+      const g = ctx.createLinearGradient(-12, -12, 12, 12);
+      g.addColorStop(0, '#ffe98a'); g.addColorStop(0.5, '#ffd23f'); g.addColorStop(1, '#e0a000');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.moveTo(-11, -12); ctx.quadraticCurveTo(-13, 4, 0, 8); ctx.quadraticCurveTo(13, 4, 11, -12); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#e0a000'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(-11, -7, 5, Math.PI * 0.4, Math.PI * 1.6); ctx.stroke();
+      ctx.beginPath(); ctx.arc(11, -7, 5, -Math.PI * 0.6, Math.PI * 0.6); ctx.stroke();
+      ctx.fillStyle = '#e0a000'; roundRect(-3, 8, 6, 6, 1); ctx.fill(); roundRect(-9, 13, 18, 5, 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,' + tw + ')'; star(6, -8, 3, t * 0.1);
+      ctx.restore();
+    }
+
+    function drawCone(x, y, sc) {
+      ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
+      ctx.fillStyle = 'rgba(0,0,0,0.18)'; ell(0, 16, 16, 5);
+      const g = ctx.createLinearGradient(0, -18, 0, 16);
+      g.addColorStop(0, '#ff8a3c'); g.addColorStop(1, '#ef5f1f');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.moveTo(0, -18); ctx.lineTo(14, 14); ctx.lineTo(-14, 14); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.moveTo(-8, 1); ctx.lineTo(8, 1); ctx.lineTo(10, 7); ctx.lineTo(-10, 7); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#d84e16'; roundRect(-16, 14, 32, 5, 2); ctx.fill();
+      ctx.restore();
+    }
+
+    // Tractor de granja (obstáculo lento), visto por detrás — ruedas traseras enormes
+    function drawTractor(x, y, sc, color) {
+      ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
+      const W = 58, H = 56;
+      ctx.fillStyle = 'rgba(0,0,0,0.28)'; ell(0, H / 2 + 4, W / 2 + 10, 9);
+
+      // ruedas delanteras pequeñas (delante = arriba)
+      for (const s of [-1, 1]) {
+        ctx.fillStyle = '#1a1c1f'; ell(s * 16, -H / 2 + 13, 6, 7);
+        ctx.fillStyle = '#555'; ell(s * 16, -H / 2 + 13, 2.4, 2.8);
+      }
+
+      // cuerpo / motor
+      const body = ctx.createLinearGradient(0, -H / 2, 0, H / 2);
+      body.addColorStop(0, shade(color, 1.2)); body.addColorStop(0.55, color); body.addColorStop(1, shade(color, 0.72));
+      ctx.fillStyle = body;
+      roundRect(-W * 0.20, -H / 2 + 2, W * 0.40, 16, 6); ctx.fill();   // capó delantero estrecho
+      roundRect(-W * 0.28, -H / 2 + 12, W * 0.56, H * 0.6, 7); ctx.fill();
+
+      // tubo de escape con humo
+      ctx.fillStyle = '#9aa0a8'; roundRect(-W * 0.20, -H / 2 + 2, 4, 18, 2); ctx.fill();
+      ctx.fillStyle = '#bcc2ca'; roundRect(-W * 0.20 - 1, -H / 2, 6, 3, 1); ctx.fill();
+      for (let i = 0; i < 2; i++) {
+        const p = (t * 0.5 + i * 20) % 30;
+        ctx.fillStyle = 'rgba(150,150,150,' + (0.32 - p / 100) + ')';
+        ctx.beginPath(); ctx.arc(-W * 0.20 + 2 + Math.sin(p * 0.2) * 2, -H / 2 - 2 - p, 2 + p * 0.1, 0, Math.PI * 2); ctx.fill();
+      }
+
+      // ruedas traseras GRANDES con dibujo
+      for (const s of [-1, 1]) {
+        ctx.fillStyle = '#15171a'; ell(s * 24, H / 2 - 12, 11, 16);
+        ctx.fillStyle = '#0c0d0f';
+        for (let a = -2; a <= 2; a++) { roundRect(s * 24 - 9, H / 2 - 12 + a * 5 - 1.4, 18, 2.2, 1); ctx.fill(); }
+        ctx.fillStyle = '#c9ced6'; ell(s * 24, H / 2 - 12, 4.5, 5);
+        ctx.fillStyle = '#8b9099'; ell(s * 24, H / 2 - 12, 1.8, 2);
+      }
+      // guardabarros sobre las ruedas
+      ctx.strokeStyle = shade(color, 0.82); ctx.lineWidth = 6;
+      for (const s of [-1, 1]) { ctx.beginPath(); ctx.arc(s * 24, H / 2 - 12, 15, Math.PI * 1.04, Math.PI * 1.96); ctx.stroke(); }
+
+      // asiento + respaldo + volante
+      ctx.fillStyle = '#3a3e44'; roundRect(-7, -7, 14, 6, 3); ctx.fill();
+      ctx.fillStyle = '#2a2d31'; roundRect(-7, -2, 14, 9, 3); ctx.fill();
+      ctx.strokeStyle = '#1c1e22'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, -12, 5, 0, Math.PI * 2); ctx.stroke();
+
+      // pilotos + enganche
+      ctx.fillStyle = '#ff5a4a';
+      roundRect(-W * 0.30, H / 2 - 22, 5, 4, 1); ctx.fill();
+      roundRect(W * 0.30 - 5, H / 2 - 22, 5, 4, 1); ctx.fill();
+      ctx.fillStyle = '#3a3f47'; roundRect(-3, H / 2 - 6, 6, 6, 2); ctx.fill();
+      ctx.restore();
+    }
+    function shade(hex, f) {
+      const n = parseInt(hex.slice(1), 16);
+      let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+      r = Math.min(255, r * f) | 0; g = Math.min(255, g * f) | 0; b = Math.min(255, b * f) | 0;
+      return 'rgb(' + r + ',' + g + ',' + b + ')';
+    }
+
+    // Carrocería compartida (coupé deportivo). Rayo y el rival usan el MISMO diseño, distinto color.
+    function drawRacerBody(w, h, g0, g1, g2, roof, number, rocket) {
+      const top = -h / 2, bot = h / 2;
+      ctx.fillStyle = 'rgba(0,0,0,0.30)'; ell(0, bot + 6, w / 2 + 12, 12);
+      // propulsores de cohete (coche azul "Rey")
+      if (rocket) {
+        for (const fx of [-9, 9]) {
+          const fl = 12 + Math.abs(Math.sin(t * 0.6 + fx)) * 8;
+          const g = ctx.createLinearGradient(0, bot, 0, bot + fl + 6);
+          g.addColorStop(0, '#fff7b0'); g.addColorStop(0.45, '#ff9a3c'); g.addColorStop(1, 'rgba(255,70,20,0)');
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.moveTo(fx - 4, bot - 1); ctx.quadraticCurveTo(fx, bot + fl + 6, fx + 4, bot - 1);
+          ctx.closePath(); ctx.fill();
+        }
+      }
+      for (const s of [-1, 1]) {
+        const wx = s * (w * 0.40);
+        ctx.fillStyle = '#15171a'; roundRect(wx - 10, bot - 19, 20, 24, 7); ctx.fill();
+        ctx.fillStyle = '#2c2f34'; roundRect(wx - 6, bot - 15, 12, 15, 4); ctx.fill();
+        ctx.fillStyle = '#c9ced6'; ell(wx, bot - 8, 3.4, 4.2);
+      }
+      const body = ctx.createLinearGradient(0, top, 0, bot);
+      body.addColorStop(0, g0); body.addColorStop(0.5, g1); body.addColorStop(1, g2);
+      ctx.fillStyle = body;
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.5, bot - 6);
+      ctx.lineTo(w * 0.5, bot - 6);
+      ctx.quadraticCurveTo(w * 0.53, top + 26, w * 0.30, top + 14);
+      ctx.quadraticCurveTo(w * 0.16, top + 6, 0, top + 6);
+      ctx.quadraticCurveTo(-w * 0.16, top + 6, -w * 0.30, top + 14);
+      ctx.quadraticCurveTo(-w * 0.53, top + 26, -w * 0.5, bot - 6);
+      ctx.closePath(); ctx.fill();
+      roundRect(-w / 2, bot - 16, w, 12, 8); ctx.fill();
+      ctx.fillStyle = 'rgba(0,0,0,0.15)';
+      ell(-w * 0.42, bot - 13, 10, 9); ell(w * 0.42, bot - 13, 10, 9);
+      ctx.fillStyle = 'rgba(255,255,255,0.20)';
+      roundRect(-w * 0.26, top + 12, w * 0.52, 5, 3); ctx.fill();
+      // techo fastback
+      ctx.fillStyle = roof;
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.2, top + 16);
+      ctx.quadraticCurveTo(0, top - 2, w * 0.2, top + 16);
+      ctx.lineTo(w * 0.17, top + 30); ctx.lineTo(-w * 0.17, top + 30);
+      ctx.closePath(); ctx.fill();
+      // luneta
+      const gl = ctx.createLinearGradient(0, top + 16, 0, top + 32);
+      gl.addColorStop(0, '#3a4350'); gl.addColorStop(1, '#222831');
+      ctx.fillStyle = gl;
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.16, top + 18); ctx.lineTo(w * 0.16, top + 18);
+      ctx.lineTo(w * 0.2, top + 30); ctx.lineTo(-w * 0.2, top + 30); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.13, top + 19); ctx.lineTo(-w * 0.02, top + 19);
+      ctx.lineTo(-w * 0.08, top + 29); ctx.lineTo(-w * 0.18, top + 29); ctx.closePath(); ctx.fill();
+      // rayo amarillo + número
+      ctx.fillStyle = '#ffd23f'; ctx.strokeStyle = '#e8a000'; ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(-9, top + 34); ctx.lineTo(7, top + 34); ctx.lineTo(-1, top + 43);
+      ctx.lineTo(10, top + 43); ctx.lineTo(-8, bot - 20); ctx.lineTo(0, top + 48);
+      ctx.lineTo(-11, top + 48); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#fff'; ell(0, bot - 22, 12, 12);
+      ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(0, bot - 22, 12, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = '#111'; ctx.font = '900 14px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(number, 0, bot - 21); ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+      // barra de luces LED
+      ctx.fillStyle = '#4e0c06'; roundRect(-w * 0.46, bot - 16, w * 0.92, 8, 4); ctx.fill();
+      const tl = ctx.createLinearGradient(0, bot - 15, 0, bot - 9);
+      tl.addColorStop(0, '#ff6a4a'); tl.addColorStop(1, '#d81f10');
+      ctx.fillStyle = tl; roundRect(-w * 0.44, bot - 15, w * 0.88, 5, 3); ctx.fill();
+      ctx.fillStyle = 'rgba(255,200,170,0.9)'; roundRect(-w * 0.42, bot - 14.5, w * 0.84, 1.5, 1); ctx.fill();
+      // difusor + cuádruple escape
+      ctx.fillStyle = '#202327'; roundRect(-w * 0.2, bot - 7, w * 0.4, 7, 2); ctx.fill();
+      ctx.fillStyle = '#3a3f47';
+      for (let k = -2; k <= 2; k++) { roundRect(k * 5 - 1, bot - 6, 2, 6, 1); ctx.fill(); }
+      ctx.fillStyle = '#cdd3da';
+      ell(-13, bot - 1, 2.5, 2); ell(-7, bot - 1, 2.5, 2); ell(7, bot - 1, 2.5, 2); ell(13, bot - 1, 2.5, 2);
+    }
+
+    // Rival (Chick): MISMO coche que Rayo pero verde
+    function drawRivalCar(x, y, sc) {
+      ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
+      drawRacerBody(94, 70, '#62e055', '#2faa3a', '#11781f', '#1f9c2e', '86');
+      ctx.restore();
+      ctx.textAlign = 'left';
+    }
+
+    // Coche de Rayo: coupé deportivo bajo y ancho (vista trasera). Da trompos al chocar.
+    function drawCar() {
+      const wob = car.wobble > 0 ? Math.sin(t * 0.8) * 2.5 : 0;
+      const bounce = Math.sin(t * 0.22) * 0.7;
+      const x = CX() + car.lane * halfBottom() * 0.8 + wob;
+      const y = VIEW_H - 52 + bounce;
+      const h = car.h;
+      const spinA = car.crash > 0 ? (1 - car.crash / car.crashDur) * Math.PI * 2 * car.spins : 0;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(car.tilt + spinA);
+      // color del jugador (rojo Rayo, o azul-cohete si eres el que se une)
+      const mp = carPreset(myCar);
+      drawRacerBody(car.w, car.h, mp.g[0], mp.g[1], mp.g[2], mp.roof, mp.num, mp.rocket);
+      ctx.restore();
+
+      // estrellitas de mareo girando sobre el coche tras el trompo
+      if (car.crash > 0) {
+        for (let k = 0; k < 3; k++) {
+          const a = t * 0.2 + k * Math.PI * 2 / 3;
+          ctx.fillStyle = '#ffe27a';
+          star(x + Math.cos(a) * 16, y - h / 2 - 6 + Math.sin(a) * 5, 4, t * 0.2);
+        }
+      }
+      ctx.textAlign = 'left';
+    }
+
+    function drawHeart(cx, cy, s, filled) {
+      ctx.fillStyle = filled ? '#ff5a6e' : 'rgba(255,255,255,0.25)';
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + s * 0.3);
+      ctx.bezierCurveTo(cx, cy, cx - s, cy - s * 0.5, cx - s, cy - s * 0.1);
+      ctx.bezierCurveTo(cx - s, cy + s * 0.5, cx, cy + s * 0.7, cx, cy + s);
+      ctx.bezierCurveTo(cx, cy + s * 0.7, cx + s, cy + s * 0.5, cx + s, cy - s * 0.1);
+      ctx.bezierCurveTo(cx + s, cy - s * 0.5, cx, cy, cx, cy + s * 0.3);
+      ctx.fill();
+    }
+
+    function drawHUD() {
+      ctx.save();
+      // panel izquierdo: trofeos · metros · posición
+      ctx.fillStyle = 'rgba(40,20,8,0.45)';
+      roundRect(14, 14, 232, 44, 14); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1.5;
+      roundRect(14, 14, 232, 44, 14); ctx.stroke();
+      drawCup(36, 36, 1);
+      ctx.fillStyle = '#fff'; ctx.font = '800 22px system-ui';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText('×' + cups, 56, 37);
+      ctx.fillStyle = '#ffe6a8'; ctx.font = '800 18px system-ui';
+      ctx.fillText(Math.floor(meters) + ' m', 116, 37);
+      const first = (mode === 'mp' && opp.present) ? (meters >= opp.meters) : (rivalLead < 0);
+      ctx.fillStyle = first ? '#ffd23f' : '#e8e8e8'; ctx.font = '800 18px system-ui';
+      ctx.fillText(first ? '1º' : '2º', 214, 37);
+      ctx.restore();
+
+      // vidas (5 corazones) arriba al centro
+      ctx.save();
+      for (let i = 0; i < 5; i++) drawHeart(CX() - 52 + i * 26, 28, 9, i < lives);
+      ctx.restore();
+      ctx.textBaseline = 'alphabetic';
+    }
+
+    function startSplash() {
+      ctx.fillStyle = 'rgba(30,16,8,0.55)';
+      ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffd23f'; ctx.font = '800 40px system-ui';
+      ctx.fillText('⚡ ¡A CORRER!', VIEW_W / 2, VIEW_H / 2 - 14);
+      ctx.fillStyle = '#fff'; ctx.font = '700 19px system-ui';
+      ctx.globalAlpha = 0.6 + Math.sin(t * 0.08) * 0.4;
+      ctx.fillText('Toca para empezar · flechas para conducir', VIEW_W / 2, VIEW_H / 2 + 22);
+      ctx.globalAlpha = 1; ctx.textAlign = 'left';
+    }
+
+    function gameOverScreen() {
+      ctx.fillStyle = 'rgba(20,8,4,0.62)';
+      ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ff6a4a'; ctx.font = '800 44px system-ui';
+      ctx.fillText('¡FIN!', VIEW_W / 2, VIEW_H / 2 - 20);
+      ctx.fillStyle = '#fff'; ctx.font = '800 22px system-ui';
+      ctx.fillText('🏆 ' + cups + '   ·   ' + Math.floor(meters) + ' m', VIEW_W / 2, VIEW_H / 2 + 12);
+      ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = '700 18px system-ui';
+      ctx.globalAlpha = 0.6 + Math.sin(t * 0.08) * 0.4;
+      ctx.fillText('Toca para volver a jugar', VIEW_W / 2, VIEW_H / 2 + 44);
+      ctx.globalAlpha = 1; ctx.textAlign = 'left';
+    }
+
+    function loop() { update(); draw(); requestAnimationFrame(loop); }
+    loop();
+  </script>
+</body>
+</html>
