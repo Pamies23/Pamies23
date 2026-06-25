@@ -23,7 +23,6 @@
       --ink:   #131311;   /* casi negro */
       --lime:  #C7F23E;   /* verde lima eléctrico (consumido en la comida) */
       --lime-dim: #7FA22E; /* lima apagado (total del día / resto) */
-      --lime-over: #ECFF8F; /* lima claro: vuelta extra al pasarse (estilo Apple Watch) */
       --track: #23231F;   /* vía oscura de las barras/anillo (lima resalta igual que en calorías) */
       --green: #2FA84F;   /* verde check */
       --red:   #E2483D;   /* eliminar */
@@ -198,12 +197,6 @@
       stroke: var(--lime); stroke-linecap: round; stroke-dasharray: 0 100;
       transition: stroke-dasharray 0.85s cubic-bezier(.22,.61,.36,1);
     }
-    /* Segunda vuelta al pasarse (estilo Apple Watch): arco claro encima con sombra */
-    .ring-over {
-      stroke: var(--lime-over); stroke-linecap: round; stroke-dasharray: 0 100;
-      transition: stroke-dasharray 0.85s cubic-bezier(.22,.61,.36,1);
-      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.55));
-    }
     .ring-pct {
       position: relative;
       font-family: var(--disp); font-weight: 800; font-size: 21px; color: #fff;
@@ -229,11 +222,9 @@
     .macro .mini { position: relative; height: 12px; border-radius: 99px; background: var(--track); overflow: hidden; display: flex; }
     .macro .mini .seg { height: 100%; background: var(--lime); width: 0; transition: width 0.7s cubic-bezier(.22,.61,.36,1); }
     .macro .mini .seg.rest { background: var(--lime-dim); }
-    /* Desbordamiento: si te pasas, una "segunda vuelta" en lima claro encima */
-    .macro .mini .seg.over {
-      position: absolute; left: 0; top: 0; height: 100%;
-      background: var(--lime-over); box-shadow: 2px 0 6px rgba(0,0,0,0.45);
-    }
+    /* Si te pasas del objetivo, el número se pone en rojo como aviso */
+    .macro .val.over { color: var(--red); }
+    .hero .now.over { color: var(--red); }
 
     /* ---------- Cabecera de sección ---------- */
     .section-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
@@ -455,7 +446,7 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.5</div>
+      <div class="avatar" id="version">V.6</div>
     </header>
 
     <div class="view-tabs" id="viewTabs">
@@ -476,7 +467,6 @@
           <circle class="ring-track" cx="18" cy="18" r="15.915"></circle>
           <circle class="ring-rest" id="kcalRingRest" cx="18" cy="18" r="15.915"></circle>
           <circle class="ring-sel"  id="kcalRingSel"  cx="18" cy="18" r="15.915"></circle>
-          <circle class="ring-over" id="kcalRingOver" cx="18" cy="18" r="15.915"></circle>
         </svg>
         <span class="ring-pct" id="kcalRingPct">0%</span>
       </div>
@@ -765,17 +755,15 @@
         $("kcalGoal").style.display = "none";
         $("kcalSub").innerHTML = "<b>" + pctDay + "%</b> de las " + dayKcal.toLocaleString("es-ES") + " kcal de hoy";
       }
-      const rawPct = goal > 0 ? view.kcal / goal * 100 : 0;
-      const kSel = Math.min(100, Math.round(rawPct));
+      const kSel = Math.min(100, Math.round(view.kcal / goal * 100));
       const kRest = isDay ? 0 : Math.min(100 - kSel, Math.round(Math.max(0, dayKcal - view.kcal) / goal * 100));
-      const kOver = isDay ? Math.min(100, Math.max(0, Math.round(rawPct - 100))) : 0;
-      $("kcalRingPct").textContent = Math.round(rawPct) + "%";   // sin tope: si te pasas, >100%
+      $("kcalRingPct").textContent = kSel + "%";
+      $("kcalNow").classList.toggle("over", view.kcal > goal);   // rojo si te pasas
       requestAnimationFrame(() => {
         // animación de "dibujado" del anillo (como el llenado de las barras)
         $("kcalRingRest").style.strokeDashoffset = -kSel;
         $("kcalRingRest").style.strokeDasharray = kRest + " 100";
         $("kcalRingSel").style.strokeDasharray = kSel + " 100";
-        $("kcalRingOver").style.strokeDasharray = kOver + " 100";   // segunda vuelta encima
         if (isDay) fitGoalWidth();
       });
 
@@ -786,10 +774,9 @@
         { key: "f", name: "Grasas",        vVal: view.fat,     dVal: sum.fat,     goal: DATA.goal.fat }
       ];
       $("macros").innerHTML = macros.map(m => {
-        const rawM = m.goal > 0 ? m.vVal / m.goal * 100 : 0;
-        const sPct = Math.min(100, Math.round(rawM));
+        const sPct = Math.min(100, Math.round(m.vVal / m.goal * 100));
         const rPct = isDay ? 0 : Math.min(100 - sPct, Math.round(Math.max(0, m.dVal - m.vVal) / m.goal * 100));
-        const oPct = isDay ? Math.min(100, Math.max(0, Math.round(rawM - 100))) : 0;   // desbordamiento
+        const over = m.vVal > m.goal;   // rojo si te pasas
         const valText = isDay
           ? `${m.vVal}<span> / ${m.goal} g</span>`
           : `${m.vVal}<span> g · <span class="pct">${m.dVal > 0 ? Math.round(m.vVal / m.dVal * 100) : 0}%</span> del día</span>`;
@@ -797,12 +784,11 @@
           <div class="macro ${m.key}">
             <div class="top">
               <div class="name">${m.name}</div>
-              <div class="val">${valText}</div>
+              <div class="val${over ? " over" : ""}">${valText}</div>
             </div>
             <div class="mini">
               <span class="seg" data-w="${sPct}"></span>
               <span class="seg rest" data-w="${rPct}"></span>
-              <span class="seg over" data-w="${oPct}"></span>
             </div>
           </div>`;
       }).join("");
@@ -1017,7 +1003,7 @@
     });
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.5";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.6";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadLog();
     render();
