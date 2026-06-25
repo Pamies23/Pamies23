@@ -295,25 +295,37 @@
       transition: transform 0.36s cubic-bezier(.22,.61,.36,1); will-change: transform;
     }
     .sheet.open { transform: translateY(0); }
-    .sheet-grip {
-      width: 38px; height: 5px; border-radius: 99px; background: var(--line);
-      margin: calc(env(safe-area-inset-top) + 10px) auto 0; flex-shrink: 0;
+    .sheet-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: calc(env(safe-area-inset-top) + 16px) 18px 6px; flex-shrink: 0;
     }
-    .standalone .sheet-grip { margin-top: calc(env(safe-area-inset-top) + 16px); }
-    .sheet-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px 6px; flex-shrink: 0; }
     .sheet-head h2 { font-family: var(--exp); font-weight: 800; font-size: 19px; text-transform: uppercase; letter-spacing: -0.01em; }
     .sheet-close { background: none; border: none; color: var(--ink); font-family: var(--disp); font-size: 14px; font-weight: 700; cursor: pointer; padding: 4px 0; }
     .sheet-spacer { width: 48px; }
 
-    .meal-tabs { display: flex; gap: 8px; padding: 10px 18px 4px; flex-shrink: 0; overflow-x: auto; }
-    .meal-tabs button {
+    /* Segmentado Alimentos / Recetas */
+    .type-tabs { display: flex; gap: 8px; padding: 10px 18px 4px; flex-shrink: 0; }
+    .type-tabs button {
       flex: 1 0 auto; border: 1px solid var(--line); background: var(--card);
-      color: var(--ink); border-radius: 99px; padding: 9px 16px;
+      color: var(--ink); border-radius: 99px; padding: 10px 16px;
       font-family: var(--disp); font-size: 13px; font-weight: 700;
       letter-spacing: 0.02em; text-transform: uppercase; cursor: pointer;
       transition: all 0.15s ease; white-space: nowrap;
     }
-    .meal-tabs button.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .type-tabs button.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+    /* Categorías (Salado / Dulce…) */
+    .cat-tabs { display: flex; gap: 8px; padding: 8px 18px 2px; flex-shrink: 0; overflow-x: auto; scrollbar-width: none; }
+    .cat-tabs::-webkit-scrollbar { display: none; }
+    .cat-tabs.hidden { display: none; }
+    .cat-tabs button {
+      flex: 0 0 auto; border: none; background: var(--card); color: var(--muted);
+      border-radius: 99px; padding: 7px 14px;
+      font-family: var(--disp); font-size: 12px; font-weight: 700;
+      letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer;
+      transition: all 0.15s ease; white-space: nowrap;
+    }
+    .cat-tabs button.active { background: var(--lime); color: var(--ink); }
 
     .search-wrap { position: relative; padding: 12px 18px 8px; flex-shrink: 0; }
     .search-ico { position: absolute; left: 32px; top: 50%; transform: translateY(-30%); font-size: 15px; opacity: 0.55; pointer-events: none; }
@@ -398,6 +410,18 @@
     .modal-title h3 { font-family: var(--disp); font-weight: 800; font-size: 19px; text-transform: uppercase; letter-spacing: 0.01em; color: var(--ink); }
     .modal-ref { font-size: 13px; color: var(--muted); margin-top: 2px; font-weight: 500; }
 
+    /* Selector de comida dentro del modal */
+    .modal-meals { display: flex; gap: 7px; margin-bottom: 14px; overflow-x: auto; scrollbar-width: none; }
+    .modal-meals::-webkit-scrollbar { display: none; }
+    .modal-meals button {
+      flex: 1 0 auto; border: 1px solid var(--line); background: var(--card); color: var(--ink);
+      border-radius: 99px; padding: 9px 12px;
+      font-family: var(--disp); font-size: 12px; font-weight: 700;
+      letter-spacing: 0.02em; text-transform: uppercase; cursor: pointer;
+      transition: all 0.15s ease; white-space: nowrap;
+    }
+    .modal-meals button.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+
     .grams-field {
       display: flex; align-items: center; gap: 14px;
       background: var(--card); border-radius: var(--r-md);
@@ -445,7 +469,7 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.7</div>
+      <div class="avatar" id="version">V.8</div>
     </header>
 
     <div class="view-tabs" id="viewTabs">
@@ -492,23 +516,28 @@
 
   <!-- ===================== Pantalla Añadir comida ===================== -->
   <section class="sheet" id="sheet" aria-hidden="true">
-    <div class="sheet-grip"></div>
     <header class="sheet-head">
       <button class="sheet-close" id="sheetClose">Cerrar</button>
       <h2>Añadir comida</h2>
       <span class="sheet-spacer"></span>
     </header>
 
-    <div class="meal-tabs" id="mealTabs">
-      <button data-meal="Desayuno">Desayuno</button>
-      <button data-meal="Comida">Comida</button>
-      <button data-meal="Cena">Cena</button>
-      <button data-meal="Snack">Snack</button>
+    <!-- Alimentos sueltos o recetas -->
+    <div class="type-tabs" id="typeTabs">
+      <button data-type="alimentos" class="active">Alimentos</button>
+      <button data-type="recetas">Recetas</button>
+    </div>
+
+    <!-- Categorías (solo en Alimentos) -->
+    <div class="cat-tabs" id="catTabs">
+      <button data-cat="todos" class="active">Todos</button>
+      <button data-cat="salado">Salado</button>
+      <button data-cat="dulce">Dulce</button>
     </div>
 
     <div class="search-wrap">
       <span class="search-ico">🔍</span>
-      <input id="search" type="search" placeholder="Buscar alimento…"
+      <input id="search" type="search" placeholder="Buscar…"
              autocomplete="off" autocorrect="off" autocapitalize="none">
     </div>
 
@@ -530,7 +559,15 @@
         </div>
       </div>
 
-      <div class="grams-field">
+      <!-- ¿A qué comida lo asigno? (antes estaba arriba del todo) -->
+      <div class="modal-meals" id="mMeals">
+        <button data-meal="Desayuno">Desayuno</button>
+        <button data-meal="Comida">Comida</button>
+        <button data-meal="Cena">Cena</button>
+        <button data-meal="Snack">Snack</button>
+      </div>
+
+      <div class="grams-field" id="mGramsField">
         <button class="gminus" id="mMinus" aria-label="Menos">−</button>
         <div class="gwrap">
           <input id="mGrams" type="number" inputmode="numeric" min="0" step="1" value="100">
@@ -604,22 +641,49 @@
        Añade aquí nuevos alimentos y úsalos en DATA.meals por su clave.
        ========================================================= */
     const FOODS = {
-      claras_huevo:    { name: "Claras de huevo",     emoji: "🥚", base: 150, ration: "150 ml", kcal: 63,  protein: 16.5, carbs: 0.5,  fat: 0.2 },
-      jamon_serrano:   { name: "Jamón serrano",       emoji: "🍖", base: 55,  ration: "55 g",   kcal: 137, protein: 18.5, carbs: 0.6,  fat: 6.7 },
-      pollo_solomillo: { name: "Solomillo de pollo",  emoji: "🍗", base: 100, ration: "100 g",  kcal: 108, protein: 22,   carbs: 0.5,  fat: 1.8 },
-      fajitas:         { name: "Fajitas (sin pan)",   emoji: "🌮", base: 300, ration: "300 g",  kcal: 219, protein: 26.7, carbs: 21.9, fat: 1.8 },
-      queso_cottage:   { name: "Queso Cottage",       emoji: "🧀", base: 100, ration: "100 g",  kcal: 99,  protein: 14,   carbs: 1.7,  fat: 4.0 },
-      champinones:     { name: "Champiñones",         emoji: "🍄", base: 100, ration: "100 g",  kcal: 20,  protein: 2.6,  carbs: 0.8,  fat: 0.6 },
-      rucula:          { name: "Rúcula",              emoji: "🥬", base: 100, ration: "100 g",  kcal: 26,  protein: 3.4,  carbs: 1.0,  fat: 0.4 },
-      arandanos:       { name: "Arándanos",           emoji: "🫐", base: 100, ration: "100 g",  kcal: 57,  protein: 0.7,  carbs: 14,   fat: 0.3 },
-      mermelada0:      { name: "Mermelada 0%",        emoji: "🍓", base: 25,  ration: "25 g",   kcal: 10,  protein: 0.2,  carbs: 2.9,  fat: 0 },
-      platano:         { name: "Plátano",             emoji: "🍌", base: 120, ration: "120 g",  kcal: 107, protein: 1.3,  carbs: 27,   fat: 0.3 },
-      queso_viejo:     { name: "Queso viejo tostado", emoji: "🧀", base: 100, ration: "100 g",  kcal: 474, protein: 27,   carbs: 1.5,  fat: 40 },
-      naranja:         { name: "Naranja",             emoji: "🍊", base: 150, ration: "150 g",  kcal: 70,  protein: 1.4,  carbs: 17,   fat: 0.2 },
-      sandia:          { name: "Sandía",              emoji: "🍉", base: 300, ration: "300 g",  kcal: 90,  protein: 1.8,  carbs: 21,   fat: 0.3 },
-      roquefort:       { name: "Queso Roquefort",     emoji: "🧀", base: 100, ration: "100 g",  kcal: 364, protein: 19,   carbs: 0.5,  fat: 32 },
-      bowl_salmon:     { name: "Bowl salmón y arroz", emoji: "🐟", base: 400, ration: "400 g",  kcal: 628, protein: 38.4, carbs: 48,   fat: 30 }
+      claras_huevo:    { name: "Claras de huevo",     emoji: "🥚", cat: "salado", base: 150, ration: "150 ml", kcal: 63,  protein: 16.5, carbs: 0.5,  fat: 0.2 },
+      jamon_serrano:   { name: "Jamón serrano",       emoji: "🍖", cat: "salado", base: 55,  ration: "55 g",   kcal: 137, protein: 18.5, carbs: 0.6,  fat: 6.7 },
+      pollo_solomillo: { name: "Solomillo de pollo",  emoji: "🍗", cat: "salado", base: 100, ration: "100 g",  kcal: 108, protein: 22,   carbs: 0.5,  fat: 1.8 },
+      fajitas:         { name: "Fajitas (sin pan)",   emoji: "🌮", cat: "salado", base: 300, ration: "300 g",  kcal: 219, protein: 26.7, carbs: 21.9, fat: 1.8 },
+      queso_cottage:   { name: "Queso Cottage",       emoji: "🧀", cat: "salado", base: 100, ration: "100 g",  kcal: 99,  protein: 14,   carbs: 1.7,  fat: 4.0 },
+      champinones:     { name: "Champiñones",         emoji: "🍄", cat: "salado", base: 100, ration: "100 g",  kcal: 20,  protein: 2.6,  carbs: 0.8,  fat: 0.6 },
+      rucula:          { name: "Rúcula",              emoji: "🥬", cat: "salado", base: 100, ration: "100 g",  kcal: 26,  protein: 3.4,  carbs: 1.0,  fat: 0.4 },
+      salmon:          { name: "Salmón",              emoji: "🐟", cat: "salado", base: 100, ration: "100 g",  kcal: 208, protein: 20,   carbs: 0,    fat: 13 },
+      arroz:           { name: "Arroz blanco",        emoji: "🍚", cat: "salado", base: 100, ration: "100 g",  kcal: 130, protein: 2.7,  carbs: 28,   fat: 0.3 },
+      queso_viejo:     { name: "Queso viejo tostado", emoji: "🧀", cat: "salado", base: 100, ration: "100 g",  kcal: 474, protein: 27,   carbs: 1.5,  fat: 40 },
+      roquefort:       { name: "Queso Roquefort",     emoji: "🧀", cat: "salado", base: 100, ration: "100 g",  kcal: 364, protein: 19,   carbs: 0.5,  fat: 32 },
+      arandanos:       { name: "Arándanos",           emoji: "🫐", cat: "dulce",  base: 100, ration: "100 g",  kcal: 57,  protein: 0.7,  carbs: 14,   fat: 0.3 },
+      mermelada0:      { name: "Mermelada 0%",        emoji: "🍓", cat: "dulce",  base: 25,  ration: "25 g",   kcal: 10,  protein: 0.2,  carbs: 2.9,  fat: 0 },
+      platano:         { name: "Plátano",             emoji: "🍌", cat: "dulce",  base: 120, ration: "120 g",  kcal: 107, protein: 1.3,  carbs: 27,   fat: 0.3 },
+      naranja:         { name: "Naranja",             emoji: "🍊", cat: "dulce",  base: 150, ration: "150 g",  kcal: 70,  protein: 1.4,  carbs: 17,   fat: 0.2 },
+      sandia:          { name: "Sandía",              emoji: "🍉", cat: "dulce",  base: 300, ration: "300 g",  kcal: 90,  protein: 1.8,  carbs: 21,   fat: 0.3 }
     };
+
+    /* =========================================================
+       RECETAS  —  combinaciones de alimentos del catálogo.
+       Al añadir una receta se registran sus ingredientes en la comida elegida.
+       ========================================================= */
+    const RECIPES = {
+      bowl_salmon: {
+        name: "Bowl de salmón y arroz", emoji: "🐟",
+        items: [ { food: "salmon", grams: 180 }, { food: "arroz", grams: 150 }, { food: "rucula", grams: 40 } ]
+      },
+      pollo_roquefort: {
+        name: "Pollo, roquefort y rúcula", emoji: "🍗",
+        items: [ { food: "pollo_solomillo", grams: 300 }, { food: "roquefort", grams: 30 }, { food: "rucula", grams: 50 } ]
+      }
+    };
+
+    // Nutrición total de una receta (suma de sus ingredientes)
+    function recipeNutri(recipeKey) {
+      const sum = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+      RECIPES[recipeKey].items.forEach(it => {
+        const n = nutri(it.food, it.grams);
+        sum.kcal += n.kcal; sum.protein += n.protein; sum.carbs += n.carbs; sum.fat += n.fat;
+      });
+      sum.protein = round1(sum.protein); sum.carbs = round1(sum.carbs); sum.fat = round1(sum.fat);
+      return sum;
+    }
 
     // Momentos del día (orden e icono para la Home)
     const MEAL_ORDER = ["Desayuno", "Comida", "Cena", "Snack"];
@@ -855,7 +919,8 @@
        PANTALLA AÑADIR COMIDA (sheet)
        ========================================================= */
     const sheet = $("sheet");
-    let activeMeal = "Desayuno";
+    let activeType = "alimentos";   // alimentos | recetas
+    let activeCat  = "todos";       // todos | salado | dulce
 
     function defaultMeal() {
       const h = new Date().getHours();
@@ -866,9 +931,9 @@
     }
 
     function openSheet() {
-      activeMeal = defaultMeal();
+      activeType = "alimentos"; activeCat = "todos";
       $("search").value = "";
-      syncTabs();
+      syncSheetTabs();
       renderFoodList();
       sheet.classList.add("open");
       sheet.setAttribute("aria-hidden", "false");
@@ -879,30 +944,44 @@
       sheet.setAttribute("aria-hidden", "true");
       $("addBtn").classList.remove("hidden");
     }
-    function syncTabs() {
-      $("mealTabs").querySelectorAll("button").forEach(b =>
-        b.classList.toggle("active", b.dataset.meal === activeMeal));
+    function syncSheetTabs() {
+      $("typeTabs").querySelectorAll("button").forEach(b =>
+        b.classList.toggle("active", b.dataset.type === activeType));
+      $("catTabs").querySelectorAll("button").forEach(b =>
+        b.classList.toggle("active", b.dataset.cat === activeCat));
+      $("catTabs").classList.toggle("hidden", activeType !== "alimentos");
+      $("search").placeholder = activeType === "recetas" ? "Buscar receta…" : "Buscar alimento…";
     }
+
+    const cardHTML = (key, attr, emoji, name, sub, kcal) => `
+      <li class="addf" ${attr}="${key}">
+        <div class="addf-top"><span class="addf-emoji">${emoji}</span></div>
+        <div class="addf-info">
+          <div class="addf-name">${name}</div>
+          <div class="addf-sub">${sub}</div>
+          <div class="addf-kcal">${kcal} <span>kcal</span></div>
+        </div>
+        <div class="addf-plus">+</div>
+      </li>`;
 
     function renderFoodList() {
       const q = $("search").value.trim().toLowerCase();
-      const entries = Object.entries(FOODS).filter(([, f]) =>
-        !q || f.name.toLowerCase().includes(q));
       const list = $("foodList");
-      if (!entries.length) {
-        list.innerHTML = `<li class="food-empty">Sin resultados</li>`;
+
+      if (activeType === "recetas") {
+        const entries = Object.entries(RECIPES).filter(([, r]) => !q || r.name.toLowerCase().includes(q));
+        list.innerHTML = entries.length
+          ? entries.map(([k, r]) => cardHTML(k, "data-recipe", r.emoji, r.name, r.items.length + " ingredientes", recipeNutri(k).kcal)).join("")
+          : `<li class="food-empty">Sin recetas</li>`;
         return;
       }
-      list.innerHTML = entries.map(([k, f]) => `
-        <li class="addf" data-add="${k}">
-          <div class="addf-top"><span class="addf-emoji">${f.emoji}</span></div>
-          <div class="addf-info">
-            <div class="addf-name">${f.name}</div>
-            <div class="addf-sub">${f.ration}</div>
-            <div class="addf-kcal">${f.kcal} <span>kcal</span></div>
-          </div>
-          <div class="addf-plus">+</div>
-        </li>`).join("");
+
+      const entries = Object.entries(FOODS).filter(([, f]) =>
+        (activeCat === "todos" || f.cat === activeCat) &&
+        (!q || f.name.toLowerCase().includes(q)));
+      list.innerHTML = entries.length
+        ? entries.map(([k, f]) => cardHTML(k, "data-add", f.emoji, f.name, f.ration, f.kcal)).join("")
+        : `<li class="food-empty">Sin resultados</li>`;
     }
 
     $("addBtn").addEventListener("click", openSheet);
@@ -910,31 +989,52 @@
     $("sheetDone").addEventListener("click", closeSheet);
     $("search").addEventListener("input", renderFoodList);
 
-    $("mealTabs").addEventListener("click", (e) => {
-      const b = e.target.closest("button[data-meal]");
-      if (!b) return;
-      activeMeal = b.dataset.meal;
-      syncTabs();
+    $("typeTabs").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-type]"); if (!b) return;
+      activeType = b.dataset.type; syncSheetTabs(); renderFoodList();
+    });
+    $("catTabs").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-cat]"); if (!b) return;
+      activeCat = b.dataset.cat; syncSheetTabs(); renderFoodList();
     });
 
     $("foodList").addEventListener("click", (e) => {
-      const li = e.target.closest("[data-add]");
-      if (li) openAdd(li.dataset.add, activeMeal);
+      const food = e.target.closest("[data-add]");
+      if (food) { openAdd(food.dataset.add); return; }
+      const rec = e.target.closest("[data-recipe]");
+      if (rec) openRecipe(rec.dataset.recipe);
     });
 
     /* =========================================================
-       MODAL DE GRAMOS  (sirve para añadir y para editar/eliminar)
+       MODAL  (añadir alimento / receta, y editar/eliminar)
        ========================================================= */
     const modal = $("modal");
-    let modalState = null;   // { mode:'add'|'edit', foodKey, time, idx }
+    let modalState = null;   // { mode:'add'|'edit'|'recipe', foodKey/recipeKey, time, idx }
+
+    function syncMealPicker() {
+      $("mMeals").querySelectorAll("button").forEach(b =>
+        b.classList.toggle("active", b.dataset.meal === modalState.time));
+    }
 
     function showModal() {
-      const f = FOODS[modalState.foodKey];
-      $("mEmoji").textContent = f.emoji;
-      $("mTitle").textContent = f.name;
-      $("mRef").textContent = "Referencia: " + f.ration + " · " + f.kcal + " kcal";
-      $("mDelete").hidden = modalState.mode !== "edit";
-      $("mSave").textContent = modalState.mode === "edit" ? "Guardar" : "Añadir";
+      const isRecipe = modalState.mode === "recipe";
+      $("mGramsField").style.display = isRecipe ? "none" : "";
+      if (isRecipe) {
+        const r = RECIPES[modalState.recipeKey];
+        $("mEmoji").textContent = r.emoji;
+        $("mTitle").textContent = r.name;
+        $("mRef").textContent = r.items.map(it => FOODS[it.food].name + " " + it.grams + " g").join(" · ");
+        $("mDelete").hidden = true;
+        $("mSave").textContent = "Añadir receta";
+      } else {
+        const f = FOODS[modalState.foodKey];
+        $("mEmoji").textContent = f.emoji;
+        $("mTitle").textContent = f.name;
+        $("mRef").textContent = "Referencia: " + f.ration + " · " + f.kcal + " kcal";
+        $("mDelete").hidden = modalState.mode !== "edit";
+        $("mSave").textContent = modalState.mode === "edit" ? "Guardar" : "Añadir";
+      }
+      syncMealPicker();
       updatePreview();
       modal.classList.add("open");
       modal.setAttribute("aria-hidden", "false");
@@ -945,15 +1045,19 @@
       modalState = null;
     }
 
-    function openAdd(foodKey, time) {
-      modalState = { mode: "add", foodKey, time };
+    function openAdd(foodKey) {
+      modalState = { mode: "add", foodKey, time: defaultMeal() };
       $("mGrams").value = FOODS[foodKey].base;
+      showModal();
+    }
+    function openRecipe(recipeKey) {
+      modalState = { mode: "recipe", recipeKey, time: defaultMeal() };
       showModal();
     }
     function openEdit(idx) {
       const meal = DATA.meals[idx];
       if (!meal || !FOODS[meal.food]) return;
-      modalState = { mode: "edit", foodKey: meal.food, idx };
+      modalState = { mode: "edit", foodKey: meal.food, idx, time: meal.time };
       $("mGrams").value = meal.grams;
       showModal();
     }
@@ -967,13 +1071,20 @@
       updatePreview();
     }
     function updatePreview() {
-      const n = nutri(modalState.foodKey, currentGrams());
+      const n = modalState.mode === "recipe"
+        ? recipeNutri(modalState.recipeKey)
+        : nutri(modalState.foodKey, currentGrams());
       $("pvKcal").textContent = n.kcal;
       $("pvP").textContent = n.protein;
       $("pvC").textContent = n.carbs;
       $("pvF").textContent = n.fat;
     }
 
+    $("mMeals").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-meal]"); if (!b || !modalState) return;
+      modalState.time = b.dataset.meal;
+      syncMealPicker();
+    });
     $("mGrams").addEventListener("input", updatePreview);
     $("mPlus").addEventListener("click", () => setGrams(currentGrams() + 10));
     $("mMinus").addEventListener("click", () => setGrams(currentGrams() - 10));
@@ -981,11 +1092,14 @@
     modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
 
     $("mSave").addEventListener("click", () => {
-      const g = Math.max(1, currentGrams());
-      if (modalState.mode === "add") {
-        DATA.meals.push({ food: modalState.foodKey, time: modalState.time, grams: g });
+      if (modalState.mode === "recipe") {
+        RECIPES[modalState.recipeKey].items.forEach(it =>
+          DATA.meals.push({ food: it.food, time: modalState.time, grams: it.grams }));
+      } else if (modalState.mode === "add") {
+        DATA.meals.push({ food: modalState.foodKey, time: modalState.time, grams: Math.max(1, currentGrams()) });
       } else {
-        DATA.meals[modalState.idx].grams = g;
+        DATA.meals[modalState.idx].grams = Math.max(1, currentGrams());
+        DATA.meals[modalState.idx].time = modalState.time;   // permite reasignar la comida
       }
       saveLog();
       render();
@@ -1002,7 +1116,7 @@
     });
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.7";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.8";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadLog();
     render();
