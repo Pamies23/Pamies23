@@ -525,7 +525,7 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.14</div>
+      <div class="avatar" id="version">V.15</div>
     </header>
 
     <section class="hero">
@@ -670,10 +670,6 @@
     </div><!-- /.top-region -->
 
     <!-- Contenido sobre blanco (debajo del corte) -->
-    <div class="cat-tabs sim-cat" id="simCat">
-      <button data-cat="salado" class="active">Salado</button>
-      <button data-cat="dulce">Dulce</button>
-    </div>
     <div class="sim-items" id="simItems"></div>
     <button class="sim-add" id="simAddFood">＋ Añadir alimento</button>
     <button class="confirm sim-save" id="simSave" disabled>Guardar receta</button>
@@ -945,7 +941,7 @@
         $("kcalGoal").style.display = "";
         $("kcalGoal").style.fontSize = "16px";
         $("kcalGoal").textContent = "KCAL";
-        $("kcalSub").innerHTML = "<b>" + mGrams + " g</b> de " + mm.name + " · <b>" + share + "%</b> de tus kcal";
+        $("kcalSub").innerHTML = "<b>" + mGrams + " g</b> de " + mm.name;
         kSel = Math.min(100, share);
         $("kcalRingPct").textContent = share + "%";
       } else {
@@ -1036,7 +1032,7 @@
           const b = byMeal[t];
           if (!b.items.length) return "";
           return `
-            <div class="log-sub">${MEAL_ICON[t]} ${t}<span class="ls-kcal">${b.kcal} kcal</span></div>
+            <div class="log-sub">${t}<span class="ls-kcal">${b.kcal} kcal</span></div>
             <ul class="log-list">${b.items.map(r => rowHTML(r)).join("")}</ul>`;
         }).join("");
         log.innerHTML = blocks || `<div class="meal-empty">Aún no has registrado nada hoy</div>`;
@@ -1314,11 +1310,9 @@
        SIMULADOR DE RECETAS  (crear tu propio plato y guardarlo)
        ========================================================= */
     let simItems = [];          // [{ food, grams }]
-    let simCat = "salado";
 
     function openSim() {
-      simItems = []; simCat = "salado";
-      $("simCat").querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.cat === simCat));
+      simItems = [];
       simRender();
       showView("sim");
     }
@@ -1372,11 +1366,6 @@
     }
 
     $("simClose").addEventListener("click", closeSim);
-    $("simCat").addEventListener("click", (e) => {
-      const b = e.target.closest("button[data-cat]"); if (!b) return;
-      simCat = b.dataset.cat;
-      $("simCat").querySelectorAll("button").forEach(x => x.classList.toggle("active", x === b));
-    });
     $("simItems").addEventListener("click", (e) => {
       const btn = e.target.closest("button[data-act]"); if (!btn) return;
       const row = e.target.closest(".sim-item"); const i = parseInt(row.dataset.i, 10);
@@ -1391,9 +1380,11 @@
       if (!simItems.length) return;
       const name = (prompt("Nombre del plato:", "") || "").trim();
       if (!name) return;                       // pide el nombre al guardar
+      // pide la categoría al guardar (Aceptar = Dulce · Cancelar = Salado)
+      const cat = confirm("¿Es un plato dulce?\n\nAceptar = Dulce   ·   Cancelar = Salado") ? "dulce" : "salado";
       const id = "u" + Date.now();
       userRecipes[id] = {
-        name, cat: simCat, user: true,
+        name, cat, user: true,
         emoji: FOODS[simItems[0].food].emoji,
         items: simItems.map(it => ({ food: it.food, grams: it.grams }))
       };
@@ -1436,7 +1427,7 @@
     });
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.14";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.15";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadLog();
     render();
