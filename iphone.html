@@ -470,9 +470,17 @@
       display: flex; justify-content: space-around; text-align: center;
       background: var(--ink); border-radius: var(--r-md); padding: 14px; margin-bottom: 16px;
     }
+    .pv-cell { display: flex; flex-direction: column; align-items: center; }
     .modal-preview .pv-n { font-family: var(--disp); font-size: 20px; font-weight: 800; color: #fff; }
     .modal-preview .pv-n.kcal { color: var(--lime); }
     .modal-preview .pv-l { font-family: var(--disp); font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 3px; }
+    /* Anillo bajo cada cifra: proporción respecto al objetivo diario */
+    .pv-ring { position: relative; width: 40px; height: 40px; margin-top: 9px; display: flex; align-items: center; justify-content: center; }
+    .pv-ring svg { width: 40px; height: 40px; transform: rotate(-90deg); }
+    .pv-ring circle { fill: none; stroke-width: 4; }
+    .pvr-track { stroke: rgba(255,255,255,0.16); }
+    .pvr-sel { stroke: var(--lime); stroke-linecap: round; stroke-dasharray: 0 100; transition: stroke-dasharray 0.5s cubic-bezier(.22,.61,.36,1); }
+    .pv-pct { position: absolute; font-family: var(--disp); font-weight: 700; font-size: 9px; color: #fff; }
 
     .modal-actions { display: flex; gap: 10px; }
     .modal-actions button {
@@ -498,8 +506,8 @@
 
     /* Botón ✕ de cerrar (en el sitio del círculo de versión de la Home) */
     .page-x {
-      border: none; cursor: pointer;
-      font-family: var(--sans); font-size: 20px; font-weight: 400;
+      border: none; cursor: pointer; padding: 0; line-height: 1;
+      font-family: var(--sans); font-size: 20px; font-weight: 400; text-align: center;
     }
 
     .confirm:disabled { opacity: 0.4; }
@@ -535,7 +543,7 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.22</div>
+      <div class="avatar" id="version">V.23</div>
     </header>
 
     <section class="hero">
@@ -640,10 +648,22 @@
       </div>
 
       <div class="modal-preview">
-        <div><div class="pv-n kcal" id="pvKcal">0</div><div class="pv-l">kcal</div></div>
-        <div><div class="pv-n" id="pvP">0</div><div class="pv-l">Prot</div></div>
-        <div><div class="pv-n" id="pvC">0</div><div class="pv-l">Carb</div></div>
-        <div><div class="pv-n" id="pvF">0</div><div class="pv-l">Grasa</div></div>
+        <div class="pv-cell">
+          <div class="pv-n kcal" id="pvKcal">0</div><div class="pv-l">kcal</div>
+          <div class="pv-ring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="pvr-track" cx="18" cy="18" r="15.915"></circle><circle class="pvr-sel" id="pvKcalRing" cx="18" cy="18" r="15.915"></circle></svg><span class="pv-pct" id="pvKcalPct">0%</span></div>
+        </div>
+        <div class="pv-cell">
+          <div class="pv-n" id="pvP">0</div><div class="pv-l">Prot</div>
+          <div class="pv-ring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="pvr-track" cx="18" cy="18" r="15.915"></circle><circle class="pvr-sel" id="pvPRing" cx="18" cy="18" r="15.915"></circle></svg><span class="pv-pct" id="pvPPct">0%</span></div>
+        </div>
+        <div class="pv-cell">
+          <div class="pv-n" id="pvC">0</div><div class="pv-l">Carb</div>
+          <div class="pv-ring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="pvr-track" cx="18" cy="18" r="15.915"></circle><circle class="pvr-sel" id="pvCRing" cx="18" cy="18" r="15.915"></circle></svg><span class="pv-pct" id="pvCPct">0%</span></div>
+        </div>
+        <div class="pv-cell">
+          <div class="pv-n" id="pvF">0</div><div class="pv-l">Grasa</div>
+          <div class="pv-ring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="pvr-track" cx="18" cy="18" r="15.915"></circle><circle class="pvr-sel" id="pvFRing" cx="18" cy="18" r="15.915"></circle></svg><span class="pv-pct" id="pvFPct">0%</span></div>
+        </div>
       </div>
 
       <div class="modal-actions">
@@ -1311,6 +1331,12 @@
       $("mGrams").value = Math.max(0, v);
       updatePreview();
     }
+    // Rellena un anillo del preview: proporción de 'val' sobre el objetivo diario
+    function setPvRing(id, val, goal) {
+      const pct = goal > 0 ? Math.round(val / goal * 100) : 0;
+      $(id + "Pct").textContent = pct + "%";
+      requestAnimationFrame(() => { $(id + "Ring").style.strokeDasharray = Math.min(100, pct) + " 100"; });
+    }
     function updatePreview() {
       const n = modalState.mode === "recipe"
         ? recipeNutri(modalState.recipeKey)
@@ -1319,6 +1345,10 @@
       $("pvP").textContent = n.protein;
       $("pvC").textContent = n.carbs;
       $("pvF").textContent = n.fat;
+      setPvRing("pvKcal", n.kcal, DATA.goal.kcal);
+      setPvRing("pvP", n.protein, DATA.goal.protein);
+      setPvRing("pvC", n.carbs, DATA.goal.carbs);
+      setPvRing("pvF", n.fat, DATA.goal.fat);
     }
 
     $("mMeals").addEventListener("click", (e) => {
@@ -1482,7 +1512,7 @@
     });
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.22";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.23";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadLog();
     render();
