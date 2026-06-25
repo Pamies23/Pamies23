@@ -62,6 +62,43 @@
     }
     .standalone .app { padding-top: calc(env(safe-area-inset-top) + 20px); }
 
+    /* ---------- Región superior con fondo de agua (corte limpio) ---------- */
+    .top-region {
+      position: relative;
+      margin: calc((env(safe-area-inset-top) + 12px) * -1) -18px 22px;
+      padding: calc(env(safe-area-inset-top) + 16px) 18px 22px;
+      background-color: #BCE4E2;                 /* relleno mientras no esté water.jpg */
+      background-image: url("water.jpg");
+      background-size: cover;
+      background-position: center;
+    }
+    .standalone .top-region {
+      margin-top: calc((env(safe-area-inset-top) + 20px) * -1);
+      padding-top: calc(env(safe-area-inset-top) + 24px);
+    }
+
+    /* ---------- Splash de entrada (palmeras) ---------- */
+    .splash {
+      position: fixed; inset: 0; z-index: 200;
+      background-color: #A7C3C9;                 /* relleno mientras no esté palms.jpg */
+      background-image: url("palms.jpg");
+      background-size: cover; background-position: center;
+      display: flex; flex-direction: column; justify-content: flex-end;
+      padding: 0 30px calc(env(safe-area-inset-bottom) + 60px);
+      opacity: 1; transition: opacity 0.65s ease;
+    }
+    .splash::before {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0) 45%, rgba(0,0,0,0.5));
+    }
+    .splash.hide { opacity: 0; pointer-events: none; }
+    .splash-title {
+      position: relative; font-family: var(--exp); font-weight: 900;
+      font-size: 58px; line-height: 0.9; letter-spacing: -0.02em;
+      text-transform: uppercase; color: #fff;
+    }
+    .splash-sub { position: relative; margin-top: 12px; font-size: 16px; font-weight: 500; color: rgba(255,255,255,0.9); }
+
     /* ---------- Cabecera ---------- */
     .topbar {
       display: flex; align-items: center; justify-content: space-between;
@@ -94,13 +131,14 @@
     .view-tabs::-webkit-scrollbar { display: none; }
     .view-tabs button {
       flex: 0 0 auto; cursor: pointer;
-      border: 1px solid var(--line); background: var(--card); color: var(--ink);
+      border: none; background: var(--bg); color: var(--ink);
       border-radius: 99px; padding: 9px 17px;
       font-family: var(--disp); font-size: 13px; font-weight: 700;
       letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
       transition: all 0.15s ease;
     }
-    .view-tabs button.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .view-tabs button.active { background: var(--ink); color: #fff; }
 
     /* ---------- Hero: contador de calorías (tarjeta negra) ---------- */
     .hero {
@@ -134,10 +172,11 @@
     .bar .seg { height: 100%; background: var(--lime); width: 0; transition: width 0.8s cubic-bezier(.22,.61,.36,1); }
     .bar .seg.rest { background: var(--lime-dim); }
 
-    /* ---------- Macros (cajetines beige) ---------- */
-    .macros { display: flex; flex-direction: column; gap: 10px; margin-bottom: 26px; }
+    /* ---------- Macros (cajetines blancos sobre el agua) ---------- */
+    .macros { display: flex; flex-direction: column; gap: 10px; margin-bottom: 0; }
     .macro {
-      background: var(--card); border-radius: var(--r-md); padding: 15px 17px;
+      background: var(--bg); border-radius: var(--r-md); padding: 15px 17px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
     }
     .macro .top { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 11px; }
     .macro .name {
@@ -170,25 +209,17 @@
     .log-sub .ls-kcal { margin-left: auto; color: var(--ink); }
     .log-list { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-    /* Tarjeta de alimento (cuadrícula, estilo producto + swipe para eliminar) */
+    /* Tarjeta de alimento (cuadrícula, estilo producto) */
     .logf {
-      position: relative; border-radius: var(--r-md); overflow: hidden; background: var(--red);
+      border-radius: var(--r-md); overflow: hidden;
       box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+      cursor: pointer;
     }
-    .logf-del {
-      position: absolute; top: 0; right: 0; bottom: 0; width: 88px; border: none;
-      background: var(--red); color: #fff;
-      font-family: var(--disp); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
-      display: flex; align-items: center; justify-content: center; cursor: pointer;
-    }
+    .logf:active { transform: scale(0.98); }
     .logf-main {
-      position: relative; z-index: 1;
       display: flex; flex-direction: column;
       background: var(--bg); border-radius: var(--r-md); overflow: hidden;
-      transform: translateX(0); touch-action: pan-y; cursor: pointer;
     }
-    .logf.swiping .logf-main { transition: none; }
-    .logf:not(.swiping) .logf-main { transition: transform 0.25s cubic-bezier(.22,.61,.36,1); }
     .logf-top {
       background: var(--card); aspect-ratio: 1 / 0.82;
       display: flex; align-items: center; justify-content: center;
@@ -364,36 +395,38 @@
 
  <div class="app" id="app">
 
-  <header class="topbar">
-    <div class="greeting">
-      <div class="eyebrow" id="dateLabel">—</div>
-      <h1 id="greeting">Hola</h1>
-    </div>
-    <div class="avatar" id="avatar">V</div>
-  </header>
+  <div class="top-region">
+    <header class="topbar">
+      <div class="greeting">
+        <div class="eyebrow" id="dateLabel">—</div>
+        <h1 id="greeting">Hola</h1>
+      </div>
+      <div class="avatar" id="avatar">V</div>
+    </header>
 
-  <div class="view-tabs" id="viewTabs">
-    <button data-view="Desayuno">Desayuno</button>
-    <button data-view="Comida">Comida</button>
-    <button data-view="Cena">Cena</button>
-    <button data-view="Snack">Snack</button>
-  </div>
-
-  <section class="hero">
-    <div class="label" id="heroLabel">Hoy</div>
-    <div class="count">
-      <span class="now" id="kcalNow">0</span>
-      <span class="goal" id="kcalGoal">/ 0</span>
-      <span class="unit">kcal</span>
+    <div class="view-tabs" id="viewTabs">
+      <button data-view="Desayuno">Desayuno</button>
+      <button data-view="Comida">Comida</button>
+      <button data-view="Cena">Cena</button>
+      <button data-view="Snack">Snack</button>
     </div>
-    <div class="remaining" id="kcalSub">Te quedan <b id="kcalLeft">0 kcal</b> para tu objetivo</div>
-    <div class="bar">
-      <span class="seg" id="kcalSel"></span>
-      <span class="seg rest" id="kcalRest"></span>
-    </div>
-  </section>
 
-  <section class="macros" id="macros"></section>
+    <section class="hero">
+      <div class="label" id="heroLabel">Hoy</div>
+      <div class="count">
+        <span class="now" id="kcalNow">0</span>
+        <span class="goal" id="kcalGoal">/ 0</span>
+        <span class="unit">kcal</span>
+      </div>
+      <div class="remaining" id="kcalSub">Te quedan <b id="kcalLeft">0 kcal</b> para tu objetivo</div>
+      <div class="bar">
+        <span class="seg" id="kcalSel"></span>
+        <span class="seg rest" id="kcalRest"></span>
+      </div>
+    </section>
+
+    <section class="macros" id="macros"></section>
+  </div><!-- /.top-region -->
 
   <div class="section-head">
     <h2 id="logTitle">Comidas de hoy</h2>
@@ -402,6 +435,12 @@
   <div id="foodLog"></div>
 
  </div><!-- /.app -->
+
+  <!-- ===================== Splash de entrada ===================== -->
+  <div class="splash" id="splash">
+    <div class="splash-title">Verde</div>
+    <div class="splash-sub">Cuenta tus calorías. Easy.</div>
+  </div>
 
   <button class="add" id="addBtn" aria-label="Añadir comida">+</button>
 
@@ -475,6 +514,20 @@
         matchMedia('(display-mode: standalone)').matches) {
       document.documentElement.classList.add('standalone');
     }
+
+    /* Splash de entrada: se oculta sola tras un momento (o al tocar) */
+    (function () {
+      const splash = document.getElementById('splash');
+      if (!splash) return;
+      let gone = false;
+      const dismiss = () => {
+        if (gone) return; gone = true;
+        splash.classList.add('hide');
+        setTimeout(() => splash.remove(), 700);
+      };
+      setTimeout(dismiss, 1700);
+      splash.addEventListener('click', dismiss);
+    })();
 
     /* =========================================================
        DATOS  —  estructura lista para rellenar con Vitrubio.
@@ -668,7 +721,6 @@
 
       const rowHTML = (r) => `
         <li class="logf" data-idx="${r.idx}">
-          <button class="logf-del" data-del="${r.idx}">Eliminar</button>
           <div class="logf-main">
             <div class="logf-top"><span class="logf-emoji">${FOODS[r.food].emoji}</span></div>
             <div class="logf-info">
@@ -714,63 +766,12 @@
     });
 
     /* =========================================================
-       LOG: editar (tap) / eliminar (deslizar a la izquierda)
+       LOG: tocar una tarjeta para editar / eliminar (en el modal)
        ========================================================= */
     const foodLog = $("foodLog");
-    const SWIPE_OPEN = 88, SWIPE_THRESHOLD = 44;
-    let drag = null;
-
-    const rowX = (row) => parseFloat(row.dataset.x || "0");
-    function setRowX(row, x) {
-      row.dataset.x = x;
-      row.querySelector(".logf-main").style.transform = "translateX(" + x + "px)";
-    }
-    function closeRows(except) {
-      foodLog.querySelectorAll(".logf").forEach(r => {
-        if (r !== except && rowX(r) !== 0) { r.classList.remove("swiping"); setRowX(r, 0); }
-      });
-    }
-
-    foodLog.addEventListener("pointerdown", (e) => {
-      const main = e.target.closest(".logf-main");
-      if (!main) return;
-      const row = main.closest(".logf");
-      drag = { row, idx: parseInt(row.dataset.idx, 10), startX: e.clientX, startY: e.clientY,
-               baseX: rowX(row), axis: null, moved: false, tx: rowX(row) };
-    });
-    document.addEventListener("pointermove", (e) => {
-      if (!drag) return;
-      const dx = e.clientX - drag.startX, dy = e.clientY - drag.startY;
-      if (!drag.axis) {
-        if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
-          drag.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
-          if (drag.axis === "x") { drag.row.classList.add("swiping"); closeRows(drag.row); }
-        } else return;
-      }
-      if (drag.axis !== "x") return;
-      drag.moved = true;
-      drag.tx = Math.min(0, Math.max(-SWIPE_OPEN, drag.baseX + dx));
-      drag.row.querySelector(".logf-main").style.transform = "translateX(" + drag.tx + "px)";
-    });
-    document.addEventListener("pointerup", () => {
-      if (!drag) return;
-      const d = drag; drag = null;
-      d.row.classList.remove("swiping");
-      if (d.axis === "x" && d.moved) {
-        setRowX(d.row, d.tx <= -SWIPE_THRESHOLD ? -SWIPE_OPEN : 0);
-      } else {
-        if (rowX(d.row) !== 0) setRowX(d.row, 0);   // estaba abierta → cerrar
-        else openEdit(d.idx);                        // tap limpio → editar
-      }
-    });
-
     foodLog.addEventListener("click", (e) => {
-      const del = e.target.closest(".logf-del");
-      if (del) {
-        DATA.meals.splice(parseInt(del.dataset.del, 10), 1);
-        saveLog();
-        render();
-      }
+      const card = e.target.closest(".logf");
+      if (card) openEdit(parseInt(card.dataset.idx, 10));
     });
 
     /* =========================================================
