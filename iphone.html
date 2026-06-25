@@ -63,15 +63,20 @@
     }
     .standalone .app { padding-top: calc(env(safe-area-inset-top) + 20px); }
 
-    /* ---------- Región superior con fondo de agua (corte limpio) ---------- */
+    /* ---------- Región superior con fondo de agua (se funde con el blanco) ---------- */
     .top-region {
       position: relative;
       margin: calc((env(safe-area-inset-top) + 12px) * -1) -18px 22px;
-      padding: calc(env(safe-area-inset-top) + 16px) 18px 22px;
+      padding: calc(env(safe-area-inset-top) + 16px) 18px 40px;
       background-color: #5A9F9F;                 /* color del agua (relleno y borde superior) */
-      background-image: url("water.jpg");
-      background-size: cover;
-      background-position: center;
+      /* La capa de degradado funde la parte baja del agua hacia el blanco:
+         así no hay corte duro al pasar al contenido. */
+      background-image:
+        linear-gradient(to bottom, rgba(255,255,255,0) 62%, var(--bg) 100%),
+        url("water.jpg");
+      background-size: cover, cover;
+      background-position: center, center;
+      background-repeat: no-repeat, no-repeat;
     }
     /* Prolonga el color del agua hacia arriba: al tirar/rebotar nunca se ve blanco
        ni parece que la foto se corta en el borde superior. */
