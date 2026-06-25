@@ -21,7 +21,8 @@
       --card:  #ECE8DD;   /* beige avena (tarjetas) */
       --card2: #E2DDCF;   /* beige un punto más oscuro */
       --ink:   #131311;   /* casi negro */
-      --lime:  #C7F23E;   /* verde lima eléctrico (acento) */
+      --lime:  #C7F23E;   /* verde lima eléctrico (consumido en la comida) */
+      --lime-dim: #7FA22E; /* lima apagado (total del día / resto) */
       --green: #2FA84F;   /* verde check */
       --red:   #E2483D;   /* eliminar */
       --muted: #908C81;
@@ -84,25 +85,22 @@
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
 
-    /* ---------- Tabs de vista (subrayado, estilo HG) ---------- */
+    /* ---------- Selector de vista (pills sombreadas) ---------- */
     .view-tabs {
-      display: flex; gap: 22px; overflow-x: auto;
-      margin: 0 -18px 20px; padding: 0 18px 10px;
-      border-bottom: 1px solid var(--line);
+      display: flex; gap: 8px; overflow-x: auto;
+      margin: 0 -18px 20px; padding: 0 18px 2px;
       scrollbar-width: none;
     }
     .view-tabs::-webkit-scrollbar { display: none; }
     .view-tabs button {
-      flex: 0 0 auto; border: none; background: none; cursor: pointer;
-      font-family: var(--disp); font-size: 15px; font-weight: 700;
-      letter-spacing: 0.01em; color: var(--muted);
-      padding: 0 0 10px; position: relative; white-space: nowrap;
+      flex: 0 0 auto; cursor: pointer;
+      border: 1px solid var(--line); background: var(--card); color: var(--ink);
+      border-radius: 99px; padding: 9px 17px;
+      font-family: var(--disp); font-size: 13px; font-weight: 700;
+      letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap;
+      transition: all 0.15s ease;
     }
-    .view-tabs button.active { color: var(--ink); }
-    .view-tabs button.active::after {
-      content: ""; position: absolute; left: 0; right: 0; bottom: -11px;
-      height: 3px; background: var(--ink); border-radius: 3px;
-    }
+    .view-tabs button.active { background: var(--ink); color: #fff; border-color: var(--ink); }
 
     /* ---------- Hero: contador de calorías (tarjeta negra) ---------- */
     .hero {
@@ -134,7 +132,7 @@
       background: rgba(255,255,255,0.14); overflow: hidden; display: flex;
     }
     .bar .seg { height: 100%; background: var(--lime); width: 0; transition: width 0.8s cubic-bezier(.22,.61,.36,1); }
-    .bar .seg.rest { opacity: 0.32; }
+    .bar .seg.rest { background: var(--lime-dim); }
 
     /* ---------- Macros (cajetines beige) ---------- */
     .macros { display: flex; flex-direction: column; gap: 10px; margin-bottom: 26px; }
@@ -152,8 +150,8 @@
     .macro .val span { font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
     .macro .val .pct { color: var(--ink); font-weight: 700; }
     .macro .mini { height: 9px; border-radius: 99px; background: rgba(19,19,17,0.10); overflow: hidden; display: flex; }
-    .macro .mini .seg { height: 100%; background: var(--ink); width: 0; transition: width 0.7s cubic-bezier(.22,.61,.36,1); }
-    .mini .seg.rest { opacity: 0.22; }
+    .macro .mini .seg { height: 100%; background: var(--lime); width: 0; transition: width 0.7s cubic-bezier(.22,.61,.36,1); }
+    .macro .mini .seg.rest { background: var(--lime-dim); }
 
     /* ---------- Cabecera de sección ---------- */
     .section-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
@@ -170,36 +168,39 @@
       margin: 18px 2px 9px;
     }
     .log-sub .ls-kcal { margin-left: auto; color: var(--ink); }
-    .log-list { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+    .log-list { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-    /* Fila deslizable (swipe-to-delete) */
-    .logf { position: relative; border-radius: var(--r-md); overflow: hidden; background: var(--red); }
+    /* Tarjeta de alimento (cuadrícula, estilo producto + swipe para eliminar) */
+    .logf {
+      position: relative; border-radius: var(--r-md); overflow: hidden; background: var(--red);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    }
     .logf-del {
-      position: absolute; top: 0; right: 0; bottom: 0; width: 96px; border: none;
+      position: absolute; top: 0; right: 0; bottom: 0; width: 88px; border: none;
       background: var(--red); color: #fff;
-      font-family: var(--disp); font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+      font-family: var(--disp); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
       display: flex; align-items: center; justify-content: center; cursor: pointer;
     }
     .logf-main {
       position: relative; z-index: 1;
-      display: flex; align-items: center; gap: 13px;
-      background: var(--card); border-radius: var(--r-md);
-      padding: 14px 16px; transform: translateX(0); touch-action: pan-y; cursor: pointer;
+      display: flex; flex-direction: column;
+      background: var(--bg); border-radius: var(--r-md); overflow: hidden;
+      transform: translateX(0); touch-action: pan-y; cursor: pointer;
     }
     .logf.swiping .logf-main { transition: none; }
     .logf:not(.swiping) .logf-main { transition: transform 0.25s cubic-bezier(.22,.61,.36,1); }
-    .logf-emoji {
-      width: 42px; height: 42px; border-radius: 11px; background: var(--bg);
-      display: flex; align-items: center; justify-content: center; font-size: 21px; flex-shrink: 0;
+    .logf-top {
+      background: var(--card); aspect-ratio: 1 / 0.82;
+      display: flex; align-items: center; justify-content: center;
     }
-    .logf-body { flex: 1; min-width: 0; }
+    .logf-emoji { font-size: 52px; line-height: 1; }
+    .logf-info { padding: 12px 14px 14px; }
     .logf-name {
-      font-family: var(--disp); font-size: 15px; font-weight: 700;
-      letter-spacing: 0.01em; text-transform: uppercase; color: var(--ink);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      font-family: var(--disp); font-size: 15px; font-weight: 800;
+      letter-spacing: 0.01em; text-transform: uppercase; color: var(--ink); line-height: 1.05;
     }
-    .logf-grams { font-size: 12.5px; color: var(--muted); margin-top: 2px; font-weight: 500; }
-    .logf-kcal { font-family: var(--disp); font-size: 17px; font-weight: 800; color: var(--ink); flex-shrink: 0; }
+    .logf-grams { font-size: 12px; color: var(--muted); margin-top: 3px; font-weight: 500; }
+    .logf-kcal { font-family: var(--disp); font-size: 18px; font-weight: 800; color: var(--ink); margin-top: 8px; }
     .logf-kcal span { font-family: var(--sans); font-size: 11px; font-weight: 500; color: var(--muted); }
 
     .meal-empty {
@@ -372,7 +373,6 @@
   </header>
 
   <div class="view-tabs" id="viewTabs">
-    <button data-view="dia">Día completo</button>
     <button data-view="Desayuno">Desayuno</button>
     <button data-view="Comida">Comida</button>
     <button data-view="Cena">Cena</button>
@@ -670,12 +670,12 @@
         <li class="logf" data-idx="${r.idx}">
           <button class="logf-del" data-del="${r.idx}">Eliminar</button>
           <div class="logf-main">
-            <span class="logf-emoji">${FOODS[r.food].emoji}</span>
-            <div class="logf-body">
+            <div class="logf-top"><span class="logf-emoji">${FOODS[r.food].emoji}</span></div>
+            <div class="logf-info">
               <div class="logf-name">${FOODS[r.food].name}</div>
               <div class="logf-grams">${r.grams} g</div>
+              <div class="logf-kcal">${r.n.kcal} <span>kcal</span></div>
             </div>
-            <span class="logf-kcal">${r.n.kcal} <span>kcal</span></span>
           </div>
         </li>`;
 
@@ -708,7 +708,8 @@
     $("viewTabs").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-view]");
       if (!b) return;
-      activeView = b.dataset.view;
+      // Tocar el chip activo lo deselecciona → vuelve a "día completo" (sin filtro)
+      activeView = (activeView === b.dataset.view) ? "dia" : b.dataset.view;
       render();
     });
 
@@ -716,7 +717,7 @@
        LOG: editar (tap) / eliminar (deslizar a la izquierda)
        ========================================================= */
     const foodLog = $("foodLog");
-    const SWIPE_OPEN = 96, SWIPE_THRESHOLD = 48;
+    const SWIPE_OPEN = 88, SWIPE_THRESHOLD = 44;
     let drag = null;
 
     const rowX = (row) => parseFloat(row.dataset.x || "0");
