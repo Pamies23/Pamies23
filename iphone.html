@@ -7,7 +7,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Verde">
-  <meta name="theme-color" content="#F4F1EA">
+  <meta name="theme-color" content="#FFFFFF">
   <link rel="apple-touch-icon" href="icon.png">
   <title>Verde</title>
 
@@ -17,6 +17,7 @@
 
   <style>
     :root {
+      --bg:         #FFFFFF;
       --cream:      #F4F1EA;
       --cream-card: #FBF9F4;
       --forest:     #1E3A2B;
@@ -38,7 +39,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
     html, body {
-      background: var(--cream);
+      background: var(--bg);
       color: var(--ink);
       font-family: var(--sans);
       -webkit-font-smoothing: antialiased;
@@ -139,21 +140,21 @@
     }
     .hero .remaining b { color: var(--lime); font-weight: 600; }
 
-    /* Barra horizontal mate */
+    /* Barra horizontal mate (dos segmentos: seleccionado + resto atenuado) */
     .bar {
       height: 12px;
       border-radius: 99px;
       background: rgba(244, 241, 234, 0.16);
       overflow: hidden;
+      display: flex;
     }
-    .bar > span {
-      display: block;
+    .bar .seg {
       height: 100%;
-      border-radius: 99px;
       background: var(--lime);
       width: 0;
-      transition: width 0.9s cubic-bezier(.22,.61,.36,1);
+      transition: width 0.8s cubic-bezier(.22,.61,.36,1);
     }
+    .bar .seg.rest { opacity: 0.3; }
 
     /* ---------- Macros (cajetines rectangulares a lo ancho) ---------- */
     .macros {
@@ -188,23 +189,52 @@
       color: var(--forest);
     }
     .macro .val span { font-size: 13px; color: var(--muted); font-family: var(--sans); }
+    .macro .val .pct { color: var(--terracotta); font-weight: 600; }
     .macro .mini {
       height: 8px;
       border-radius: 99px;
       background: var(--line);
       overflow: hidden;
+      display: flex;
     }
-    .macro .mini > span { display: block; height: 100%; border-radius: 99px; width: 0; transition: width 0.9s cubic-bezier(.22,.61,.36,1); }
-    .macro.p .mini > span { background: var(--olive); }
-    .macro.c .mini > span { background: var(--lime); }
-    .macro.f .mini > span { background: var(--terracotta); }
+    .macro .mini .seg { height: 100%; width: 0; transition: width 0.7s cubic-bezier(.22,.61,.36,1); }
+    .macro.p .mini .seg { background: var(--olive); }
+    .macro.c .mini .seg { background: var(--lime); }
+    .macro.f .mini .seg { background: var(--terracotta); }
+    .mini .seg.rest { opacity: 0.25; }   /* parte no seleccionada (fade tipo Power BI) */
 
-    /* ---------- Sección comidas (desplegables) ---------- */
+    /* ---------- Selector de vista (filtro de estadísticas) ---------- */
+    .view-tabs {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      margin-bottom: 18px;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+    .view-tabs::-webkit-scrollbar { display: none; }
+    .view-tabs button {
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      background: var(--cream-card);
+      color: var(--olive);
+      border-radius: 99px;
+      padding: 9px 16px;
+      font-family: var(--sans); font-size: 14px; font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .view-tabs button.active {
+      background: var(--forest); color: var(--cream); border-color: var(--forest);
+    }
+
+    /* ---------- Log de alimentos (por vista) ---------- */
     .section-head {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
     .section-head h2 {
       font-family: var(--serif);
@@ -212,74 +242,62 @@
       font-size: 22px;
       color: var(--forest);
     }
+    .section-head .sh-meta { font-size: 13px; color: var(--muted); font-weight: 500; }
 
-    .meal-groups { display: flex; flex-direction: column; gap: 10px; }
+    .log-sub {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+      color: var(--olive);
+      margin: 16px 2px 8px;
+    }
+    .log-sub .ls-kcal { margin-left: auto; color: var(--muted); font-weight: 600; letter-spacing: 0; text-transform: none; }
+    .log-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
 
-    .mgroup {
+    /* Fila deslizable (swipe-to-delete) */
+    .logf {
+      position: relative;
+      border-radius: var(--r-md);
+      overflow: hidden;
+      background: var(--terracotta);   /* se ve al deslizar */
+    }
+    .logf-del {
+      position: absolute; top: 0; right: 0; bottom: 0;
+      width: 96px; border: none;
+      background: var(--terracotta); color: var(--cream);
+      font-family: var(--sans); font-size: 14px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+    }
+    .logf-main {
+      position: relative; z-index: 1;
+      display: flex; align-items: center; gap: 12px;
       background: var(--cream-card);
       border: 1px solid var(--line);
       border-radius: var(--r-md);
-      overflow: hidden;
-    }
-    .mg-head {
-      width: 100%;
-      background: none;
-      border: none;
-      display: flex;
-      align-items: center;
-      gap: 13px;
-      padding: 15px 16px;
-      cursor: pointer;
-      font-family: var(--sans);
-      text-align: left;
-    }
-    .mg-emoji {
-      width: 40px; height: 40px;
-      border-radius: 12px;
-      background: var(--cream);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 19px;
-      flex-shrink: 0;
-    }
-    .mg-info { flex: 1; min-width: 0; }
-    .mg-name { font-weight: 600; font-size: 16px; color: var(--ink); }
-    .mg-sub { font-size: 13px; color: var(--muted); margin-top: 1px; }
-    .mg-kcal {
-      font-family: var(--serif); font-size: 18px; font-weight: 500;
-      color: var(--forest); flex-shrink: 0;
-    }
-    .mg-kcal span { font-size: 11px; color: var(--muted); font-family: var(--sans); font-weight: 500; }
-    .mg-chev {
-      font-size: 13px; color: var(--olive); flex-shrink: 0; width: 14px; text-align: center;
-      transition: transform 0.28s ease;
-    }
-    .mgroup.open .mg-chev { transform: rotate(180deg); }
-
-    .mg-body {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.32s ease;
-    }
-    .mgroup.open .mg-body { max-height: 1200px; }
-    .mg-list { list-style: none; padding: 0 16px 8px; }
-    .mg-food {
-      display: flex; align-items: center; gap: 12px;
-      padding: 11px 0;
-      border-top: 1px solid var(--line);
+      padding: 14px 16px;
+      transform: translateX(0);
+      touch-action: pan-y;
       cursor: pointer;
     }
-    .mgf-emoji { font-size: 17px; flex-shrink: 0; width: 22px; text-align: center; }
-    .mgf-body { flex: 1; min-width: 0; }
-    .mgf-name { font-size: 15px; font-weight: 500; color: var(--ink); }
-    .mgf-grams { font-size: 12.5px; color: var(--muted); margin-top: 1px; }
-    .mgf-kcal { font-size: 14px; font-weight: 600; color: var(--olive); flex-shrink: 0; }
-    .mgf-edit { font-size: 14px; color: var(--muted); flex-shrink: 0; opacity: 0.5; }
+    .logf.swiping .logf-main { transition: none; }
+    .logf:not(.swiping) .logf-main { transition: transform 0.25s cubic-bezier(.22,.61,.36,1); }
+    .logf-emoji {
+      width: 40px; height: 40px; border-radius: 12px; background: var(--cream);
+      display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0;
+    }
+    .logf-body { flex: 1; min-width: 0; }
+    .logf-name { font-size: 15px; font-weight: 600; color: var(--ink); }
+    .logf-grams { font-size: 12.5px; color: var(--muted); margin-top: 1px; }
+    .logf-kcal {
+      font-family: var(--serif); font-size: 17px; font-weight: 500; color: var(--forest); flex-shrink: 0;
+    }
+    .logf-kcal span { font-size: 11px; color: var(--muted); font-family: var(--sans); font-weight: 500; }
 
     .meal-empty {
       background: var(--cream-card);
       border: 1px dashed var(--line);
       border-radius: var(--r-md);
-      padding: 22px;
+      padding: 24px;
       text-align: center;
       color: var(--muted);
       font-size: 14px;
@@ -310,7 +328,7 @@
     .sheet {
       position: fixed;
       inset: 0;
-      background: var(--cream);
+      background: var(--bg);
       z-index: 50;
       display: flex;
       flex-direction: column;
@@ -437,7 +455,7 @@
       flex-shrink: 0;
       padding: 12px 20px calc(env(safe-area-inset-bottom) + 14px);
       border-top: 1px solid var(--line);
-      background: var(--cream);
+      background: var(--bg);
     }
     .confirm {
       width: 100%;
@@ -464,7 +482,7 @@
     .modal.open { visibility: visible; background: rgba(34, 36, 31, 0.45); }
     .modal-card {
       width: 100%; max-width: 460px;
-      background: var(--cream);
+      background: var(--bg);
       border-radius: 26px 26px 0 0;
       padding: 22px 22px calc(env(safe-area-inset-bottom) + 22px);
       transform: translateY(100%);
@@ -536,23 +554,35 @@
     <div class="avatar" id="avatar">V</div>
   </header>
 
+  <div class="view-tabs" id="viewTabs">
+    <button data-view="dia">Día completo</button>
+    <button data-view="Desayuno">Desayuno</button>
+    <button data-view="Comida">Comida</button>
+    <button data-view="Cena">Cena</button>
+    <button data-view="Snack">Snack</button>
+  </div>
+
   <section class="hero">
-    <div class="label">Hoy</div>
+    <div class="label" id="heroLabel">Hoy</div>
     <div class="count">
       <span class="now" id="kcalNow">0</span>
       <span class="goal" id="kcalGoal">/ 0</span>
       <span class="unit">kcal</span>
     </div>
-    <div class="remaining">Te quedan <b id="kcalLeft">0 kcal</b> para tu objetivo</div>
-    <div class="bar"><span id="kcalBar"></span></div>
+    <div class="remaining" id="kcalSub">Te quedan <b id="kcalLeft">0 kcal</b> para tu objetivo</div>
+    <div class="bar">
+      <span class="seg" id="kcalSel"></span>
+      <span class="seg rest" id="kcalRest"></span>
+    </div>
   </section>
 
   <section class="macros" id="macros"></section>
 
   <div class="section-head">
-    <h2>Comidas de hoy</h2>
+    <h2 id="logTitle">Comidas de hoy</h2>
+    <span class="sh-meta" id="logMeta"></span>
   </div>
-  <div class="meal-groups" id="mealGroups"></div>
+  <div id="foodLog"></div>
 
  </div><!-- /.app -->
 
@@ -725,6 +755,9 @@
       return "Buenas noches";
     }
 
+    // Vista activa para el filtro de estadísticas: "dia" o un momento del día
+    let activeView = "dia";
+
     function render() {
       // Cabecera
       const d = new Date();
@@ -745,90 +778,181 @@
       sum.carbs = Math.round(sum.carbs);
       sum.fat = Math.round(sum.fat);
 
-      // Contador principal (calorías)
-      const goal = DATA.goal.kcal;
-      const left = Math.max(0, goal - sum.kcal);
-      $("kcalNow").textContent = sum.kcal.toLocaleString("es-ES");
-      $("kcalGoal").textContent = "/ " + goal.toLocaleString("es-ES");
-      $("kcalLeft").textContent = left.toLocaleString("es-ES") + " kcal";
-      const pct = Math.min(100, Math.round((sum.kcal / goal) * 100));
-      requestAnimationFrame(() => { $("kcalBar").style.width = pct + "%"; });
+      // Totales por momento del día
+      const byMeal = {};
+      MEAL_ORDER.forEach(t => byMeal[t] = { kcal: 0, protein: 0, carbs: 0, fat: 0, items: [] });
+      resolved.forEach(r => {
+        const b = byMeal[r.time];
+        if (!b) return;
+        b.kcal += r.n.kcal; b.protein += r.n.protein; b.carbs += r.n.carbs; b.fat += r.n.fat;
+        b.items.push(r);
+      });
+      MEAL_ORDER.forEach(t => {
+        const b = byMeal[t];
+        b.protein = Math.round(b.protein); b.carbs = Math.round(b.carbs); b.fat = Math.round(b.fat);
+      });
 
-      // Macros (cajetines rectangulares)
+      const isDay = activeView === "dia";
+      const view = isDay ? sum : byMeal[activeView];
+      const dayKcal = sum.kcal;
+      const goal = DATA.goal.kcal;
+
+      // Chips de vista activos
+      $("viewTabs").querySelectorAll("button").forEach(b =>
+        b.classList.toggle("active", b.dataset.view === activeView));
+
+      // ---- Contador de calorías (hero) ----
+      $("heroLabel").textContent = isDay ? "Hoy" : activeView;
+      $("kcalNow").textContent = view.kcal.toLocaleString("es-ES");
+      if (isDay) {
+        const leftK = Math.max(0, goal - sum.kcal);
+        $("kcalGoal").textContent = "/ " + goal.toLocaleString("es-ES");
+        $("kcalSub").innerHTML = "Te quedan <b>" + leftK.toLocaleString("es-ES") + " kcal</b> para tu objetivo";
+      } else {
+        const pctDay = dayKcal > 0 ? Math.round(view.kcal / dayKcal * 100) : 0;
+        $("kcalGoal").textContent = "";
+        $("kcalSub").innerHTML = "<b>" + pctDay + "%</b> de las " + dayKcal.toLocaleString("es-ES") + " kcal de hoy";
+      }
+      const kSel = Math.min(100, Math.round(view.kcal / goal * 100));
+      const kRest = isDay ? 0 : Math.min(100 - kSel, Math.round(Math.max(0, dayKcal - view.kcal) / goal * 100));
+      requestAnimationFrame(() => {
+        $("kcalSel").style.width = kSel + "%";
+        $("kcalRest").style.width = kRest + "%";
+      });
+
+      // ---- Macros (con resaltado tipo Power BI) ----
       const macros = [
-        { key: "p", name: "Proteínas", val: sum.protein, goal: DATA.goal.protein },
-        { key: "c", name: "Carbohidratos", val: sum.carbs, goal: DATA.goal.carbs },
-        { key: "f", name: "Grasas", val: sum.fat, goal: DATA.goal.fat }
+        { key: "p", name: "Proteínas",     vVal: view.protein, dVal: sum.protein, goal: DATA.goal.protein },
+        { key: "c", name: "Carbohidratos", vVal: view.carbs,   dVal: sum.carbs,   goal: DATA.goal.carbs },
+        { key: "f", name: "Grasas",        vVal: view.fat,     dVal: sum.fat,     goal: DATA.goal.fat }
       ];
       $("macros").innerHTML = macros.map(m => {
-        const p = Math.min(100, Math.round((m.val / m.goal) * 100));
+        const sPct = Math.min(100, Math.round(m.vVal / m.goal * 100));
+        const rPct = isDay ? 0 : Math.min(100 - sPct, Math.round(Math.max(0, m.dVal - m.vVal) / m.goal * 100));
+        const valText = isDay
+          ? `${m.vVal}<span> / ${m.goal} g</span>`
+          : `${m.vVal}<span> g · <span class="pct">${m.dVal > 0 ? Math.round(m.vVal / m.dVal * 100) : 0}%</span> del día</span>`;
         return `
           <div class="macro ${m.key}">
             <div class="top">
               <div class="name">${m.name}</div>
-              <div class="val">${m.val}<span> / ${m.goal} g</span></div>
+              <div class="val">${valText}</div>
             </div>
-            <div class="mini"><span data-w="${p}"></span></div>
+            <div class="mini">
+              <span class="seg" data-w="${sPct}"></span>
+              <span class="seg rest" data-w="${rPct}"></span>
+            </div>
           </div>`;
       }).join("");
 
-      // Comidas agrupadas por momento del día (desplegables)
-      const groups = $("mealGroups");
-      const blocks = MEAL_ORDER.map(time => {
-        const its = resolved.filter(r => r.time === time);
-        if (!its.length) return "";
-        const tot = its.reduce((a, r) => a + r.n.kcal, 0);
-        const open = openMeals.has(time);
-        const rows = its.map(r => `
-          <li class="mg-food" data-idx="${r.idx}">
-            <span class="mgf-emoji">${FOODS[r.food].emoji}</span>
-            <div class="mgf-body">
-              <div class="mgf-name">${FOODS[r.food].name}</div>
-              <div class="mgf-grams">${r.grams} g</div>
-            </div>
-            <span class="mgf-kcal">${r.n.kcal} kcal</span>
-            <span class="mgf-edit">✎</span>
-          </li>`).join("");
-        return `
-          <div class="mgroup ${open ? "open" : ""}" data-meal="${time}">
-            <button class="mg-head" data-toggle="${time}">
-              <div class="mg-emoji">${MEAL_ICON[time]}</div>
-              <div class="mg-info">
-                <div class="mg-name">${time}</div>
-                <div class="mg-sub">${its.length} ${its.length === 1 ? "alimento" : "alimentos"}</div>
-              </div>
-              <div class="mg-kcal">${tot} <span>kcal</span></div>
-              <div class="mg-chev">▾</div>
-            </button>
-            <div class="mg-body"><ul class="mg-list">${rows}</ul></div>
-          </div>`;
-      }).join("");
-      groups.innerHTML = blocks || `<div class="meal-empty">Aún no has registrado nada hoy</div>`;
+      // ---- Log de alimentos (según vista, con swipe para eliminar) ----
+      $("logTitle").textContent = isDay ? "Comidas de hoy" : activeView;
+      $("logMeta").textContent = view.kcal ? view.kcal.toLocaleString("es-ES") + " kcal" : "";
 
-      // Animar mini-barras de macros
+      const rowHTML = (r) => `
+        <li class="logf" data-idx="${r.idx}">
+          <button class="logf-del" data-del="${r.idx}">Eliminar</button>
+          <div class="logf-main">
+            <span class="logf-emoji">${FOODS[r.food].emoji}</span>
+            <div class="logf-body">
+              <div class="logf-name">${FOODS[r.food].name}</div>
+              <div class="logf-grams">${r.grams} g</div>
+            </div>
+            <span class="logf-kcal">${r.n.kcal} <span>kcal</span></span>
+          </div>
+        </li>`;
+
+      const log = $("foodLog");
+      if (isDay) {
+        const blocks = MEAL_ORDER.map(t => {
+          const b = byMeal[t];
+          if (!b.items.length) return "";
+          return `
+            <div class="log-sub">${MEAL_ICON[t]} ${t}<span class="ls-kcal">${b.kcal} kcal</span></div>
+            <ul class="log-list">${b.items.map(rowHTML).join("")}</ul>`;
+        }).join("");
+        log.innerHTML = blocks || `<div class="meal-empty">Aún no has registrado nada hoy</div>`;
+      } else {
+        const b = byMeal[activeView];
+        log.innerHTML = b.items.length
+          ? `<ul class="log-list">${b.items.map(rowHTML).join("")}</ul>`
+          : `<div class="meal-empty">No has registrado nada en ${activeView}</div>`;
+      }
+
+      // Animar barras (segmento seleccionado + resto)
       requestAnimationFrame(() => {
-        document.querySelectorAll('.macro .mini > span').forEach(s => {
-          s.style.width = s.dataset.w + "%";
-        });
+        document.querySelectorAll('.macro .mini .seg').forEach(s => { s.style.width = s.dataset.w + "%"; });
       });
     }
 
     /* =========================================================
-       ACORDEÓN DE COMIDAS EN LA HOME (desplegar / plegar + editar)
+       SELECTOR DE VISTA (filtro de estadísticas)
        ========================================================= */
-    const openMeals = new Set(MEAL_ORDER);   // por defecto, todas desplegadas
+    $("viewTabs").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-view]");
+      if (!b) return;
+      activeView = b.dataset.view;
+      render();
+    });
 
-    $("mealGroups").addEventListener("click", (e) => {
-      const toggle = e.target.closest("[data-toggle]");
-      if (toggle) {
-        const time = toggle.dataset.toggle;
-        const grp = toggle.closest(".mgroup");
-        const nowOpen = grp.classList.toggle("open");
-        nowOpen ? openMeals.add(time) : openMeals.delete(time);
-        return;
+    /* =========================================================
+       LOG: editar (tap) / eliminar (deslizar a la izquierda)
+       ========================================================= */
+    const foodLog = $("foodLog");
+    const SWIPE_OPEN = 96, SWIPE_THRESHOLD = 48;
+    let drag = null;
+
+    const rowX = (row) => parseFloat(row.dataset.x || "0");
+    function setRowX(row, x) {
+      row.dataset.x = x;
+      row.querySelector(".logf-main").style.transform = "translateX(" + x + "px)";
+    }
+    function closeRows(except) {
+      foodLog.querySelectorAll(".logf").forEach(r => {
+        if (r !== except && rowX(r) !== 0) { r.classList.remove("swiping"); setRowX(r, 0); }
+      });
+    }
+
+    foodLog.addEventListener("pointerdown", (e) => {
+      const main = e.target.closest(".logf-main");
+      if (!main) return;
+      const row = main.closest(".logf");
+      drag = { row, idx: parseInt(row.dataset.idx, 10), startX: e.clientX, startY: e.clientY,
+               baseX: rowX(row), axis: null, moved: false, tx: rowX(row) };
+    });
+    document.addEventListener("pointermove", (e) => {
+      if (!drag) return;
+      const dx = e.clientX - drag.startX, dy = e.clientY - drag.startY;
+      if (!drag.axis) {
+        if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+          drag.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+          if (drag.axis === "x") { drag.row.classList.add("swiping"); closeRows(drag.row); }
+        } else return;
       }
-      const row = e.target.closest(".mg-food");
-      if (row) openEdit(parseInt(row.dataset.idx, 10));   // editar / eliminar
+      if (drag.axis !== "x") return;
+      drag.moved = true;
+      drag.tx = Math.min(0, Math.max(-SWIPE_OPEN, drag.baseX + dx));
+      drag.row.querySelector(".logf-main").style.transform = "translateX(" + drag.tx + "px)";
+    });
+    document.addEventListener("pointerup", () => {
+      if (!drag) return;
+      const d = drag; drag = null;
+      d.row.classList.remove("swiping");
+      if (d.axis === "x" && d.moved) {
+        setRowX(d.row, d.tx <= -SWIPE_THRESHOLD ? -SWIPE_OPEN : 0);
+      } else {
+        if (rowX(d.row) !== 0) setRowX(d.row, 0);   // estaba abierta → cerrar
+        else openEdit(d.idx);                        // tap limpio → editar
+      }
+    });
+
+    foodLog.addEventListener("click", (e) => {
+      const del = e.target.closest(".logf-del");
+      if (del) {
+        DATA.meals.splice(parseInt(del.dataset.del, 10), 1);
+        saveLog();
+        render();
+      }
     });
 
     /* =========================================================
