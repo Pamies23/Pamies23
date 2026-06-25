@@ -13,27 +13,27 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
     :root {
-      --bg:         #FFFFFF;
-      --cream:      #F4F1EA;
-      --cream-card: #FBF9F4;
-      --forest:     #1E3A2B;
-      --olive:      #5E7355;
-      --terracotta: #C9694A;
-      --lime:       #A8C256;
-      --ink:        #22241F;
-      --muted:      #8A8A7E;
-      --line:       #E6E1D6;
+      --bg:    #FFFFFF;
+      --card:  #ECE8DD;   /* beige avena (tarjetas) */
+      --card2: #E2DDCF;   /* beige un punto más oscuro */
+      --ink:   #131311;   /* casi negro */
+      --lime:  #C7F23E;   /* verde lima eléctrico (acento) */
+      --green: #2FA84F;   /* verde check */
+      --red:   #E2483D;   /* eliminar */
+      --muted: #908C81;
+      --line:  #E3DFD4;
 
-      --r-lg: 26px;
+      --r-lg: 24px;
       --r-md: 18px;
       --r-sm: 12px;
 
-      --serif: 'Fraunces', Georgia, serif;
-      --sans:  'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --disp: 'Archivo', -apple-system, sans-serif;   /* titulares / números */
+      --exp:  'Archivo', -apple-system, sans-serif;   /* display bestia (peso 900) */
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -44,502 +44,319 @@
       font-family: var(--sans);
       -webkit-font-smoothing: antialiased;
     }
+    html, body { height: 100%; position: fixed; width: 100%; overflow: hidden; }
 
-    /* El body NO scrollea: queda fijo a la pantalla. Así evitamos el
-       "tirón" del scroll de página en iOS y los saltos al ocultarse barras. */
-    html, body {
-      height: 100%;
-      position: fixed;
-      width: 100%;
-      overflow: hidden;
-    }
-
-    /* Contenedor real de scroll con momentum/rebote nativos de iOS. */
     .app {
       height: 100%;
       overflow-y: auto;
-      -webkit-overflow-scrolling: touch;   /* inercia tipo nativo */
-      overscroll-behavior-y: contain;       /* el rebote se queda dentro */
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
       scroll-behavior: smooth;
       padding:
         calc(env(safe-area-inset-top) + 12px)
-        20px
-        calc(env(safe-area-inset-bottom) + 110px);
-      padding-left: max(20px, env(safe-area-inset-left));
-      padding-right: max(20px, env(safe-area-inset-right));
+        18px
+        calc(env(safe-area-inset-bottom) + 120px);
+      padding-left: max(18px, env(safe-area-inset-left));
+      padding-right: max(18px, env(safe-area-inset-right));
     }
-
-    /* En modo app, un pelín más de respiro bajo el reloj/Dynamic Island */
     .standalone .app { padding-top: calc(env(safe-area-inset-top) + 20px); }
 
     /* ---------- Cabecera ---------- */
     .topbar {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      margin-bottom: 26px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 22px;
     }
     .greeting .eyebrow {
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--olive);
+      font-family: var(--disp);
+      font-size: 12px; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--muted);
     }
     .greeting h1 {
-      font-family: var(--serif);
-      font-weight: 500;
-      font-size: 30px;
-      line-height: 1.1;
-      margin-top: 4px;
-      color: var(--forest);
+      font-family: var(--exp);
+      font-weight: 800; font-size: 30px; line-height: 0.98;
+      letter-spacing: -0.01em; text-transform: uppercase;
+      margin-top: 3px; color: var(--ink);
     }
     .avatar {
-      width: 44px; height: 44px;
-      border-radius: 50%;
-      background: var(--forest);
-      color: var(--cream);
-      font-family: var(--serif);
-      font-size: 19px;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--ink); color: var(--lime);
+      font-family: var(--disp); font-weight: 800; font-size: 18px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
 
-    /* ---------- Tarjeta principal (contador) ---------- */
-    .hero {
-      background: var(--forest);
-      color: var(--cream);
-      border-radius: var(--r-lg);
-      padding: 26px 24px 24px;
-      margin-bottom: 16px;
-    }
-    .hero .label {
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: rgba(244, 241, 234, 0.65);
-    }
-    .hero .count {
-      font-family: var(--serif);
-      font-weight: 500;
-      line-height: 1;
-      margin: 12px 0 2px;
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
-    }
-    .hero .count .now { font-size: 58px; }
-    .hero .count .goal { font-size: 22px; color: rgba(244, 241, 234, 0.6); }
-    .hero .count .unit { font-size: 15px; color: rgba(244, 241, 234, 0.6); font-family: var(--sans); font-weight: 500; }
-
-    .hero .remaining {
-      font-size: 14px;
-      color: rgba(244, 241, 234, 0.75);
-      margin-bottom: 18px;
-    }
-    .hero .remaining b { color: var(--lime); font-weight: 600; }
-
-    /* Barra horizontal mate (dos segmentos: seleccionado + resto atenuado) */
-    .bar {
-      height: 12px;
-      border-radius: 99px;
-      background: rgba(244, 241, 234, 0.16);
-      overflow: hidden;
-      display: flex;
-    }
-    .bar .seg {
-      height: 100%;
-      background: var(--lime);
-      width: 0;
-      transition: width 0.8s cubic-bezier(.22,.61,.36,1);
-    }
-    .bar .seg.rest { opacity: 0.3; }
-
-    /* ---------- Macros (cajetines rectangulares a lo ancho) ---------- */
-    .macros {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 28px;
-    }
-    .macro {
-      background: var(--cream-card);
-      border: 1px solid var(--line);
-      border-radius: var(--r-md);
-      padding: 14px 16px;
-    }
-    .macro .top {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-    .macro .name {
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-    .macro .val {
-      font-family: var(--serif);
-      font-size: 20px;
-      font-weight: 500;
-      color: var(--forest);
-    }
-    .macro .val span { font-size: 13px; color: var(--muted); font-family: var(--sans); }
-    .macro .val .pct { color: var(--terracotta); font-weight: 600; }
-    .macro .mini {
-      height: 8px;
-      border-radius: 99px;
-      background: var(--line);
-      overflow: hidden;
-      display: flex;
-    }
-    .macro .mini .seg { height: 100%; width: 0; transition: width 0.7s cubic-bezier(.22,.61,.36,1); }
-    .macro.p .mini .seg { background: var(--olive); }
-    .macro.c .mini .seg { background: var(--lime); }
-    .macro.f .mini .seg { background: var(--terracotta); }
-    .mini .seg.rest { opacity: 0.25; }   /* parte no seleccionada (fade tipo Power BI) */
-
-    /* ---------- Selector de vista (filtro de estadísticas) ---------- */
+    /* ---------- Tabs de vista (subrayado, estilo HG) ---------- */
     .view-tabs {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      margin-bottom: 18px;
-      padding-bottom: 2px;
+      display: flex; gap: 22px; overflow-x: auto;
+      margin: 0 -18px 20px; padding: 0 18px 10px;
+      border-bottom: 1px solid var(--line);
       scrollbar-width: none;
     }
     .view-tabs::-webkit-scrollbar { display: none; }
     .view-tabs button {
-      flex: 0 0 auto;
-      border: 1px solid var(--line);
-      background: var(--cream-card);
-      color: var(--olive);
-      border-radius: 99px;
-      padding: 9px 16px;
-      font-family: var(--sans); font-size: 14px; font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      white-space: nowrap;
+      flex: 0 0 auto; border: none; background: none; cursor: pointer;
+      font-family: var(--disp); font-size: 15px; font-weight: 700;
+      letter-spacing: 0.01em; color: var(--muted);
+      padding: 0 0 10px; position: relative; white-space: nowrap;
     }
-    .view-tabs button.active {
-      background: var(--forest); color: var(--cream); border-color: var(--forest);
+    .view-tabs button.active { color: var(--ink); }
+    .view-tabs button.active::after {
+      content: ""; position: absolute; left: 0; right: 0; bottom: -11px;
+      height: 3px; background: var(--ink); border-radius: 3px;
     }
 
-    /* ---------- Log de alimentos (por vista) ---------- */
-    .section-head {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      margin-bottom: 12px;
+    /* ---------- Hero: contador de calorías (tarjeta negra) ---------- */
+    .hero {
+      background: var(--ink); color: #fff;
+      border-radius: var(--r-lg);
+      padding: 22px 22px 24px;
+      margin-bottom: 14px;
     }
+    .hero .label {
+      font-family: var(--disp);
+      font-size: 12px; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: rgba(255,255,255,0.5);
+    }
+    .hero .count {
+      display: flex; align-items: baseline; gap: 8px; margin: 8px 0 4px;
+    }
+    .hero .count .now {
+      font-family: var(--exp);
+      font-weight: 900; font-size: 64px; line-height: 0.9;
+      letter-spacing: -0.02em;
+    }
+    .hero .count .goal { font-family: var(--disp); font-weight: 700; font-size: 20px; color: rgba(255,255,255,0.45); }
+    .hero .count .unit { font-family: var(--disp); font-weight: 700; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.45); }
+    .hero .remaining { font-size: 14px; color: rgba(255,255,255,0.7); margin-bottom: 18px; }
+    .hero .remaining b { color: var(--lime); font-weight: 700; }
+
+    .bar {
+      height: 12px; border-radius: 99px;
+      background: rgba(255,255,255,0.14); overflow: hidden; display: flex;
+    }
+    .bar .seg { height: 100%; background: var(--lime); width: 0; transition: width 0.8s cubic-bezier(.22,.61,.36,1); }
+    .bar .seg.rest { opacity: 0.32; }
+
+    /* ---------- Macros (cajetines beige) ---------- */
+    .macros { display: flex; flex-direction: column; gap: 10px; margin-bottom: 26px; }
+    .macro {
+      background: var(--card); border-radius: var(--r-md); padding: 15px 17px;
+    }
+    .macro .top { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 11px; }
+    .macro .name {
+      font-family: var(--disp); font-size: 12px; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink);
+    }
+    .macro .val {
+      font-family: var(--disp); font-size: 21px; font-weight: 800; color: var(--ink); letter-spacing: -0.01em;
+    }
+    .macro .val span { font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+    .macro .val .pct { color: var(--ink); font-weight: 700; }
+    .macro .mini { height: 9px; border-radius: 99px; background: rgba(19,19,17,0.10); overflow: hidden; display: flex; }
+    .macro .mini .seg { height: 100%; background: var(--ink); width: 0; transition: width 0.7s cubic-bezier(.22,.61,.36,1); }
+    .mini .seg.rest { opacity: 0.22; }
+
+    /* ---------- Cabecera de sección ---------- */
+    .section-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
     .section-head h2 {
-      font-family: var(--serif);
-      font-weight: 500;
-      font-size: 22px;
-      color: var(--forest);
+      font-family: var(--exp); font-weight: 800; font-size: 22px;
+      letter-spacing: -0.01em; text-transform: uppercase; color: var(--ink);
     }
-    .section-head .sh-meta { font-size: 13px; color: var(--muted); font-weight: 500; }
+    .section-head .sh-meta { font-family: var(--disp); font-size: 13px; font-weight: 700; color: var(--muted); }
 
     .log-sub {
       display: flex; align-items: center; gap: 8px;
-      font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
-      color: var(--olive);
-      margin: 16px 2px 8px;
+      font-family: var(--disp); font-size: 12px; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+      margin: 18px 2px 9px;
     }
-    .log-sub .ls-kcal { margin-left: auto; color: var(--muted); font-weight: 600; letter-spacing: 0; text-transform: none; }
-    .log-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .log-sub .ls-kcal { margin-left: auto; color: var(--ink); }
+    .log-list { list-style: none; display: flex; flex-direction: column; gap: 9px; }
 
     /* Fila deslizable (swipe-to-delete) */
-    .logf {
-      position: relative;
-      border-radius: var(--r-md);
-      overflow: hidden;
-      background: var(--terracotta);   /* se ve al deslizar */
-    }
+    .logf { position: relative; border-radius: var(--r-md); overflow: hidden; background: var(--red); }
     .logf-del {
-      position: absolute; top: 0; right: 0; bottom: 0;
-      width: 96px; border: none;
-      background: var(--terracotta); color: var(--cream);
-      font-family: var(--sans); font-size: 14px; font-weight: 700;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer;
+      position: absolute; top: 0; right: 0; bottom: 0; width: 96px; border: none;
+      background: var(--red); color: #fff;
+      font-family: var(--disp); font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
     }
     .logf-main {
       position: relative; z-index: 1;
-      display: flex; align-items: center; gap: 12px;
-      background: var(--cream-card);
-      border: 1px solid var(--line);
-      border-radius: var(--r-md);
-      padding: 14px 16px;
-      transform: translateX(0);
-      touch-action: pan-y;
-      cursor: pointer;
+      display: flex; align-items: center; gap: 13px;
+      background: var(--card); border-radius: var(--r-md);
+      padding: 14px 16px; transform: translateX(0); touch-action: pan-y; cursor: pointer;
     }
     .logf.swiping .logf-main { transition: none; }
     .logf:not(.swiping) .logf-main { transition: transform 0.25s cubic-bezier(.22,.61,.36,1); }
     .logf-emoji {
-      width: 40px; height: 40px; border-radius: 12px; background: var(--cream);
-      display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0;
+      width: 42px; height: 42px; border-radius: 11px; background: var(--bg);
+      display: flex; align-items: center; justify-content: center; font-size: 21px; flex-shrink: 0;
     }
     .logf-body { flex: 1; min-width: 0; }
-    .logf-name { font-size: 15px; font-weight: 600; color: var(--ink); }
-    .logf-grams { font-size: 12.5px; color: var(--muted); margin-top: 1px; }
-    .logf-kcal {
-      font-family: var(--serif); font-size: 17px; font-weight: 500; color: var(--forest); flex-shrink: 0;
+    .logf-name {
+      font-family: var(--disp); font-size: 15px; font-weight: 700;
+      letter-spacing: 0.01em; text-transform: uppercase; color: var(--ink);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .logf-kcal span { font-size: 11px; color: var(--muted); font-family: var(--sans); font-weight: 500; }
+    .logf-grams { font-size: 12.5px; color: var(--muted); margin-top: 2px; font-weight: 500; }
+    .logf-kcal { font-family: var(--disp); font-size: 17px; font-weight: 800; color: var(--ink); flex-shrink: 0; }
+    .logf-kcal span { font-family: var(--sans); font-size: 11px; font-weight: 500; color: var(--muted); }
 
     .meal-empty {
-      background: var(--cream-card);
-      border: 1px dashed var(--line);
-      border-radius: var(--r-md);
-      padding: 24px;
-      text-align: center;
-      color: var(--muted);
-      font-size: 14px;
+      background: var(--card); border-radius: var(--r-md);
+      padding: 26px; text-align: center; color: var(--muted); font-size: 14px; font-weight: 500;
     }
 
-    /* ---------- Botón añadir ---------- */
+    /* ---------- Botón flotante añadir ---------- */
     .add {
       position: fixed;
-      right: max(20px, env(safe-area-inset-right));
-      bottom: calc(env(safe-area-inset-bottom) + 22px);
-      width: 60px; height: 60px;
-      border-radius: 50%;
-      background: var(--terracotta);
-      color: var(--cream);
-      border: none;
-      font-size: 30px;
-      font-weight: 300;
-      line-height: 1;
+      right: max(18px, env(safe-area-inset-right));
+      bottom: calc(env(safe-area-inset-bottom) + 20px);
+      width: 60px; height: 60px; border-radius: 50%;
+      background: var(--lime); color: var(--ink); border: none;
+      font-size: 32px; font-weight: 400; line-height: 1;
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 8px 22px rgba(201, 105, 74, 0.32);
-      cursor: pointer;
-      transition: transform 0.15s ease;
+      box-shadow: 0 10px 26px rgba(19,19,17,0.22);
+      cursor: pointer; transition: transform 0.15s ease;
     }
     .add:active { transform: scale(0.92); }
     .add.hidden { opacity: 0; pointer-events: none; transform: scale(0.6); }
 
     /* ---------- Pantalla Añadir comida (sheet) ---------- */
     .sheet {
-      position: fixed;
-      inset: 0;
-      background: var(--bg);
-      z-index: 50;
-      display: flex;
-      flex-direction: column;
+      position: fixed; inset: 0; background: var(--bg); z-index: 50;
+      display: flex; flex-direction: column;
       transform: translateY(100%);
-      transition: transform 0.36s cubic-bezier(.22,.61,.36,1);
-      will-change: transform;
+      transition: transform 0.36s cubic-bezier(.22,.61,.36,1); will-change: transform;
     }
     .sheet.open { transform: translateY(0); }
-
     .sheet-grip {
-      width: 38px; height: 5px; border-radius: 99px;
-      background: var(--line);
-      margin: 0 auto;
-      margin-top: calc(env(safe-area-inset-top) + 10px);
-      flex-shrink: 0;
+      width: 38px; height: 5px; border-radius: 99px; background: var(--line);
+      margin: calc(env(safe-area-inset-top) + 10px) auto 0; flex-shrink: 0;
     }
     .standalone .sheet-grip { margin-top: calc(env(safe-area-inset-top) + 16px); }
-
-    .sheet-head {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 20px 6px;
-      flex-shrink: 0;
-    }
-    .sheet-head h2 {
-      font-family: var(--serif); font-weight: 500; font-size: 19px; color: var(--forest);
-    }
-    .sheet-close {
-      background: none; border: none; color: var(--terracotta);
-      font-family: var(--sans); font-size: 15px; font-weight: 600; cursor: pointer;
-      padding: 4px 0;
-    }
+    .sheet-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px 6px; flex-shrink: 0; }
+    .sheet-head h2 { font-family: var(--exp); font-weight: 800; font-size: 19px; text-transform: uppercase; letter-spacing: -0.01em; }
+    .sheet-close { background: none; border: none; color: var(--ink); font-family: var(--disp); font-size: 14px; font-weight: 700; cursor: pointer; padding: 4px 0; }
     .sheet-spacer { width: 48px; }
 
-    .meal-tabs {
-      display: flex; gap: 8px; padding: 10px 20px 4px; flex-shrink: 0;
-      overflow-x: auto;
-    }
+    .meal-tabs { display: flex; gap: 8px; padding: 10px 18px 4px; flex-shrink: 0; overflow-x: auto; }
     .meal-tabs button {
-      flex: 1 0 auto;
-      border: 1px solid var(--line);
-      background: var(--cream-card);
-      color: var(--olive);
-      border-radius: 99px;
-      padding: 9px 16px;
-      font-family: var(--sans); font-size: 14px; font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      white-space: nowrap;
+      flex: 1 0 auto; border: 1px solid var(--line); background: var(--card);
+      color: var(--ink); border-radius: 99px; padding: 9px 16px;
+      font-family: var(--disp); font-size: 13px; font-weight: 700;
+      letter-spacing: 0.02em; text-transform: uppercase; cursor: pointer;
+      transition: all 0.15s ease; white-space: nowrap;
     }
-    .meal-tabs button.active {
-      background: var(--forest); color: var(--cream); border-color: var(--forest);
-    }
+    .meal-tabs button.active { background: var(--ink); color: #fff; border-color: var(--ink); }
 
-    .search-wrap {
-      position: relative; padding: 12px 20px 8px; flex-shrink: 0;
-    }
-    .search-ico {
-      position: absolute; left: 34px; top: 50%; transform: translateY(-30%);
-      font-size: 15px; opacity: 0.6; pointer-events: none;
-    }
+    .search-wrap { position: relative; padding: 12px 18px 8px; flex-shrink: 0; }
+    .search-ico { position: absolute; left: 32px; top: 50%; transform: translateY(-30%); font-size: 15px; opacity: 0.55; pointer-events: none; }
     .search-wrap input {
-      width: 100%;
-      border: 1px solid var(--line);
-      background: var(--cream-card);
-      border-radius: var(--r-md);
-      padding: 13px 14px 13px 40px;
-      font-family: var(--sans); font-size: 16px; color: var(--ink);
-      outline: none;
-      -webkit-appearance: none;
+      width: 100%; border: none; background: var(--card); border-radius: var(--r-md);
+      padding: 14px 14px 14px 40px; font-family: var(--sans); font-size: 16px; color: var(--ink);
+      outline: none; -webkit-appearance: none;
     }
-    .search-wrap input:focus { border-color: var(--olive); }
+    .search-wrap input:focus { box-shadow: inset 0 0 0 2px var(--ink); }
 
     .food-list {
-      list-style: none;
-      flex: 1; min-height: 0;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior-y: contain;
-      padding: 4px 20px 20px;
-      display: flex; flex-direction: column; gap: 8px;
+      list-style: none; flex: 1; min-height: 0; overflow-y: auto;
+      -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain;
+      padding: 4px 18px 20px; display: flex; flex-direction: column; gap: 9px;
     }
     .food {
-      display: flex; align-items: center; gap: 12px;
-      background: var(--cream-card);
-      border: 1px solid var(--line);
-      border-radius: var(--r-md);
-      padding: 12px 14px;
+      display: flex; align-items: center; gap: 13px;
+      background: var(--card); border-radius: var(--r-md); padding: 12px 14px;
     }
-    .food.picked { border-color: var(--olive); background: #F3F5EC; }
     .food .fe {
-      width: 38px; height: 38px; border-radius: 11px; background: var(--cream);
-      display: flex; align-items: center; justify-content: center; font-size: 18px;
-      flex-shrink: 0;
+      width: 40px; height: 40px; border-radius: 11px; background: var(--bg);
+      display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;
     }
     .food .fb { flex: 1; min-width: 0; }
-    .food .fb .ft { font-weight: 600; font-size: 15px; color: var(--ink);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .food .fb .fs { font-size: 12.5px; color: var(--muted); margin-top: 1px; }
-
-    /* Botón añadir / stepper */
+    .food .fb .ft {
+      font-family: var(--disp); font-weight: 700; font-size: 15px;
+      text-transform: uppercase; letter-spacing: 0.01em; color: var(--ink);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .food .fb .fs { font-size: 12.5px; color: var(--muted); margin-top: 1px; font-weight: 500; }
     .food .pick {
-      border: none; background: var(--forest); color: var(--cream);
-      width: 32px; height: 32px; border-radius: 50%;
-      font-size: 20px; font-weight: 300; line-height: 1;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; flex-shrink: 0;
-    }
-    .stepper {
-      display: flex; align-items: center; gap: 10px; flex-shrink: 0;
-    }
-    .stepper button {
-      border: none; width: 30px; height: 30px; border-radius: 50%;
-      background: var(--forest); color: var(--cream);
-      font-size: 18px; line-height: 1; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .stepper button.minus { background: var(--cream); color: var(--forest); border: 1px solid var(--line); }
-    .stepper .qty {
-      font-family: var(--serif); font-size: 17px; font-weight: 500;
-      color: var(--forest); min-width: 18px; text-align: center;
+      border: none; background: var(--ink); color: var(--lime);
+      width: 34px; height: 34px; border-radius: 50%;
+      font-size: 22px; font-weight: 400; line-height: 1;
+      display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
     }
 
-    .sheet-foot {
-      flex-shrink: 0;
-      padding: 12px 20px calc(env(safe-area-inset-bottom) + 14px);
-      border-top: 1px solid var(--line);
-      background: var(--bg);
-    }
+    .sheet-foot { flex-shrink: 0; padding: 12px 18px calc(env(safe-area-inset-bottom) + 14px); border-top: 1px solid var(--line); background: var(--bg); }
     .confirm {
-      width: 100%;
-      border: none;
-      background: var(--terracotta);
-      color: var(--cream);
-      border-radius: var(--r-md);
-      padding: 16px;
-      font-family: var(--sans); font-size: 16px; font-weight: 700;
-      cursor: pointer;
-      transition: opacity 0.15s ease, transform 0.12s ease;
+      width: 100%; border: none; background: var(--ink); color: #fff;
+      border-radius: 99px; padding: 17px;
+      font-family: var(--disp); font-size: 15px; font-weight: 700;
+      letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer;
+      transition: transform 0.12s ease;
     }
     .confirm:active { transform: scale(0.98); }
-    .confirm:disabled { background: var(--line); color: var(--muted); cursor: default; }
 
     /* ---------- Modal de gramos (añadir / editar) ---------- */
     .modal {
       position: fixed; inset: 0; z-index: 80;
       display: flex; align-items: flex-end; justify-content: center;
-      background: rgba(34, 36, 31, 0);
-      visibility: hidden;
+      background: rgba(19,19,17,0); visibility: hidden;
       transition: background 0.25s ease, visibility 0.25s ease;
     }
-    .modal.open { visibility: visible; background: rgba(34, 36, 31, 0.45); }
+    .modal.open { visibility: visible; background: rgba(19,19,17,0.5); }
     .modal-card {
-      width: 100%; max-width: 460px;
-      background: var(--bg);
-      border-radius: 26px 26px 0 0;
-      padding: 22px 22px calc(env(safe-area-inset-bottom) + 22px);
-      transform: translateY(100%);
-      transition: transform 0.3s cubic-bezier(.22,.61,.36,1);
+      width: 100%; max-width: 460px; background: var(--bg);
+      border-radius: 24px 24px 0 0; padding: 22px 20px calc(env(safe-area-inset-bottom) + 20px);
+      transform: translateY(100%); transition: transform 0.3s cubic-bezier(.22,.61,.36,1);
     }
     .modal.open .modal-card { transform: translateY(0); }
-
     .modal-top { display: flex; align-items: center; gap: 13px; margin-bottom: 16px; }
     .modal-emoji {
-      width: 46px; height: 46px; border-radius: 13px; background: var(--cream-card);
-      border: 1px solid var(--line);
-      display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;
+      width: 48px; height: 48px; border-radius: 12px; background: var(--card);
+      display: flex; align-items: center; justify-content: center; font-size: 23px; flex-shrink: 0;
     }
     .modal-title { flex: 1; min-width: 0; }
-    .modal-title h3 { font-family: var(--serif); font-weight: 500; font-size: 20px; color: var(--forest); }
-    .modal-ref { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .modal-title h3 { font-family: var(--disp); font-weight: 800; font-size: 19px; text-transform: uppercase; letter-spacing: 0.01em; color: var(--ink); }
+    .modal-ref { font-size: 13px; color: var(--muted); margin-top: 2px; font-weight: 500; }
 
     .grams-field {
       display: flex; align-items: center; gap: 14px;
-      background: var(--cream-card); border: 1px solid var(--line);
-      border-radius: var(--r-md);
-      padding: 10px 14px; margin-bottom: 14px;
+      background: var(--card); border-radius: var(--r-md);
+      padding: 10px 12px; margin-bottom: 14px;
     }
     .grams-field button {
-      border: none; width: 40px; height: 40px; border-radius: 50%;
-      background: var(--forest); color: var(--cream);
-      font-size: 22px; line-height: 1; cursor: pointer; flex-shrink: 0;
+      border: none; width: 42px; height: 42px; border-radius: 50%;
+      background: var(--ink); color: #fff; font-size: 24px; line-height: 1; cursor: pointer; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
     }
-    .grams-field .gminus { background: var(--cream); color: var(--forest); border: 1px solid var(--line); }
+    .grams-field .gminus { background: var(--bg); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); }
     .grams-field .gwrap { flex: 1; text-align: center; }
     .grams-field input {
       width: 100%; border: none; background: none; outline: none;
-      font-family: var(--serif); font-weight: 500; font-size: 32px; color: var(--forest);
-      text-align: center; -webkit-appearance: none; -moz-appearance: textfield;
+      font-family: var(--exp); font-weight: 900; font-size: 36px; color: var(--ink);
+      text-align: center; -webkit-appearance: none; -moz-appearance: textfield; letter-spacing: -0.02em;
     }
     .grams-field input::-webkit-outer-spin-button,
     .grams-field input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-    .grams-field .gunit { font-size: 13px; color: var(--muted); display: block; margin-top: -4px; }
+    .grams-field .gunit { font-family: var(--disp); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); display: block; margin-top: -2px; }
 
     .modal-preview {
       display: flex; justify-content: space-around; text-align: center;
-      background: var(--forest); color: var(--cream);
-      border-radius: var(--r-md); padding: 14px; margin-bottom: 16px;
+      background: var(--ink); border-radius: var(--r-md); padding: 14px; margin-bottom: 16px;
     }
-    .modal-preview .pv-n { font-family: var(--serif); font-size: 19px; font-weight: 500; }
-    .modal-preview .pv-l { font-size: 11px; color: rgba(244,241,234,0.6); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
+    .modal-preview .pv-n { font-family: var(--disp); font-size: 20px; font-weight: 800; color: #fff; }
     .modal-preview .pv-n.kcal { color: var(--lime); }
+    .modal-preview .pv-l { font-family: var(--disp); font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 3px; }
 
     .modal-actions { display: flex; gap: 10px; }
     .modal-actions button {
-      flex: 1; border: none; border-radius: var(--r-md); padding: 15px;
-      font-family: var(--sans); font-size: 15px; font-weight: 700; cursor: pointer;
+      flex: 1; border: none; border-radius: 99px; padding: 16px;
+      font-family: var(--disp); font-size: 14px; font-weight: 700;
+      letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer;
     }
-    .modal-actions .m-cancel { background: var(--cream-card); border: 1px solid var(--line); color: var(--olive); }
-    .modal-actions .m-delete { background: #F2E4DF; color: var(--terracotta); flex: 0 0 auto; padding: 15px 20px; }
-    .modal-actions .m-save { background: var(--terracotta); color: var(--cream); }
+    .modal-actions .m-cancel { background: var(--card); color: var(--ink); }
+    .modal-actions .m-delete { background: var(--red); color: #fff; flex: 0 0 auto; padding: 16px 22px; }
+    .modal-actions .m-save { background: var(--ink); color: #fff; }
   </style>
 </head>
 <body>
@@ -763,7 +580,7 @@
       const d = new Date();
       $("dateLabel").textContent = d.toLocaleDateString("es-ES",
         { weekday: "long", day: "numeric", month: "long" }).toUpperCase();
-      $("greeting").textContent = hello() + ", " + DATA.user.name;
+      $("greeting").textContent = hello();
       $("avatar").textContent = DATA.user.initial;
 
       // Resolver cada comida (con su índice original) y totales del día
