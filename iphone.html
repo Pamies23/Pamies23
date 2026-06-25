@@ -40,12 +40,19 @@
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
     html, body {
-      background: var(--bg);
+      background: #5A9F9F;
       color: var(--ink);
       font-family: var(--sans);
       -webkit-font-smoothing: antialiased;
     }
     html, body { height: 100%; height: 100dvh; position: fixed; width: 100%; overflow: hidden; }
+
+    /* Fondo de agua a pantalla completa (fijo). El contenido scrollea por encima
+       en toda la pantalla: nunca aparece blanco ni se corta. */
+    body::before {
+      content: ""; position: fixed; inset: 0; z-index: -1;
+      background: #5A9F9F url("water.jpg") center center / cover no-repeat;
+    }
 
     .app {
       height: 100%;
@@ -63,26 +70,11 @@
     }
     .standalone .app { padding-top: calc(env(safe-area-inset-top) + 20px); }
 
-    /* ---------- Región superior con fondo de agua (se funde con el blanco) ---------- */
+    /* ---------- Región superior (sin fondo propio: usa el agua de pantalla completa) ---------- */
     .top-region {
       position: relative;
       margin: calc((env(safe-area-inset-top) + 12px) * -1) -18px 22px;
-      padding: calc(env(safe-area-inset-top) + 16px) 18px 40px;
-      background-color: #5A9F9F;                 /* color del agua (relleno y borde superior) */
-      /* La capa de degradado funde la parte baja del agua hacia el blanco:
-         así no hay corte duro al pasar al contenido. */
-      background-image:
-        linear-gradient(to bottom, rgba(255,255,255,0) 62%, var(--bg) 100%),
-        url("water.jpg");
-      background-size: cover, cover;
-      background-position: center, center;
-      background-repeat: no-repeat, no-repeat;
-    }
-    /* Prolonga el color del agua hacia arriba: al tirar/rebotar nunca se ve blanco
-       ni parece que la foto se corta en el borde superior. */
-    .top-region::before {
-      content: ""; position: absolute; left: 0; right: 0; top: -100vh;
-      height: 100vh; background: #5A9F9F;
+      padding: calc(env(safe-area-inset-top) + 16px) 18px 22px;
     }
     .standalone .top-region {
       margin-top: calc((env(safe-area-inset-top) + 20px) * -1);
