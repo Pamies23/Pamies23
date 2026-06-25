@@ -131,6 +131,11 @@
       font-family: var(--disp); font-weight: 800; font-size: 14px; letter-spacing: 0.02em;
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
+    /* La versión es un cajetín pequeño (no un círculo) */
+    #version {
+      width: auto; height: auto; border-radius: 8px;
+      padding: 5px 9px; font-size: 12px; letter-spacing: 0.04em; white-space: nowrap;
+    }
 
     /* ---------- Selector de vista (pills, debajo de los macros) ---------- */
     .view-tabs {
@@ -268,7 +273,10 @@
     .logf-top {
       background: var(--card); aspect-ratio: 1 / 0.82;
       display: flex; align-items: center; justify-content: center;
+      transition: background 0.18s ease;
     }
+    /* Alimento seleccionado como filtro: su parte de arriba se pone en negro */
+    .logf.sel .logf-top { background: var(--ink); }
     .logf-emoji { font-size: 52px; line-height: 1; }
     .logf-info { padding: 12px 14px 14px; }
     .logf-name {
@@ -527,7 +535,7 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.21</div>
+      <div class="avatar" id="version">V.22</div>
     </header>
 
     <section class="hero">
@@ -854,6 +862,8 @@
     let activeView = "dia";
     // Macro seleccionado como filtro: null | "p" | "c" | "f"
     let activeMacro = null;
+    // Alimento concreto seleccionado como filtro: su idx | null
+    let activeFood = null;
     const MACROS = {
       p: { prop: "protein", f: 4, name: "Proteínas",     short: "prot" },
       c: { prop: "carbs",   f: 4, name: "Carbohidratos", short: "carb" },
@@ -927,6 +937,11 @@
       const dayKcal = sum.kcal;
       const goal = DATA.goal.kcal;
 
+      // Alimento concreto seleccionado como filtro (su idx) — exclusivo con el macro
+      const foodSel = (activeFood != null) ? resolved.find(r => r.idx === activeFood) : null;
+      if (activeFood != null && !foodSel) activeFood = null;
+      const statView = foodSel ? foodSel.n : view;   // valores que se muestran en hero/macros
+
       // Chips de vista activos
       $("viewTabs").querySelectorAll("button").forEach(b =>
         b.classList.toggle("active", b.dataset.view === activeView));
@@ -944,6 +959,17 @@
         $("kcalGoal").style.fontSize = "16px";
         $("kcalGoal").textContent = "KCAL";
         $("kcalSub").innerHTML = "<b>" + mGrams + " g</b> de " + mm.name;
+        kSel = Math.min(100, share);
+        $("kcalRingPct").textContent = share + "%";
+      } else if (foodSel) {
+        const fn = foodSel.n;
+        $("kcalNow").textContent = fn.kcal.toLocaleString("es-ES");
+        $("kcalNow").classList.remove("over");
+        $("kcalGoal").style.display = "";
+        $("kcalGoal").style.fontSize = "16px";
+        $("kcalGoal").textContent = "KCAL";
+        $("kcalSub").innerHTML = "<b>" + FOODS[foodSel.food].name + "</b> · " + foodSel.grams + " g";
+        const share = dayKcal > 0 ? Math.round(fn.kcal / dayKcal * 100) : 0;
         kSel = Math.min(100, share);
         $("kcalRingPct").textContent = share + "%";
       } else {
@@ -969,14 +995,14 @@
         $("kcalRingRest").style.strokeDashoffset = -kSel;
         $("kcalRingRest").style.strokeDasharray = kRest + " 100";
         $("kcalRingSel").style.strokeDasharray = kSel + " 100";
-        if (!activeMacro && isDay) fitGoalWidth();
+        if (!activeMacro && !foodSel && isDay) fitGoalWidth();
       });
 
       // ---- Macros (clic = filtrar; el seleccionado se resalta en negro) ----
       const macros = [
-        { key: "p", name: "Proteínas",     vVal: view.protein, dVal: sum.protein, goal: DATA.goal.protein },
-        { key: "c", name: "Carbohidratos", vVal: view.carbs,   dVal: sum.carbs,   goal: DATA.goal.carbs },
-        { key: "f", name: "Grasas",        vVal: view.fat,     dVal: sum.fat,     goal: DATA.goal.fat }
+        { key: "p", name: "Proteínas",     vVal: statView.protein, dVal: sum.protein, goal: DATA.goal.protein },
+        { key: "c", name: "Carbohidratos", vVal: statView.carbs,   dVal: sum.carbs,   goal: DATA.goal.carbs },
+        { key: "f", name: "Grasas",        vVal: statView.fat,     dVal: sum.fat,     goal: DATA.goal.fat }
       ];
       $("macros").innerHTML = macros.map(m => {
         const sPct = Math.min(100, Math.round(m.vVal / m.goal * 100));
@@ -1004,7 +1030,7 @@
           ? `${r.n[MACROS[macro].prop]} <span>g ${MACROS[macro].short}</span>`
           : `${r.n.kcal} <span>kcal</span>`;
         return `
-          <li class="logf" data-idx="${r.idx}">
+          <li class="logf${r.idx === activeFood ? " sel" : ""}" data-idx="${r.idx}">
             <div class="logf-main">
               <div class="logf-top"><span class="logf-emoji">${FOODS[r.food].emoji}</span></div>
               <div class="logf-info">
@@ -1069,16 +1095,26 @@
       const m = e.target.closest("[data-macro]");
       if (!m) return;
       activeMacro = (activeMacro === m.dataset.macro) ? null : m.dataset.macro;
+      activeFood = null;                  // macro y alimento son exclusivos
       render();
     });
 
     /* =========================================================
-       LOG: tocar una tarjeta para editar / eliminar (en el modal)
+       LOG: parte de arriba (beige) = filtra por ese alimento;
+            parte de abajo (números) = abre su menú para editar/eliminar.
        ========================================================= */
     const foodLog = $("foodLog");
     foodLog.addEventListener("click", (e) => {
       const card = e.target.closest(".logf");
-      if (card) openEdit(parseInt(card.dataset.idx, 10));
+      if (!card) return;
+      const idx = parseInt(card.dataset.idx, 10);
+      if (e.target.closest(".logf-top")) {
+        activeFood = (activeFood === idx) ? null : idx;   // otro alimento sustituye al anterior
+        activeMacro = null;                               // exclusivo con el macro
+        render();
+      } else {
+        openEdit(idx);
+      }
     });
 
     /* =========================================================
@@ -1446,7 +1482,7 @@
     });
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.21";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.22";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadLog();
     render();
