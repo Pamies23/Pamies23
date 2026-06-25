@@ -303,7 +303,7 @@
        Scroll NATURAL del documento, igual que la Home: así llegan hasta el
        borde inferior en standalone (un panel fijo no lo hacía). Solo se ve una
        a la vez (las demás van en display:none). */
-    #sheet, #sim, #simPick, #modal { display: none; }
+    #sheet, #sim, #simPick { display: none; }
     .page { min-height: 100%; background: var(--bg); }
     .page.shown, .sim.shown { display: block; animation: pageIn 0.26s ease both; }
     @keyframes pageIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
@@ -399,23 +399,23 @@
     }
     .confirm:active { transform: scale(0.98); }
 
-    /* ---------- Modal de gramos (añadir / editar) ----------
-       Es una "página" de scroll natural (como el resto) para que la tarjeta
-       llegue al borde inferior real en standalone. */
+    /* ---------- Modal de gramos (añadir / editar) ---------- */
     .modal {
-      min-height: 100%;
+      position: fixed; inset: 0; z-index: 80;
+      min-height: 100dvh;
       display: flex; align-items: flex-end; justify-content: center;
-      background: rgba(19,19,17,0.5);
+      background: rgba(19,19,17,0); visibility: hidden;
+      transition: background 0.25s ease, visibility 0.25s ease;
     }
-    .modal.shown { animation: modalFade 0.22s ease both; }
-    @keyframes modalFade { from { opacity: 0; } to { opacity: 1; } }
+    .modal.open { visibility: visible; background: rgba(19,19,17,0.5); }
     .modal-card {
       width: 100%; max-width: 460px; background: var(--bg);
-      box-shadow: 0 -10px 40px rgba(0,0,0,0.18);
-      border-radius: 24px 24px 0 0; padding: 22px 20px calc(env(safe-area-inset-bottom) + 20px);
-      animation: cardUp 0.3s cubic-bezier(.22,.61,.36,1) both;
+      border-radius: 24px 24px 0 0;
+      /* margen inferior justo (como el botón Hecho): sin hueco de más */
+      padding: 22px 20px max(14px, calc(env(safe-area-inset-bottom) - 6px));
+      transform: translateY(100%); transition: transform 0.3s cubic-bezier(.22,.61,.36,1);
     }
-    @keyframes cardUp { from { transform: translateY(100%); } to { transform: none; } }
+    .modal.open .modal-card { transform: translateY(0); }
     .modal-top { display: flex; align-items: center; gap: 13px; margin-bottom: 16px; }
     .modal-emoji {
       width: 48px; height: 48px; border-radius: 12px; background: var(--card);
@@ -527,7 +527,7 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.19</div>
+      <div class="avatar" id="version">V.20</div>
     </header>
 
     <section class="hero">
@@ -1090,17 +1090,15 @@
 
     // Solo una "página" visible (Home / Añadir / Simulador / Selector). Scroll
     // natural del documento → llega al borde inferior también en standalone.
-    let currentView = "app";   // vista visible (sin contar el modal, que va por encima)
     function showView(id) {
-      ["app", "sheet", "sim", "simPick", "modal"].forEach(v => {
+      ["app", "sheet", "sim", "simPick"].forEach(v => {
         const el = $(v), on = (v === id);
-        el.style.display = on ? (v === "modal" ? "flex" : "block") : "none";
+        el.style.display = on ? "block" : "none";
         if (v !== "app") el.classList.toggle("shown", on);
         el.setAttribute("aria-hidden", on ? "false" : "true");
       });
       $("addBtn").classList.toggle("hidden", id !== "app");
       window.scrollTo(0, 0);
-      if (id !== "modal") currentView = id;   // para volver aquí al cerrar el modal
     }
 
     function defaultMeal() {
@@ -1196,7 +1194,6 @@
        ========================================================= */
     const modal = $("modal");
     let modalState = null;   // { mode:'add'|'edit'|'recipe', foodKey/recipeKey, time, idx }
-    let modalScroll = 0;     // scroll de la vista de fondo al abrir el modal
 
     function syncMealPicker() {
       $("mMeals").querySelectorAll("button").forEach(b =>
@@ -1224,13 +1221,15 @@
       }
       syncMealPicker();
       updatePreview();
-      modalScroll = window.scrollY;   // recuerda dónde estaba la vista de fondo
-      showView("modal");
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden", "false");
+      updateScrollLock();             // bloquea el scroll del fondo mientras está abierto
     }
     function closeModal() {
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
       modalState = null;
-      showView(currentView);          // vuelve a la vista desde la que se abrió
-      window.scrollTo(0, modalScroll);
+      updateScrollLock();
     }
 
     function openAdd(foodKey) {
@@ -1430,7 +1429,7 @@
     });
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.19";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.20";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadLog();
     render();
