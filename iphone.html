@@ -46,13 +46,15 @@
       -webkit-font-smoothing: antialiased;
     }
     html { height: 100%; }
-    /* Ancla el body al viewport REAL con inset:0 (no a 100dvh). En standalone iOS,
-       100dvh calcula mal el alto y el final del scroll queda fuera de pantalla;
-       con inset:0 el scroller mide justo la pantalla visible y se ve todo. */
-    body { position: fixed; inset: 0; width: auto; height: auto; overflow: hidden; }
+    /* En standalone iOS, el "viewport" para position:fixed (inset:0) se queda corto
+       y no llega al área del indicador de inicio → deja una franja blanca abajo.
+       inset:0 ancla el borde; min-height:100dvh fuerza el alto REAL de pantalla
+       (que sí incluye esa zona), así se cubre todo sin franja blanca. */
+    body { position: fixed; inset: 0; width: auto; min-height: 100dvh; overflow: hidden; }
 
     .app {
       position: absolute; inset: 0;   /* ocupa exactamente la pantalla visible: sin cortes */
+      min-height: 100dvh;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
       overscroll-behavior-y: none;    /* sin rebote elástico → no aparece blanco al tirar */
@@ -90,6 +92,7 @@
     /* ---------- Splash de entrada (palmeras) ---------- */
     .splash {
       position: fixed; inset: 0; z-index: 200;
+      min-height: 100dvh;                        /* cubre hasta el borde inferior real (sin franja blanca) */
       background-color: #79908B;                 /* color de las palmeras (relleno) */
       background-image: url("palms.jpg");
       background-size: cover; background-position: center;
