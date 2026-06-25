@@ -49,7 +49,7 @@
        el splash, html+body pasan a color palmera para que esa franja nunca sea blanca. */
     html, body { height: 100%; }
     html { background: var(--bg); }
-    body { background: var(--bg); min-height: 100%; overflow-x: clip; overscroll-behavior-y: none; }
+    body { background: var(--bg); min-height: 100%; overflow-x: hidden; overscroll-behavior-y: none; }
     html.splashing, html.splashing body { background: #79908B; }
     /* Con un panel abierto (sheet/simulador/modal) se bloquea el scroll del fondo
        para que no aparezca la barra ni se mueva la Home por detrás. */
@@ -80,15 +80,11 @@
       background-size: cover;
       background-position: center;
     }
-    /* Prolonga la imagen hacia arriba: al rebotar (inercia) se ve un reflejo
-       desenfocado de la foto en vez de blanco. */
+    /* Prolonga el color del agua hacia arriba: al tirar/rebotar nunca se ve blanco
+       ni parece que la foto se corta en el borde superior. */
     .top-region::before {
-      content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: 70vh;
-      background-color: #5A9F9F;
-      background-image: url("water.jpg");
-      background-size: cover; background-position: center top;
-      transform: scaleY(-1); filter: blur(16px);
-      pointer-events: none;
+      content: ""; position: absolute; left: 0; right: 0; top: -100vh;
+      height: 100vh; background: #5A9F9F;
     }
     .standalone .top-region {
       margin-top: calc((env(safe-area-inset-top) + 20px) * -1);
@@ -487,7 +483,7 @@
         linear-gradient(rgba(255,255,255,0.28), rgba(255,255,255,0.28)),
         url("recipe-bg.jpg");
     }
-    .sim-top::before { background-color: #BFE3DE; background-image: url("recipe-bg.jpg"); }
+    .sim-top::before { background: #BFE3DE; }
     .sim { padding-bottom: calc(env(safe-area-inset-bottom) + 28px); }
 
     /* Botón ✕ de cerrar (en el sitio del círculo de versión de la Home) */
@@ -529,7 +525,7 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.16</div>
+      <div class="avatar" id="version">V.15</div>
     </header>
 
     <section class="hero">
@@ -1431,7 +1427,7 @@
     });
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.16";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.15";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadLog();
     render();
