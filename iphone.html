@@ -289,18 +289,18 @@
     .add:active { transform: scale(0.92); }
     .add.hidden { opacity: 0; pointer-events: none; transform: scale(0.6); }
 
-    /* ---------- Pantalla Añadir comida (sheet) ---------- */
-    .sheet {
-      position: fixed; inset: 0; background: var(--bg); z-index: 50;
-      min-height: 100dvh;            /* en standalone, inset:0 no llega abajo; esto sí cubre */
-      display: flex; flex-direction: column;
-      transform: translateY(100%);
-      transition: transform 0.36s cubic-bezier(.22,.61,.36,1); will-change: transform;
-    }
-    .sheet.open { transform: translateY(0); }
+    /* ---------- Páginas (Añadir comida / simulador / selector) ----------
+       Scroll NATURAL del documento, igual que la Home: así llegan hasta el
+       borde inferior en standalone (un panel fijo no lo hacía). Solo se ve una
+       a la vez (las demás van en display:none). */
+    #sheet, #sim, #simPick { display: none; }
+    .page { min-height: 100%; background: var(--bg); }
+    .page.shown, .sim.shown { display: block; animation: pageIn 0.26s ease both; }
+    @keyframes pageIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
     .sheet-head {
       display: flex; align-items: center; justify-content: space-between;
-      padding: calc(env(safe-area-inset-top) + 16px) 18px 6px; flex-shrink: 0;
+      padding: calc(env(safe-area-inset-top) + 14px) 18px 6px;
     }
     .sheet-head h2 { font-family: var(--exp); font-weight: 800; font-size: 19px; text-transform: uppercase; letter-spacing: -0.01em; }
     .sheet-close { background: none; border: none; color: var(--ink); font-family: var(--disp); font-size: 14px; font-weight: 700; cursor: pointer; padding: 4px 0; }
@@ -341,9 +341,8 @@
 
     /* Lista de alimentos en formato cuadro, igual que la Home */
     .food-list {
-      list-style: none; flex: 1; min-height: 0; overflow-y: auto;
-      -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain;
-      padding: 4px 18px calc(env(safe-area-inset-bottom) + 20px);
+      list-style: none;
+      padding: 6px 18px calc(env(safe-area-inset-bottom) + 28px);
       display: flex; flex-wrap: wrap; align-content: flex-start; gap: 12px;
     }
     .addf {
@@ -465,29 +464,28 @@
     .modal-actions .m-delete { background: var(--red); color: #fff; flex: 0 0 auto; padding: 16px 22px; }
     .modal-actions .m-save { background: var(--ink); color: #fff; }
 
-    /* ---------- Simulador de recetas ---------- */
-    .sim {
-      z-index: 60;
+    /* ---------- Simulador de recetas (misma estructura que la Home) ---------- */
+    /* La imagen de la sandía va en la región superior (tras hero+macros) y
+       corta a blanco debajo, igual que el agua en la Home. */
+    .sim-top {
       background-color: #BFE3DE;
       background-image:
-        linear-gradient(rgba(255,255,255,0.42), rgba(255,255,255,0.42)),
+        linear-gradient(rgba(255,255,255,0.28), rgba(255,255,255,0.28)),
         url("recipe-bg.jpg");
-      background-size: cover; background-position: center;
     }
-    .sim-pick { z-index: 70; }
-    .sim-body { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 6px 18px 22px; }
-    .sim-body .hero { margin-top: 6px; }
-    .sim-body .macros { margin-bottom: 14px; }
-    .confirm:disabled { opacity: 0.4; }
+    .sim-top::before { background: #BFE3DE; }
+    .sim { padding-bottom: calc(env(safe-area-inset-bottom) + 28px); }
 
-    .sim-name {
-      width: 100%; border: none; background: var(--card); border-radius: var(--r-md);
-      padding: 14px 16px; font-family: var(--disp); font-weight: 700; font-size: 16px;
-      color: var(--ink); outline: none; -webkit-appearance: none; margin: 2px 0 10px;
+    /* Botón ✕ de cerrar (en el sitio del círculo de versión de la Home) */
+    .page-x {
+      border: none; cursor: pointer;
+      font-family: var(--sans); font-size: 20px; font-weight: 400;
     }
-    .sim-name:focus { box-shadow: inset 0 0 0 2px var(--ink); }
+
+    .confirm:disabled { opacity: 0.4; }
     .sim-cat { padding: 0 0 14px; overflow: visible; }
     .sim-cat button { flex: 1 0 auto; }
+    .sim-save { width: 100%; margin-top: 4px; }
 
     .sim-items { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
     .sim-empty { background: var(--card); border-radius: var(--r-md); padding: 20px; text-align: center; color: var(--muted); font-size: 14px; font-weight: 500; }
@@ -517,7 +515,7 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.11</div>
+      <div class="avatar" id="version">V.12</div>
     </header>
 
     <div class="view-tabs" id="viewTabs">
@@ -563,7 +561,7 @@
   <button class="add" id="addBtn" aria-label="Añadir comida">+</button>
 
   <!-- ===================== Pantalla Añadir comida ===================== -->
-  <section class="sheet" id="sheet" aria-hidden="true">
+  <section class="page sheet" id="sheet" aria-hidden="true">
     <header class="sheet-head">
       <button class="sheet-close" id="sheetClose">Cerrar</button>
       <h2>Añadir comida</h2>
@@ -576,7 +574,7 @@
       <button data-type="recetas">Recetas</button>
     </div>
 
-    <!-- Categorías (solo en Alimentos) -->
+    <!-- Categorías -->
     <div class="cat-tabs" id="catTabs">
       <button data-cat="todos" class="active">Todos</button>
       <button data-cat="salado">Salado</button>
@@ -590,10 +588,6 @@
     </div>
 
     <ul class="food-list" id="foodList"></ul>
-
-    <div class="sheet-foot" id="sheetFoot">
-      <button class="confirm" id="sheetDone">Hecho</button>
-    </div>
   </section>
 
   <!-- ===================== Modal de gramos (añadir / editar) ===================== -->
@@ -639,16 +633,14 @@
     </div>
   </div>
 
-  <!-- ===================== Simulador de recetas ===================== -->
-  <section class="sheet sim" id="sim" aria-hidden="true">
-    <header class="sheet-head">
-      <button class="sheet-close" id="simClose">Cerrar</button>
-      <h2>Crear receta</h2>
-      <span class="sheet-spacer"></span>
-    </header>
+  <!-- ===================== Simulador de recetas (estructura tipo Home) ===================== -->
+  <section class="app sim" id="sim" aria-hidden="true">
+    <div class="top-region sim-top">
+      <header class="topbar">
+        <h1>Creador de recetas</h1>
+        <button class="avatar page-x" id="simClose" aria-label="Cerrar">✕</button>
+      </header>
 
-    <div class="sim-body" id="simBody">
-      <!-- Resumen en vivo del plato vs objetivo diario -->
       <section class="hero">
         <div class="hero-left">
           <div class="now" id="simNow">0</div>
@@ -664,27 +656,20 @@
         </div>
       </section>
       <section class="macros" id="simMacros"></section>
+    </div><!-- /.top-region -->
 
-      <!-- Nombre y categoría del plato -->
-      <input class="sim-name" id="simName" type="text" placeholder="Nombre del plato"
-             autocomplete="off" maxlength="40">
-      <div class="cat-tabs sim-cat" id="simCat">
-        <button data-cat="salado" class="active">Salado</button>
-        <button data-cat="dulce">Dulce</button>
-      </div>
-
-      <!-- Ingredientes del plato -->
-      <div class="sim-items" id="simItems"></div>
-      <button class="sim-add" id="simAddFood">＋ Añadir alimento</button>
+    <!-- Contenido sobre blanco (debajo del corte) -->
+    <div class="cat-tabs sim-cat" id="simCat">
+      <button data-cat="salado" class="active">Salado</button>
+      <button data-cat="dulce">Dulce</button>
     </div>
-
-    <div class="sheet-foot">
-      <button class="confirm" id="simSave" disabled>Guardar receta</button>
-    </div>
+    <div class="sim-items" id="simItems"></div>
+    <button class="sim-add" id="simAddFood">＋ Añadir alimento</button>
+    <button class="confirm sim-save" id="simSave" disabled>Guardar receta</button>
   </section>
 
   <!-- Selector de alimentos del simulador -->
-  <section class="sheet sim-pick" id="simPick" aria-hidden="true">
+  <section class="page sheet sim-pick" id="simPick" aria-hidden="true">
     <header class="sheet-head">
       <button class="sheet-close" id="simPickClose">Cerrar</button>
       <h2>Elegir alimento</h2>
@@ -851,11 +836,9 @@
        ========================================================= */
     const $ = (id) => document.getElementById(id);
 
-    // Bloquea el scroll del documento cuando hay algún panel abierto
+    // Bloquea el scroll del documento mientras el modal está abierto
     function updateScrollLock() {
-      const open = ["sheet", "sim", "simPick"].some(id => $(id).classList.contains("open"))
-                || $("modal").classList.contains("open");
-      document.documentElement.classList.toggle("locked", open);
+      document.documentElement.classList.toggle("locked", $("modal").classList.contains("open"));
     }
 
     // Vista activa para el filtro de estadísticas: "dia" o un momento del día
@@ -1049,6 +1032,19 @@
     let activeType = "alimentos";   // alimentos | recetas
     let activeCat  = "todos";       // todos | salado | dulce
 
+    // Solo una "página" visible (Home / Añadir / Simulador / Selector). Scroll
+    // natural del documento → llega al borde inferior también en standalone.
+    function showView(id) {
+      ["app", "sheet", "sim", "simPick"].forEach(v => {
+        const el = $(v), on = (v === id);
+        el.style.display = on ? "block" : "none";
+        if (v !== "app") el.classList.toggle("shown", on);
+        el.setAttribute("aria-hidden", on ? "false" : "true");
+      });
+      $("addBtn").classList.toggle("hidden", id !== "app");
+      window.scrollTo(0, 0);
+    }
+
     function defaultMeal() {
       const h = new Date().getHours();
       if (h < 11) return "Desayuno";
@@ -1062,17 +1058,9 @@
       $("search").value = "";
       syncSheetTabs();
       renderFoodList();
-      sheet.classList.add("open");
-      sheet.setAttribute("aria-hidden", "false");
-      $("addBtn").classList.add("hidden");
-      updateScrollLock();
+      showView("sheet");
     }
-    function closeSheet() {
-      sheet.classList.remove("open");
-      sheet.setAttribute("aria-hidden", "true");
-      $("addBtn").classList.remove("hidden");
-      updateScrollLock();
-    }
+    function closeSheet() { showView("app"); }
     function syncSheetTabs() {
       $("typeTabs").querySelectorAll("button").forEach(b =>
         b.classList.toggle("active", b.dataset.type === activeType));
@@ -1126,7 +1114,6 @@
 
     $("addBtn").addEventListener("click", openSheet);
     $("sheetClose").addEventListener("click", closeSheet);
-    $("sheetDone").addEventListener("click", closeSheet);
     $("search").addEventListener("input", renderFoodList);
 
     $("typeTabs").addEventListener("click", (e) => {
@@ -1273,13 +1260,11 @@
 
     function openSim() {
       simItems = []; simCat = "salado";
-      $("simName").value = "";
       $("simCat").querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.cat === simCat));
       simRender();
-      $("sim").classList.add("open"); $("sim").setAttribute("aria-hidden", "false");
-      updateScrollLock();
+      showView("sim");
     }
-    function closeSim() { $("sim").classList.remove("open"); $("sim").setAttribute("aria-hidden", "true"); updateScrollLock(); }
+    function closeSim() { showView("sheet"); }   // vuelve a Añadir → Recetas
 
     function simRender() {
       const goal = DATA.goal;
@@ -1325,11 +1310,10 @@
         document.querySelectorAll('#simMacros .mini .seg').forEach(s => s.style.width = s.dataset.w + "%");
       });
 
-      $("simSave").disabled = !(simItems.length && $("simName").value.trim());
+      $("simSave").disabled = !simItems.length;
     }
 
     $("simClose").addEventListener("click", closeSim);
-    $("simName").addEventListener("input", () => { $("simSave").disabled = !(simItems.length && $("simName").value.trim()); });
     $("simCat").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-cat]"); if (!b) return;
       simCat = b.dataset.cat;
@@ -1346,8 +1330,9 @@
     });
 
     $("simSave").addEventListener("click", () => {
-      const name = $("simName").value.trim();
-      if (!name || !simItems.length) return;
+      if (!simItems.length) return;
+      const name = (prompt("Nombre del plato:", "") || "").trim();
+      if (!name) return;                       // pide el nombre al guardar
       const id = "u" + Date.now();
       userRecipes[id] = {
         name, cat: simCat, user: true,
@@ -1355,8 +1340,8 @@
         items: simItems.map(it => ({ food: it.food, grams: it.grams }))
       };
       saveRecipes();
-      closeSim();
       activeType = "recetas"; activeCat = "todos"; syncSheetTabs(); renderFoodList();
+      showView("sheet");                       // a Añadir → Recetas, ya con el plato guardado
     });
 
     /* ---- Selector de alimentos del simulador ---- */
@@ -1365,10 +1350,9 @@
       simPickCat = "todos"; $("simSearch").value = "";
       $("simPickCat").querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.cat === "todos"));
       renderSimPick();
-      $("simPick").classList.add("open"); $("simPick").setAttribute("aria-hidden", "false");
-      updateScrollLock();
+      showView("simPick");
     }
-    function closeSimPick() { $("simPick").classList.remove("open"); $("simPick").setAttribute("aria-hidden", "true"); updateScrollLock(); }
+    function closeSimPick() { showView("sim"); }
     function renderSimPick() {
       const q = $("simSearch").value.trim().toLowerCase();
       const entries = Object.entries(FOODS).filter(([, f]) =>
@@ -1394,7 +1378,7 @@
     });
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.11";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.12";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadLog();
     render();
