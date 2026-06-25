@@ -527,7 +527,7 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.20</div>
+      <div class="avatar" id="version">V.21</div>
     </header>
 
     <section class="hero">
@@ -576,9 +576,9 @@
   <!-- ===================== Pantalla Añadir comida ===================== -->
   <section class="page sheet" id="sheet" aria-hidden="true">
     <header class="sheet-head">
-      <button class="sheet-close" id="sheetClose">Cerrar</button>
-      <h2>Añadir comida</h2>
       <span class="sheet-spacer"></span>
+      <h2>Añadir comida</h2>
+      <button class="sheet-close" id="sheetClose">Cerrar</button>
     </header>
 
     <!-- Alimentos sueltos o recetas -->
@@ -680,9 +680,9 @@
   <!-- Selector de alimentos del simulador -->
   <section class="page sheet sim-pick" id="simPick" aria-hidden="true">
     <header class="sheet-head">
-      <button class="sheet-close" id="simPickClose">Cerrar</button>
-      <h2>Elegir alimento</h2>
       <span class="sheet-spacer"></span>
+      <h2>Elegir alimento</h2>
+      <button class="sheet-close" id="simPickClose">Cerrar</button>
     </header>
     <div class="cat-tabs" id="simPickCat">
       <button data-cat="todos" class="active">Todos</button>
@@ -1172,6 +1172,23 @@
     $("sheetClose").addEventListener("click", closeSheet);
     $("search").addEventListener("input", renderFoodList);
 
+    // Deslizar hacia abajo (estando arriba del todo) cierra el panel
+    function enablePullToDismiss(el, dismiss) {
+      let startY = null, tracking = false;
+      el.addEventListener("touchstart", (e) => {
+        tracking = window.scrollY <= 0;
+        startY = tracking ? e.touches[0].clientY : null;
+      }, { passive: true });
+      el.addEventListener("touchmove", (e) => {
+        if (!tracking || startY === null) return;
+        if (window.scrollY > 0) { tracking = false; return; }
+        if (e.touches[0].clientY - startY > 70) { tracking = false; startY = null; dismiss(); }
+      }, { passive: true });
+      el.addEventListener("touchend", () => { tracking = false; startY = null; });
+    }
+    enablePullToDismiss($("sheet"), closeSheet);
+    enablePullToDismiss($("simPick"), closeSimPick);
+
     $("typeTabs").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-type]"); if (!b) return;
       activeType = b.dataset.type; syncSheetTabs(); renderFoodList();
@@ -1429,7 +1446,7 @@
     });
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.20";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.21";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadLog();
     render();
