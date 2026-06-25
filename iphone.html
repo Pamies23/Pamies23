@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Verde">
+  <meta name="theme-color" content="#F4F1EA">
+  <link rel="apple-touch-icon" href="icon.png">
+  <title>Verde</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --cream:      #F4F1EA;
+      --cream-card: #FBF9F4;
+      --forest:     #1E3A2B;
+      --olive:      #5E7355;
+      --terracotta: #C9694A;
+      --lime:       #A8C256;
+      --ink:        #22241F;
+      --muted:      #8A8A7E;
+      --line:       #E6E1D6;
+
+      --r-lg: 26px;
+      --r-md: 18px;
+      --r-sm: 12px;
+
+      --serif: 'Fraunces', Georgia, serif;
+      --sans:  'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      background: var(--cream);
+      color: var(--ink);
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
+      overscroll-behavior-y: none;
+    }
+
+    body {
+      min-height: 100vh;
+      padding:
+        calc(env(safe-area-inset-top) + 12px)
+        20px
+        calc(env(safe-area-inset-bottom) + 24px);
+      padding-left: max(20px, env(safe-area-inset-left));
+      padding-right: max(20px, env(safe-area-inset-right));
+    }
+
+    /* En modo app, un pelín más de respiro bajo el reloj/Dynamic Island */
+    .standalone body { padding-top: calc(env(safe-area-inset-top) + 20px); }
+
+    /* ---------- Cabecera ---------- */
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 26px;
+    }
+    .greeting .eyebrow {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--olive);
+    }
+    .greeting h1 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: 30px;
+      line-height: 1.1;
+      margin-top: 4px;
+      color: var(--forest);
+    }
+    .avatar {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: var(--forest);
+      color: var(--cream);
+      font-family: var(--serif);
+      font-size: 19px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* ---------- Tarjeta principal (contador) ---------- */
+    .hero {
+      background: var(--forest);
+      color: var(--cream);
+      border-radius: var(--r-lg);
+      padding: 26px 24px 24px;
+      margin-bottom: 16px;
+    }
+    .hero .label {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(244, 241, 234, 0.65);
+    }
+    .hero .count {
+      font-family: var(--serif);
+      font-weight: 500;
+      line-height: 1;
+      margin: 12px 0 2px;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .hero .count .now { font-size: 58px; }
+    .hero .count .goal { font-size: 22px; color: rgba(244, 241, 234, 0.6); }
+    .hero .count .unit { font-size: 15px; color: rgba(244, 241, 234, 0.6); font-family: var(--sans); font-weight: 500; }
+
+    .hero .remaining {
+      font-size: 14px;
+      color: rgba(244, 241, 234, 0.75);
+      margin-bottom: 18px;
+    }
+    .hero .remaining b { color: var(--lime); font-weight: 600; }
+
+    /* Barra horizontal mate */
+    .bar {
+      height: 12px;
+      border-radius: 99px;
+      background: rgba(244, 241, 234, 0.16);
+      overflow: hidden;
+    }
+    .bar > span {
+      display: block;
+      height: 100%;
+      border-radius: 99px;
+      background: var(--lime);
+      width: 0;
+      transition: width 0.9s cubic-bezier(.22,.61,.36,1);
+    }
+
+    /* ---------- Macros ---------- */
+    .macros {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 26px;
+    }
+    .macro {
+      background: var(--cream-card);
+      border: 1px solid var(--line);
+      border-radius: var(--r-md);
+      padding: 14px;
+    }
+    .macro .name {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .macro .val {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--forest);
+      margin: 4px 0 10px;
+    }
+    .macro .val span { font-size: 13px; color: var(--muted); font-family: var(--sans); }
+    .macro .mini {
+      height: 6px;
+      border-radius: 99px;
+      background: var(--line);
+      overflow: hidden;
+    }
+    .macro .mini > span { display: block; height: 100%; border-radius: 99px; width: 0; transition: width 0.9s ease; }
+    .macro.p .mini > span { background: var(--olive); }
+    .macro.c .mini > span { background: var(--lime); }
+    .macro.f .mini > span { background: var(--terracotta); }
+
+    /* ---------- Sección comidas ---------- */
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .section-head h2 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: 22px;
+      color: var(--forest);
+    }
+    .section-head .link {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--terracotta);
+    }
+
+    .meals { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .meal {
+      background: var(--cream-card);
+      border: 1px solid var(--line);
+      border-radius: var(--r-md);
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .meal .emoji {
+      width: 42px; height: 42px;
+      border-radius: 12px;
+      background: var(--cream);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .meal .body { flex: 1; min-width: 0; }
+    .meal .body .t {
+      font-weight: 600;
+      font-size: 16px;
+      color: var(--ink);
+    }
+    .meal .body .s {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .meal .kcal {
+      font-family: var(--serif);
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--forest);
+      flex-shrink: 0;
+    }
+    .meal .kcal span { font-size: 11px; color: var(--muted); font-family: var(--sans); display: block; text-align: right; font-weight: 500; }
+
+    .meal.empty {
+      justify-content: center;
+      color: var(--muted);
+      font-size: 14px;
+      border-style: dashed;
+      padding: 22px;
+    }
+
+    /* ---------- Botón añadir ---------- */
+    .add {
+      position: fixed;
+      right: max(20px, env(safe-area-inset-right));
+      bottom: calc(env(safe-area-inset-bottom) + 22px);
+      width: 60px; height: 60px;
+      border-radius: 50%;
+      background: var(--terracotta);
+      color: var(--cream);
+      border: none;
+      font-size: 30px;
+      font-weight: 300;
+      line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 8px 22px rgba(201, 105, 74, 0.32);
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+    .add:active { transform: scale(0.92); }
+  </style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="greeting">
+      <div class="eyebrow" id="dateLabel">—</div>
+      <h1 id="greeting">Hola</h1>
+    </div>
+    <div class="avatar" id="avatar">V</div>
+  </header>
+
+  <section class="hero">
+    <div class="label">Hoy</div>
+    <div class="count">
+      <span class="now" id="kcalNow">0</span>
+      <span class="goal" id="kcalGoal">/ 0</span>
+      <span class="unit">kcal</span>
+    </div>
+    <div class="remaining">Te quedan <b id="kcalLeft">0 kcal</b> para tu objetivo</div>
+    <div class="bar"><span id="kcalBar"></span></div>
+  </section>
+
+  <section class="macros" id="macros"></section>
+
+  <div class="section-head">
+    <h2>Comidas de hoy</h2>
+    <span class="link">Ver todo</span>
+  </div>
+  <ul class="meals" id="meals"></ul>
+
+  <button class="add" aria-label="Añadir comida">+</button>
+
+  <script>
+    /* Detección modo app vs Safari */
+    if (navigator.standalone === true ||
+        matchMedia('(display-mode: standalone)').matches) {
+      document.documentElement.classList.add('standalone');
+    }
+
+    /* =========================================================
+       DATOS  —  estructura lista para rellenar con Vitrubio.
+       Solo hay que sustituir estos valores; la vista se pinta sola.
+       ========================================================= */
+    const DATA = {
+      user: { name: "Verde", initial: "V" },
+      goal: { kcal: 2000, protein: 140, carbs: 220, fat: 65 }, // objetivos diarios
+      meals: [
+        { name: "Avena con frutos rojos", time: "Desayuno", emoji: "🥣", kcal: 320, protein: 12, carbs: 54, fat: 7 },
+        { name: "Bowl de pollo y quinoa",  time: "Comida",   emoji: "🥗", kcal: 540, protein: 42, carbs: 48, fat: 18 },
+        { name: "Yogur griego y nueces",   time: "Snack",    emoji: "🍶", kcal: 210, protein: 16, carbs: 9,  fat: 12 }
+      ]
+    };
+
+    /* =========================================================
+       RENDER
+       ========================================================= */
+    const $ = (id) => document.getElementById(id);
+
+    function hello() {
+      const h = new Date().getHours();
+      if (h < 6)  return "Buenas noches";
+      if (h < 14) return "Buenos días";
+      if (h < 21) return "Buenas tardes";
+      return "Buenas noches";
+    }
+
+    function render() {
+      // Cabecera
+      const d = new Date();
+      $("dateLabel").textContent = d.toLocaleDateString("es-ES",
+        { weekday: "long", day: "numeric", month: "long" }).toUpperCase();
+      $("greeting").textContent = hello() + ", " + DATA.user.name;
+      $("avatar").textContent = DATA.user.initial;
+
+      // Totales del día
+      const sum = DATA.meals.reduce((a, m) => ({
+        kcal: a.kcal + (m.kcal || 0),
+        protein: a.protein + (m.protein || 0),
+        carbs: a.carbs + (m.carbs || 0),
+        fat: a.fat + (m.fat || 0)
+      }), { kcal: 0, protein: 0, carbs: 0, fat: 0 });
+
+      // Contador principal
+      const goal = DATA.goal.kcal;
+      const left = Math.max(0, goal - sum.kcal);
+      $("kcalNow").textContent = sum.kcal.toLocaleString("es-ES");
+      $("kcalGoal").textContent = "/ " + goal.toLocaleString("es-ES");
+      $("kcalLeft").textContent = left.toLocaleString("es-ES") + " kcal";
+      const pct = Math.min(100, Math.round((sum.kcal / goal) * 100));
+      requestAnimationFrame(() => { $("kcalBar").style.width = pct + "%"; });
+
+      // Macros
+      const macros = [
+        { key: "p", name: "Proteínas", val: sum.protein, goal: DATA.goal.protein },
+        { key: "c", name: "Carbos",    val: sum.carbs,   goal: DATA.goal.carbs },
+        { key: "f", name: "Grasas",    val: sum.fat,     goal: DATA.goal.fat }
+      ];
+      $("macros").innerHTML = macros.map(m => {
+        const p = Math.min(100, Math.round((m.val / m.goal) * 100));
+        return `
+          <div class="macro ${m.key}">
+            <div class="name">${m.name}</div>
+            <div class="val">${m.val}<span> /${m.goal}g</span></div>
+            <div class="mini"><span data-w="${p}"></span></div>
+          </div>`;
+      }).join("");
+
+      // Comidas
+      const list = $("meals");
+      if (!DATA.meals.length) {
+        list.innerHTML = `<li class="meal empty">Aún no has registrado nada hoy</li>`;
+      } else {
+        list.innerHTML = DATA.meals.map(m => `
+          <li class="meal">
+            <div class="emoji">${m.emoji || "🍽️"}</div>
+            <div class="body">
+              <div class="t">${m.name}</div>
+              <div class="s">${m.time}</div>
+            </div>
+            <div class="kcal">${m.kcal}<span>kcal</span></div>
+          </li>`).join("");
+      }
+
+      // Animar mini-barras de macros
+      requestAnimationFrame(() => {
+        document.querySelectorAll('.macro .mini > span').forEach(s => {
+          s.style.width = s.dataset.w + "%";
+        });
+      });
+    }
+
+    render();
+  </script>
+</body>
+</html>
