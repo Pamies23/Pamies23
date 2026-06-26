@@ -618,6 +618,55 @@
     }
     .sex-toggle button.active { background: var(--ink); color: #fff; }
     .prof-body .confirm { margin-top: 4px; }
+
+    /* =========================================================
+       iPad / pantallas grandes — layout propio (no un móvil estirado)
+       ========================================================= */
+    @media (min-width: 768px) {
+      /* Tipos un poco mayores en cabeceras para que respiren en pantalla grande */
+      .topbar h1 { font-size: 34px; }
+      /* Listas de alimentos del selector: 3 columnas y contenido centrado */
+      .food-list { max-width: 940px; margin: 0 auto; }
+      .food-list .addf { width: calc(33.333% - 8px); }
+      /* El menú de Home: 3 columnas (en lugar de 2) para no estirar las tarjetas */
+      #foodLog .log-list { grid-template-columns: repeat(3, 1fr); }
+      /* Cabeceras/controles de las hojas, centrados y más anchos */
+      .sheet-head, .type-tabs, .cat-tabs, .search-wrap { max-width: 940px; margin-left: auto; margin-right: auto; }
+      /* "Tus datos": dos columnas de tarjetas */
+      .prof-body { max-width: 860px; margin: 0 auto;
+        display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+      .prof-body .prof-card:first-child { grid-column: 1 / -1; }   /* datos personales a lo ancho */
+      .prof-body .prof-card:last-of-type { grid-column: 1 / -1; }  /* déficit a lo ancho */
+      .prof-body .confirm { grid-column: 1 / -1; }
+      .prof-title { font-size: 56px; }
+    }
+
+    /* iPad en horizontal: Home en dos paneles (estadísticas + menú) */
+    @media (min-width: 900px) and (orientation: landscape) {
+      .app {
+        max-width: 1280px; margin: 0 auto;
+        display: grid;
+        grid-template-columns: minmax(360px, 36%) 1fr;
+        grid-template-rows: auto 1fr;
+        column-gap: 30px;
+        align-items: start;
+      }
+      /* Panel izquierdo: el bloque de estadísticas como tarjeta contenida y fija */
+      .top-region {
+        grid-column: 1; grid-row: 1 / span 2;
+        position: sticky; top: calc(env(safe-area-inset-top) + 16px);
+        margin: 0; border-radius: 26px; overflow: hidden;
+        padding: 24px 22px 22px;
+      }
+      .top-region::before { display: none; }            /* sin prolongación: ya es una tarjeta */
+      .view-tabs { margin: 14px 0 0; padding: 0 0 2px; }
+      /* Columna derecha: el menú con más columnas */
+      .section-head { grid-column: 2; grid-row: 1; margin-top: 6px; }
+      #foodLog { grid-column: 2; grid-row: 2; }
+      #foodLog .log-list { grid-template-columns: repeat(3, 1fr); }
+      /* En este modo el selector de comida puede usar 4 columnas */
+      .food-list .addf { width: calc(25% - 9px); }
+    }
   </style>
 </head>
 <body>
@@ -628,7 +677,7 @@
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
       <button class="avatar gear-btn" id="settingsBtn" aria-label="Tus datos">⚙</button>
-      <div class="avatar" id="version">V.1</div>
+      <div class="avatar" id="version">V.2</div>
     </header>
 
     <section class="hero">
@@ -2002,7 +2051,7 @@
     enablePullToDismiss($("profile"), closeProfile);
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.1";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.2";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadProfile();
     recomputeGoalKcal();
