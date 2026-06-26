@@ -24,7 +24,7 @@
       --lime:  #C7F23E;   /* verde lima eléctrico (consumido en la comida) */
       --lime-dim: #7FA22E; /* lima apagado (total del día / resto) */
       --green: #2FA84F;   /* verde check */
-      --red:   #A3271B;   /* rojo oscuro (avisos y eliminar) */
+      --red:   #EF4136;   /* rojo luminoso (avisos y eliminar) */
       --muted: #908C81;
       --line:  #E3DFD4;
 
@@ -551,7 +551,7 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.28</div>
+      <div class="avatar" id="version">V.29</div>
     </header>
 
     <section class="hero">
@@ -968,7 +968,6 @@
       // Alimento concreto seleccionado como filtro (su idx) — exclusivo con el macro
       const foodSel = (activeFood != null) ? resolved.find(r => r.idx === activeFood) : null;
       if (activeFood != null && !foodSel) activeFood = null;
-      const statView = foodSel ? foodSel.n : view;   // valores que se muestran en hero/macros
 
       // Chips de vista activos
       $("viewTabs").querySelectorAll("button").forEach(b =>
@@ -1031,18 +1030,36 @@
       });
 
       // ---- Macros (clic = filtrar; el seleccionado se resalta en negro) ----
+      // Segmento lima = parte "enfocada" (el alimento elegido, o la vista entera);
+      // segmento apagado = el resto de esa misma vista (lo que aportan los demás
+      // alimentos, o el resto del día cuando filtras por comida sin alimento).
       const macros = [
-        { key: "p", name: "Proteínas",     vVal: statView.protein, dVal: sum.protein, goal: DATA.goal.protein },
-        { key: "c", name: "Carbohidratos", vVal: statView.carbs,   dVal: sum.carbs,   goal: DATA.goal.carbs },
-        { key: "f", name: "Grasas",        vVal: statView.fat,     dVal: sum.fat,     goal: DATA.goal.fat }
+        { key: "p", name: "Proteínas",     prop: "protein", goal: DATA.goal.protein },
+        { key: "c", name: "Carbohidratos", prop: "carbs",   goal: DATA.goal.carbs },
+        { key: "f", name: "Grasas",        prop: "fat",     goal: DATA.goal.fat }
       ];
+      const viewLabel = isDay ? "del día" : "de " + activeView.toLowerCase();
       $("macros").innerHTML = macros.map(m => {
-        const sPct = Math.min(100, Math.round(m.vVal / m.goal * 100));
-        const rPct = isDay ? 0 : Math.min(100 - sPct, Math.round(Math.max(0, m.dVal - m.vVal) / m.goal * 100));
-        const over = m.vVal > m.goal;   // rojo si te pasas
-        const valText = isDay
-          ? `${m.vVal}<span> / ${m.goal} g</span>`
-          : `${m.vVal}<span> g · <span class="pct">${m.dVal > 0 ? Math.round(m.vVal / m.dVal * 100) : 0}%</span> del día</span>`;
+        const goalV = m.goal;
+        const viewVal = view[m.prop];                              // total de la vista (día o comida)
+        const focusVal = foodSel ? foodSel.n[m.prop] : viewVal;    // parte resaltada (lima)
+        let restVal;
+        if (foodSel) restVal = Math.max(0, viewVal - focusVal);    // lo que aportan los demás alimentos
+        else if (!isDay) restVal = Math.max(0, sum[m.prop] - viewVal);  // resto del día
+        else restVal = 0;
+        const sPct = Math.min(100, Math.round(focusVal / goalV * 100));
+        const rPct = Math.min(100 - sPct, Math.round(restVal / goalV * 100));
+        const over = focusVal > goalV;   // rojo si te pasas
+        let valText;
+        if (foodSel) {
+          const pctCtx = viewVal > 0 ? Math.round(focusVal / viewVal * 100) : 0;
+          valText = `${focusVal}<span> g · <span class="pct">${pctCtx}%</span> ${viewLabel}</span>`;
+        } else if (isDay) {
+          valText = `${focusVal}<span> / ${goalV} g</span>`;
+        } else {
+          const pctDay = sum[m.prop] > 0 ? Math.round(viewVal / sum[m.prop] * 100) : 0;
+          valText = `${focusVal}<span> g · <span class="pct">${pctDay}%</span> del día</span>`;
+        }
         return `
           <div class="macro ${m.key}${activeMacro === m.key ? " sel" : ""}" data-macro="${m.key}">
             <div class="top">
@@ -1566,7 +1583,7 @@
     });
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.28";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.29";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadLog();
     render();
