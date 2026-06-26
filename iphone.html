@@ -546,39 +546,65 @@
     /* ---------- Botón de ajustes (engranaje) en la cabecera ---------- */
     .gear-btn { border: none; cursor: pointer; font-size: 20px; line-height: 1; }
 
-    /* ---------- Pantalla "Tus datos" ---------- */
-    .prof-body { padding: 14px 18px max(20px, calc(env(safe-area-inset-bottom) + 14px)); display: flex; flex-direction: column; gap: 16px; }
-    .prof-card { background: var(--card); border-radius: var(--r-md); padding: 16px 16px 8px; }
+    /* ---------- Pantalla "Tus datos" (estilo Home: imagen de fondo + cajetines blancos) ---------- */
+    .profile-page {
+      min-height: 100%;
+      background-color: #9BDBDD;
+      background-image: url("profile-bg.jpg");
+      background-size: cover; background-position: center top;
+    }
+    .prof-head {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+      padding: calc(env(safe-area-inset-top) + 22px) 20px 4px;
+    }
+    .prof-title {
+      font-family: var(--exp); font-weight: 900; font-size: 44px; line-height: 0.92;
+      letter-spacing: -0.02em; text-transform: uppercase; color: var(--ink);
+    }
+    .prof-close {
+      background: rgba(255,255,255,0.85); border: none; color: var(--ink); cursor: pointer;
+      border-radius: 99px; padding: 9px 15px; font-family: var(--disp); font-size: 13px;
+      font-weight: 800; text-transform: uppercase; letter-spacing: 0.02em; flex-shrink: 0;
+    }
+    .prof-body { padding: 18px 16px max(22px, calc(env(safe-area-inset-bottom) + 16px)); display: flex; flex-direction: column; gap: 14px; }
+    /* Cajetines blancos sobre la imagen (como las tarjetas de Home) */
+    .prof-card { background: var(--bg); border-radius: var(--r-md); padding: 14px 16px 6px; box-shadow: 0 4px 20px rgba(0,0,0,0.10); }
     .prof-card-h {
       font-family: var(--disp); font-weight: 800; font-size: 13px; text-transform: uppercase;
-      letter-spacing: 0.04em; color: var(--ink); margin-bottom: 6px;
+      letter-spacing: 0.04em; color: var(--ink); margin-bottom: 4px;
     }
     .prof-card-h span { color: var(--muted); font-weight: 600; letter-spacing: 0.02em; margin-left: 6px; }
-    .prof-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid rgba(19,19,17,0.08); }
-    .prof-card-h + .prof-row, .prof-row:first-of-type { border-top: none; }
-    .prof-row > label { font-family: var(--disp); font-weight: 700; font-size: 14px; color: var(--ink); }
-    .prof-inp { display: flex; align-items: baseline; gap: 6px; background: var(--bg); border-radius: 10px; padding: 8px 12px; }
+    /* Fila genérica: nombre (izq) · g/kg · valor (alineado a la derecha del todo) */
+    .prof-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid rgba(19,19,17,0.07); }
+    .prof-row:first-child { border-top: none; }
+    .pr-name { flex: 1; min-width: 0; font-family: var(--disp); font-weight: 700; font-size: 14px; color: var(--ink); }
+    .pr-gkg { width: 56px; flex-shrink: 0; text-align: right; font-family: var(--disp); font-weight: 700; font-size: 12px; color: var(--lime-dim); }
+    .pr-gkg.empty { color: transparent; }
+    .pr-val { width: 122px; flex-shrink: 0; display: flex; justify-content: flex-end; }
+    /* Cajetín blanco de entrada */
+    .prof-inp { display: flex; align-items: baseline; gap: 5px; background: var(--bg); border-radius: 10px;
+      box-shadow: inset 0 0 0 1.5px rgba(19,19,17,0.14); padding: 8px 12px; width: 100%; justify-content: flex-end; }
     .prof-inp input {
-      width: 70px; border: none; background: none; outline: none; text-align: right;
+      width: 100%; border: none; background: none; outline: none; text-align: right;
       font-family: var(--disp); font-weight: 800; font-size: 17px; color: var(--ink);
       -webkit-appearance: none; -moz-appearance: textfield;
     }
     .prof-inp input::-webkit-outer-spin-button, .prof-inp input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-    .prof-inp span { font-family: var(--disp); font-size: 12px; font-weight: 600; color: var(--muted); }
+    .prof-inp .unit { font-family: var(--disp); font-size: 12px; font-weight: 600; color: var(--muted); flex-shrink: 0; }
+    /* Valor calculado (solo lectura): negro y en negrita, alineado a la derecha */
+    .pr-calc { display: flex; align-items: baseline; gap: 5px; padding: 8px 12px; }
+    .pr-calc b { font-family: var(--disp); font-weight: 800; font-size: 17px; color: var(--ink); }
+    .pr-calc .unit { font-family: var(--disp); font-size: 12px; font-weight: 600; color: var(--muted); }
+    .prof-row.calc .pr-name { color: var(--muted); text-transform: uppercase; font-size: 12px; letter-spacing: 0.03em; }
     /* Toggle Hombre / Mujer */
     .sex-toggle { display: flex; gap: 6px; }
     .sex-toggle button {
-      border: none; background: var(--bg); color: var(--ink); cursor: pointer;
-      border-radius: 99px; padding: 8px 16px; font-family: var(--disp);
-      font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em;
+      border: none; background: var(--card); color: var(--ink); cursor: pointer;
+      border-radius: 99px; padding: 8px 14px; font-family: var(--disp);
+      font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.02em;
     }
     .sex-toggle button.active { background: var(--ink); color: #fff; }
-    /* Filas de objetivo: nombre · input · g/kg */
-    .goal-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid rgba(19,19,17,0.08); }
-    .goal-row:first-child { border-top: none; }
-    .goal-row .gr-name { flex: 1; font-family: var(--disp); font-weight: 700; font-size: 14px; color: var(--ink); }
-    .goal-row .gr-gkg { font-family: var(--disp); font-weight: 700; font-size: 12px; color: var(--lime-dim); min-width: 62px; text-align: right; }
-    .goal-row .gr-gkg.empty { color: var(--muted); }
+    .prof-body .confirm { margin-top: 4px; }
   </style>
 </head>
 <body>
@@ -589,7 +615,7 @@
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
       <button class="avatar gear-btn" id="settingsBtn" aria-label="Tus datos">⚙</button>
-      <div class="avatar" id="version">V.10</div>
+      <div class="avatar" id="version">V.11</div>
     </header>
 
     <section class="hero">
@@ -778,27 +804,28 @@
   </section>
 
   <!-- ===================== Tus datos / objetivos ===================== -->
-  <section class="page sheet" id="profile" aria-hidden="true">
-    <header class="sheet-head">
-      <span class="sheet-spacer"></span>
-      <h2>Tus datos</h2>
-      <button class="sheet-close" id="profileClose">Cerrar</button>
-    </header>
+  <section class="page profile-page" id="profile" aria-hidden="true">
+    <div class="prof-head">
+      <h1 class="prof-title">Tus<br>datos</h1>
+      <button class="prof-close" id="profileClose">Cerrar</button>
+    </div>
 
     <div class="prof-body">
       <!-- Datos personales -->
       <div class="prof-card">
         <div class="prof-card-h">Datos personales</div>
         <div class="prof-row">
-          <label for="pWeight">Peso</label>
-          <div class="prof-inp"><input id="pWeight" type="number" inputmode="decimal" min="20" step="0.1"><span>kg</span></div>
+          <span class="pr-name">Peso</span>
+          <span class="pr-gkg empty">—</span>
+          <div class="pr-val"><div class="prof-inp"><input id="pWeight" type="number" inputmode="decimal" min="20" step="0.1"><span class="unit">kg</span></div></div>
         </div>
         <div class="prof-row">
-          <label for="pHeight">Altura</label>
-          <div class="prof-inp"><input id="pHeight" type="number" inputmode="numeric" min="100" step="1"><span>cm</span></div>
+          <span class="pr-name">Altura</span>
+          <span class="pr-gkg empty">—</span>
+          <div class="pr-val"><div class="prof-inp"><input id="pHeight" type="number" inputmode="numeric" min="100" step="1"><span class="unit">cm</span></div></div>
         </div>
         <div class="prof-row">
-          <label>Sexo</label>
+          <span class="pr-name">Sexo</span>
           <div class="sex-toggle" id="pSex">
             <button type="button" data-sex="hombre">Hombre</button>
             <button type="button" data-sex="mujer">Mujer</button>
@@ -856,9 +883,10 @@
       // Datos personales del usuario
       profile: { weight: 70, height: 175, sex: "hombre" },
       // Objetivos diarios: entre semana (L-V) y fin de semana (S-D)
+      // pasivo+activo = gasto total; kcal (ingesta objetivo) se calcula con los macros.
       goals: {
-        week:    { kcal: 1176, protein: 140, carbs: 37, fat: 52 },
-        weekend: { kcal: 1176, protein: 140, carbs: 37, fat: 52 }
+        week:    { pasivo: 1500, activo: 500, protein: 140, carbs: 37, fat: 52, kcal: 1176 },
+        weekend: { pasivo: 1500, activo: 500, protein: 140, carbs: 37, fat: 52, kcal: 1176 }
       },
       // Objetivo activo (se rellena según el día con applyActiveGoal())
       goal: { kcal: 1176, protein: 140, carbs: 37, fat: 52 },
@@ -1803,41 +1831,51 @@
     /* =========================================================
        TUS DATOS  —  perfil + objetivos (entre semana / fin de semana)
        ========================================================= */
+    // Filas de cada objetivo. type:"input" = editable; type:"calc" = calculado.
     const GOAL_ROWS = [
-      { prop: "kcal",    name: "Calorías",      unit: "kcal", gkg: false },
-      { prop: "protein", name: "Proteínas",     unit: "g",    gkg: true },
-      { prop: "carbs",   name: "Carbohidratos", unit: "g",    gkg: true },
-      { prop: "fat",     name: "Grasas",        unit: "g",    gkg: true }
+      { prop: "pasivo",  name: "Consumo pasivo",   unit: "kcal", type: "input" },
+      { prop: "activo",  name: "Activo (deporte)", unit: "kcal", type: "input" },
+      { prop: "total",   name: "Total quemado",    unit: "kcal", type: "calc"  },
+      { prop: "protein", name: "Proteínas",        unit: "g",    type: "input", gkg: true },
+      { prop: "carbs",   name: "Carbohidratos",    unit: "g",    type: "input", gkg: true },
+      { prop: "fat",     name: "Grasas",           unit: "g",    type: "input", gkg: true },
+      { prop: "kcal",    name: "Calorías",         unit: "kcal", type: "calc"  }
     ];
-    // Construye las filas de cada objetivo (input + g/kg) una sola vez.
+    // Campos editables y propiedades guardadas de cada objetivo
+    const GOAL_INPUTS = GOAL_ROWS.filter(r => r.type === "input").map(r => r.prop);
+    // kcal (ingesta) = 4·prot + 4·carb + 9·grasa ; total = pasivo + activo
+    function goalKcal(g) { return Math.round(g.protein * 4 + g.carbs * 4 + g.fat * 9); }
+    function recomputeGoalKcal() { ["week", "weekend"].forEach(w => DATA.goals[w].kcal = goalKcal(DATA.goals[w])); }
+
     function buildGoalSets() {
       document.querySelectorAll(".goal-set").forEach(set => {
         const which = set.dataset.set;   // "week" | "weekend"
-        set.innerHTML = GOAL_ROWS.map(r => `
-          <div class="goal-row">
-            <span class="gr-name">${r.name}</span>
-            <div class="prof-inp">
-              <input id="g_${which}_${r.prop}" type="number" inputmode="numeric" min="0" step="1" data-set="${which}" data-prop="${r.prop}">
-              <span>${r.unit}</span>
-            </div>
-            ${r.gkg ? `<span class="gr-gkg empty" id="gkg_${which}_${r.prop}">—</span>` : `<span class="gr-gkg" style="visibility:hidden">—</span>`}
-          </div>`).join("");
+        set.innerHTML = GOAL_ROWS.map(r => {
+          const gkg = r.gkg
+            ? `<span class="pr-gkg empty" id="gkg_${which}_${r.prop}">—</span>`
+            : `<span class="pr-gkg empty">—</span>`;
+          const val = r.type === "input"
+            ? `<div class="pr-val"><div class="prof-inp">
+                 <input id="g_${which}_${r.prop}" type="number" inputmode="numeric" min="0" step="1">
+                 <span class="unit">${r.unit}</span></div></div>`
+            : `<div class="pr-val"><div class="pr-calc"><b id="calc_${which}_${r.prop}">0</b><span class="unit">${r.unit}</span></div></div>`;
+          return `<div class="prof-row${r.type === "calc" ? " calc" : ""}">
+              <span class="pr-name">${r.name}</span>${gkg}${val}</div>`;
+        }).join("");
       });
     }
-    // Refresca todos los g/kg a partir del peso y de cada input de macro.
-    function updateGkg() {
+    // Recalcula en vivo g/kg, total quemado y calorías ingeridas de ambos objetivos.
+    function updateCalc() {
       const w = parseFloat($("pWeight").value);
       ["week", "weekend"].forEach(which => {
-        GOAL_ROWS.forEach(r => {
-          if (!r.gkg) return;
-          const el = $("gkg_" + which + "_" + r.prop);
-          const g = parseFloat($("g_" + which + "_" + r.prop).value);
-          if (w > 0 && g >= 0 && !isNaN(g)) {
-            el.textContent = (g / w).toFixed(1) + " g/kg";
-            el.classList.remove("empty");
-          } else {
-            el.textContent = "—"; el.classList.add("empty");
-          }
+        const v = (prop) => parseFloat($("g_" + which + "_" + prop).value) || 0;
+        const protein = v("protein"), carbs = v("carbs"), fat = v("fat");
+        $("calc_" + which + "_total").textContent = (v("pasivo") + v("activo")).toLocaleString("es-ES");
+        $("calc_" + which + "_kcal").textContent = Math.round(protein * 4 + carbs * 4 + fat * 9).toLocaleString("es-ES");
+        [["protein", protein], ["carbs", carbs], ["fat", fat]].forEach(([prop, g]) => {
+          const el = $("gkg_" + which + "_" + prop);
+          if (w > 0) { el.textContent = (g / w).toFixed(1) + " g/kg"; el.classList.remove("empty"); }
+          else { el.textContent = "—"; el.classList.add("empty"); }
         });
       });
     }
@@ -1850,9 +1888,9 @@
       $("pHeight").value = DATA.profile.height;
       syncSexToggle();
       ["week", "weekend"].forEach(which => {
-        GOAL_ROWS.forEach(r => { $("g_" + which + "_" + r.prop).value = DATA.goals[which][r.prop]; });
+        GOAL_INPUTS.forEach(prop => { $("g_" + which + "_" + prop).value = DATA.goals[which][prop]; });
       });
-      updateGkg();
+      updateCalc();
     }
     function openProfile() { fillProfileForm(); showView("profile"); }
     function closeProfile() { showView("app"); }
@@ -1860,8 +1898,8 @@
     buildGoalSets();
     $("settingsBtn").addEventListener("click", openProfile);
     $("profileClose").addEventListener("click", closeProfile);
-    $("pWeight").addEventListener("input", updateGkg);
-    document.querySelectorAll(".goal-set input").forEach(inp => inp.addEventListener("input", updateGkg));
+    $("pWeight").addEventListener("input", updateCalc);
+    document.querySelectorAll(".goal-set input").forEach(inp => inp.addEventListener("input", updateCalc));
     $("pSex").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-sex]"); if (!b) return;
       DATA.profile.sex = b.dataset.sex; syncSexToggle();
@@ -1870,10 +1908,11 @@
       DATA.profile.weight = Math.max(0, parseFloat($("pWeight").value) || 0);
       DATA.profile.height = Math.max(0, parseInt($("pHeight").value, 10) || 0);
       ["week", "weekend"].forEach(which => {
-        GOAL_ROWS.forEach(r => {
-          DATA.goals[which][r.prop] = Math.max(0, parseInt($("g_" + which + "_" + r.prop).value, 10) || 0);
+        GOAL_INPUTS.forEach(prop => {
+          DATA.goals[which][prop] = Math.max(0, parseInt($("g_" + which + "_" + prop).value, 10) || 0);
         });
       });
+      recomputeGoalKcal();  // calorías ingeridas = a partir de los macros
       saveProfile();
       applyActiveGoal();    // recalcula el objetivo activo según el día
       render();
@@ -1882,9 +1921,10 @@
     enablePullToDismiss($("profile"), closeProfile);
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.10";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.11";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadProfile();
+    recomputeGoalKcal();
     applyActiveGoal();
     loadLog();
     render();
