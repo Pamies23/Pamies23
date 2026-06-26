@@ -121,7 +121,7 @@
     .topbar h1 {
       flex: 1; min-width: 0;
       font-family: var(--exp);
-      font-weight: 800; font-size: 30px; line-height: 0.95;
+      font-weight: 900; font-size: 30px; line-height: 0.95;
       letter-spacing: -0.015em; text-transform: uppercase; color: var(--ink);
     }
     /* El círculo del perfil ahora muestra la versión (mismo estilo de antes) */
@@ -131,10 +131,10 @@
       font-family: var(--disp); font-weight: 800; font-size: 14px; letter-spacing: 0.02em;
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
-    /* La versión es un cajetín pequeño (no un círculo) */
+    /* La versión es un cajetín pequeño (no un círculo), un poco más grande para verlo bien */
     #version {
-      width: auto; height: auto; border-radius: 8px;
-      padding: 5px 9px; font-size: 12px; letter-spacing: 0.04em; white-space: nowrap;
+      width: auto; height: auto; border-radius: 9px;
+      padding: 7px 12px; font-size: 15px; letter-spacing: 0.04em; white-space: nowrap;
     }
 
     /* ---------- Selector de vista (pills, debajo de los macros) ---------- */
@@ -148,7 +148,7 @@
       flex: 0 0 auto; cursor: pointer;
       border: none; background: var(--bg); color: var(--ink);
       border-radius: 99px; padding: 9px 17px;
-      font-family: var(--disp); font-size: 13px; font-weight: 700;
+      font-family: var(--disp); font-size: 13px; font-weight: 800;
       letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap;
       box-shadow: 0 1px 4px rgba(0,0,0,0.08);
       transition: all 0.15s ease;
@@ -252,7 +252,7 @@
     .clear-filters {
       border: none; background: var(--lime); color: var(--ink);
       border-radius: 99px; padding: 9px 17px;
-      font-family: var(--disp); font-size: 13px; font-weight: 700;
+      font-family: var(--disp); font-size: 13px; font-weight: 800;
       letter-spacing: 0.02em; text-transform: uppercase; cursor: pointer; white-space: nowrap;
     }
     .clear-filters.hidden { display: none; }
@@ -551,7 +551,7 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.5</div>
+      <div class="avatar" id="version">V.6</div>
     </header>
 
     <section class="hero">
@@ -1686,7 +1686,7 @@
     });
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.5";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.6";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadLog();
     render();
