@@ -462,6 +462,7 @@
       border: none; width: 42px; height: 42px; border-radius: 50%;
       background: var(--ink); color: #fff; font-size: 24px; line-height: 1; cursor: pointer; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
+      touch-action: none; -webkit-user-select: none; user-select: none;
     }
     .grams-field .gminus { background: var(--bg); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); }
     .grams-field .gwrap { flex: 1; text-align: center; }
@@ -551,7 +552,7 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.29</div>
+      <div class="avatar" id="version">V.30</div>
     </header>
 
     <section class="hero">
@@ -1391,8 +1392,23 @@
       syncMealPicker();
     });
     $("mGrams").addEventListener("input", updatePreview);
-    $("mPlus").addEventListener("click", () => setGrams(currentGrams() + 10));
-    $("mMinus").addEventListener("click", () => setGrams(currentGrams() - 10));
+
+    // Pulsación mantenida en un botón +/−: primer paso inmediato y, si se
+    // mantiene, auto-repetición. Reutilizable en toda la app.
+    function bindHold(btn, step) {
+      let holdTimer = null, repeatTimer = null;
+      const clear = () => { clearTimeout(holdTimer); clearInterval(repeatTimer); holdTimer = repeatTimer = null; };
+      btn.addEventListener("pointerdown", (e) => {
+        e.preventDefault();            // evita scroll/zoom al pulsar
+        clear();
+        step();                        // primer paso inmediato
+        holdTimer = setTimeout(() => { repeatTimer = setInterval(step, 80); }, 400);
+      });
+      ["pointerup", "pointerleave", "pointercancel"].forEach(ev => btn.addEventListener(ev, clear));
+    }
+
+    bindHold($("mPlus"),  () => setGrams(currentGrams() + 10));
+    bindHold($("mMinus"), () => setGrams(currentGrams() - 10));
     $("mCancel").addEventListener("click", closeModal);
     modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
 
@@ -1512,8 +1528,8 @@
     }
     function simStep(i, act) {
       if (!simItems[i]) return;
-      if (act === "plus") simItems[i].grams += 5;
-      else if (act === "minus") simItems[i].grams = Math.max(5, simItems[i].grams - 5);
+      if (act === "plus") simItems[i].grams += 10;
+      else if (act === "minus") simItems[i].grams = Math.max(5, simItems[i].grams - 10);
       simUpdateRow(i);
     }
     $("simItems").addEventListener("pointerdown", (e) => {
@@ -1583,7 +1599,7 @@
     });
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.29";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.30";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadLog();
     render();
