@@ -325,8 +325,7 @@
     /* ---------- Páginas (Añadir comida / simulador / selector) ----------
        Scroll NATURAL del documento, igual que la Home: así llegan hasta el
        borde inferior en standalone (un panel fijo no lo hacía). Solo se ve una
-       a la vez (las demás van en display:none). */
-    #sheet, #sim, #simPick { display: none; }
+       a la vez (las demás se ocultan con display:none vía JS / markup). */
     .page { min-height: 100%; background: var(--bg); }
     .page.shown, .sim.shown { display: block; animation: pageIn 0.26s ease both; }
     @keyframes pageIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
@@ -641,30 +640,40 @@
       .prof-title { font-size: 56px; }
     }
 
-    /* iPad en horizontal: Home en dos paneles (estadísticas + menú) */
+    /* iPad en horizontal: dos paneles (panel de stats fijo a la izquierda + contenido).
+       Vale tanto para la Home como para el creador de recetas (ambos son .app). */
     @media (min-width: 900px) and (orientation: landscape) {
-      .app {
-        max-width: 1280px; margin: 0 auto;
+      .app, .sim.shown {
         display: grid;
-        grid-template-columns: minmax(360px, 36%) 1fr;
-        grid-template-rows: auto 1fr;
-        column-gap: 30px;
+        grid-template-columns: 384px minmax(0, 1fr);
         align-items: start;
+        padding: 0;
       }
-      /* Panel izquierdo: el bloque de estadísticas como tarjeta contenida y fija */
-      .top-region {
-        grid-column: 1; grid-row: 1 / span 2;
-        position: sticky; top: calc(env(safe-area-inset-top) + 16px);
-        margin: 0; border-radius: 26px; overflow: hidden;
-        padding: 24px 22px 22px;
+      /* Panel izquierdo a sangre y a toda altura: la imagen rellena todo el lateral.
+         Abarca todas las filas (span) para no inflar la fila del contenido derecho,
+         y queda fijo (sticky) ocupando el alto de pantalla. */
+      .app > .top-region {
+        grid-column: 1; grid-row: 1 / span 99; align-self: start;
+        position: sticky; top: 0; height: 100vh;
+        margin: 0; border-radius: 0; overflow: hidden;
+        display: flex; flex-direction: column;
+        padding: calc(env(safe-area-inset-top) + 30px) 26px 26px;
       }
-      .top-region::before { display: none; }            /* sin prolongación: ya es una tarjeta */
-      .view-tabs { margin: 14px 0 0; padding: 0 0 2px; }
-      /* Columna derecha: el menú con más columnas */
-      .section-head { grid-column: 2; grid-row: 1; margin-top: 6px; }
-      #foodLog { grid-column: 2; grid-row: 2; }
-      #foodLog .log-list { grid-template-columns: repeat(3, 1fr); }
-      /* En este modo el selector de comida puede usar 4 columnas */
+      .app > .top-region::before { display: none; }     /* ya es panel completo */
+      .app > .top-region .view-tabs { margin: 16px 0 0; padding: 0; }
+      .app > .top-region .macros { margin-top: 2px; }
+      /* Columna derecha: todo lo que no es el panel */
+      .app > :not(.top-region) { grid-column: 2; }
+      /* Home */
+      .section-head { padding: calc(env(safe-area-inset-top) + 32px) 40px 0; margin-bottom: 16px; }
+      #foodLog { padding: 0 40px 130px; }
+      .log-list { grid-template-columns: repeat(3, 1fr); }
+      /* Creador de recetas */
+      .sim-items { padding: calc(env(safe-area-inset-top) + 32px) 40px 0; margin-bottom: 14px; }
+      .sim-add { width: auto; margin: 0 40px; }
+      .sim-save { width: auto; margin: 12px 40px 130px; }
+      /* Selector de alimentos (hoja): 4 columnas y un poco más ancho */
+      .food-list { max-width: 1060px; }
       .food-list .addf { width: calc(25% - 9px); }
     }
   </style>
@@ -677,7 +686,7 @@
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
       <button class="avatar gear-btn" id="settingsBtn" aria-label="Tus datos">⚙</button>
-      <div class="avatar" id="version">V.2</div>
+      <div class="avatar" id="version">V.3</div>
     </header>
 
     <section class="hero">
@@ -730,7 +739,7 @@
   <button class="add" id="addBtn" aria-label="Añadir comida">+</button>
 
   <!-- ===================== Pantalla Añadir comida ===================== -->
-  <section class="page sheet" id="sheet" aria-hidden="true">
+  <section class="page sheet" id="sheet" aria-hidden="true" style="display:none">
     <header class="sheet-head">
       <span class="sheet-spacer"></span>
       <h2>Añadir comida</h2>
@@ -815,7 +824,7 @@
   </div>
 
   <!-- ===================== Simulador de recetas (estructura tipo Home) ===================== -->
-  <section class="app sim" id="sim" aria-hidden="true">
+  <section class="app sim" id="sim" aria-hidden="true" style="display:none">
     <div class="top-region sim-top">
       <header class="topbar">
         <h1>Creador de recetas</h1>
@@ -846,7 +855,7 @@
   </section>
 
   <!-- Selector de alimentos del simulador -->
-  <section class="page sheet sim-pick" id="simPick" aria-hidden="true">
+  <section class="page sheet sim-pick" id="simPick" aria-hidden="true" style="display:none">
     <header class="sheet-head">
       <span class="sheet-spacer"></span>
       <h2>Elegir alimento</h2>
@@ -866,7 +875,7 @@
   </section>
 
   <!-- ===================== Tus datos / objetivos ===================== -->
-  <section class="page profile-page" id="profile" aria-hidden="true">
+  <section class="page profile-page" id="profile" aria-hidden="true" style="display:none">
     <div class="prof-head">
       <h1 class="prof-title">Tus<br>datos</h1>
       <button class="prof-close" id="profileClose">Cerrar</button>
@@ -1471,7 +1480,9 @@
     function showView(id) {
       ["app", "sheet", "sim", "simPick", "profile"].forEach(v => {
         const el = $(v), on = (v === id);
-        el.style.display = on ? "block" : "none";
+        // "" (sin display inline) deja mandar al CSS → la Home puede ser grid en iPad;
+        // las vistas inactivas se ocultan con display:none.
+        el.style.display = on ? "" : "none";
         if (v !== "app") el.classList.toggle("shown", on);
         el.setAttribute("aria-hidden", on ? "false" : "true");
       });
@@ -2051,7 +2062,7 @@
     enablePullToDismiss($("profile"), closeProfile);
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.2";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.3";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadProfile();
     recomputeGoalKcal();
