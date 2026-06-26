@@ -542,6 +542,43 @@
     /* Tarjeta "Crear receta" en la lista de Recetas */
     .addf-new .addf-top { background: var(--ink); }
     .addf-new .addf-emoji { color: var(--lime); }
+
+    /* ---------- Botón de ajustes (engranaje) en la cabecera ---------- */
+    .gear-btn { border: none; cursor: pointer; font-size: 20px; line-height: 1; }
+
+    /* ---------- Pantalla "Tus datos" ---------- */
+    .prof-body { padding: 14px 18px max(20px, calc(env(safe-area-inset-bottom) + 14px)); display: flex; flex-direction: column; gap: 16px; }
+    .prof-card { background: var(--card); border-radius: var(--r-md); padding: 16px 16px 8px; }
+    .prof-card-h {
+      font-family: var(--disp); font-weight: 800; font-size: 13px; text-transform: uppercase;
+      letter-spacing: 0.04em; color: var(--ink); margin-bottom: 6px;
+    }
+    .prof-card-h span { color: var(--muted); font-weight: 600; letter-spacing: 0.02em; margin-left: 6px; }
+    .prof-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid rgba(19,19,17,0.08); }
+    .prof-card-h + .prof-row, .prof-row:first-of-type { border-top: none; }
+    .prof-row > label { font-family: var(--disp); font-weight: 700; font-size: 14px; color: var(--ink); }
+    .prof-inp { display: flex; align-items: baseline; gap: 6px; background: var(--bg); border-radius: 10px; padding: 8px 12px; }
+    .prof-inp input {
+      width: 70px; border: none; background: none; outline: none; text-align: right;
+      font-family: var(--disp); font-weight: 800; font-size: 17px; color: var(--ink);
+      -webkit-appearance: none; -moz-appearance: textfield;
+    }
+    .prof-inp input::-webkit-outer-spin-button, .prof-inp input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .prof-inp span { font-family: var(--disp); font-size: 12px; font-weight: 600; color: var(--muted); }
+    /* Toggle Hombre / Mujer */
+    .sex-toggle { display: flex; gap: 6px; }
+    .sex-toggle button {
+      border: none; background: var(--bg); color: var(--ink); cursor: pointer;
+      border-radius: 99px; padding: 8px 16px; font-family: var(--disp);
+      font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em;
+    }
+    .sex-toggle button.active { background: var(--ink); color: #fff; }
+    /* Filas de objetivo: nombre · input · g/kg */
+    .goal-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid rgba(19,19,17,0.08); }
+    .goal-row:first-child { border-top: none; }
+    .goal-row .gr-name { flex: 1; font-family: var(--disp); font-weight: 700; font-size: 14px; color: var(--ink); }
+    .goal-row .gr-gkg { font-family: var(--disp); font-weight: 700; font-size: 12px; color: var(--lime-dim); min-width: 62px; text-align: right; }
+    .goal-row .gr-gkg.empty { color: var(--muted); }
   </style>
 </head>
 <body>
@@ -551,7 +588,8 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.9</div>
+      <button class="avatar gear-btn" id="settingsBtn" aria-label="Tus datos">⚙</button>
+      <div class="avatar" id="version">V.10</div>
     </header>
 
     <section class="hero">
@@ -739,6 +777,51 @@
     <ul class="food-list" id="simPickList"></ul>
   </section>
 
+  <!-- ===================== Tus datos / objetivos ===================== -->
+  <section class="page sheet" id="profile" aria-hidden="true">
+    <header class="sheet-head">
+      <span class="sheet-spacer"></span>
+      <h2>Tus datos</h2>
+      <button class="sheet-close" id="profileClose">Cerrar</button>
+    </header>
+
+    <div class="prof-body">
+      <!-- Datos personales -->
+      <div class="prof-card">
+        <div class="prof-card-h">Datos personales</div>
+        <div class="prof-row">
+          <label for="pWeight">Peso</label>
+          <div class="prof-inp"><input id="pWeight" type="number" inputmode="decimal" min="20" step="0.1"><span>kg</span></div>
+        </div>
+        <div class="prof-row">
+          <label for="pHeight">Altura</label>
+          <div class="prof-inp"><input id="pHeight" type="number" inputmode="numeric" min="100" step="1"><span>cm</span></div>
+        </div>
+        <div class="prof-row">
+          <label>Sexo</label>
+          <div class="sex-toggle" id="pSex">
+            <button type="button" data-sex="hombre">Hombre</button>
+            <button type="button" data-sex="mujer">Mujer</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Objetivo entre semana -->
+      <div class="prof-card">
+        <div class="prof-card-h">Entre semana <span>Lunes a viernes</span></div>
+        <div class="goal-set" data-set="week"></div>
+      </div>
+
+      <!-- Objetivo fin de semana -->
+      <div class="prof-card">
+        <div class="prof-card-h">Fin de semana <span>Sábado y domingo</span></div>
+        <div class="goal-set" data-set="weekend"></div>
+      </div>
+
+      <button class="confirm" id="profileSave">Guardar</button>
+    </div>
+  </section>
+
   <script>
     /* Detección modo app vs Safari */
     if (navigator.standalone === true ||
@@ -770,7 +853,14 @@
        ========================================================= */
     const DATA = {
       user: { name: "Verde", initial: "V" },
-      // Objetivos diarios (laborables) — de Vitruvio
+      // Datos personales del usuario
+      profile: { weight: 70, height: 175, sex: "hombre" },
+      // Objetivos diarios: entre semana (L-V) y fin de semana (S-D)
+      goals: {
+        week:    { kcal: 1176, protein: 140, carbs: 37, fat: 52 },
+        weekend: { kcal: 1176, protein: 140, carbs: 37, fat: 52 }
+      },
+      // Objetivo activo (se rellena según el día con applyActiveGoal())
       goal: { kcal: 1176, protein: 140, carbs: 37, fat: 52 },
       meals: [
         // Comidas registradas hoy: { food, time, grams }
@@ -885,6 +975,31 @@
       } catch (e) {}
     }
 
+    // Perfil y objetivos (peso, altura, sexo y los dos objetivos diarios)
+    const PROFILE_KEY = "verde.profile.v1";
+    function loadProfile() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(PROFILE_KEY));
+        if (raw) {
+          if (raw.profile) Object.assign(DATA.profile, raw.profile);
+          if (raw.goals && raw.goals.week)    Object.assign(DATA.goals.week, raw.goals.week);
+          if (raw.goals && raw.goals.weekend) Object.assign(DATA.goals.weekend, raw.goals.weekend);
+        }
+      } catch (e) {}
+    }
+    function saveProfile() {
+      try {
+        localStorage.setItem(PROFILE_KEY, JSON.stringify({ profile: DATA.profile, goals: DATA.goals }));
+      } catch (e) {}
+    }
+    // El objetivo activo depende del día: fin de semana (sáb/dom) vs entre semana.
+    const isWeekendToday = () => { const d = new Date().getDay(); return d === 0 || d === 6; };
+    function applyActiveGoal() {
+      DATA.goal = isWeekendToday() ? DATA.goals.weekend : DATA.goals.week;
+    }
+    // Fecha de hoy en formato legible (para la cabecera de Home)
+    const todayLabel = () => new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+
     /* =========================================================
        RENDER
        ========================================================= */
@@ -942,8 +1057,8 @@
     }
 
     function render() {
-      // Cabecera — título fijo
-      $("greeting").textContent = "Seguimiento diario";
+      // Cabecera — la fecha de hoy
+      $("greeting").textContent = todayLabel();
 
       // Resolver cada comida (con su índice original) y totales del día
       const sum = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
@@ -1228,7 +1343,7 @@
     // Solo una "página" visible (Home / Añadir / Simulador / Selector). Scroll
     // natural del documento → llega al borde inferior también en standalone.
     function showView(id) {
-      ["app", "sheet", "sim", "simPick"].forEach(v => {
+      ["app", "sheet", "sim", "simPick", "profile"].forEach(v => {
         const el = $(v), on = (v === id);
         el.style.display = on ? "block" : "none";
         if (v !== "app") el.classList.toggle("shown", on);
@@ -1685,9 +1800,92 @@
       openSimAdd(li.dataset.pick);      // muestra la info nutricional antes de añadir
     });
 
+    /* =========================================================
+       TUS DATOS  —  perfil + objetivos (entre semana / fin de semana)
+       ========================================================= */
+    const GOAL_ROWS = [
+      { prop: "kcal",    name: "Calorías",      unit: "kcal", gkg: false },
+      { prop: "protein", name: "Proteínas",     unit: "g",    gkg: true },
+      { prop: "carbs",   name: "Carbohidratos", unit: "g",    gkg: true },
+      { prop: "fat",     name: "Grasas",        unit: "g",    gkg: true }
+    ];
+    // Construye las filas de cada objetivo (input + g/kg) una sola vez.
+    function buildGoalSets() {
+      document.querySelectorAll(".goal-set").forEach(set => {
+        const which = set.dataset.set;   // "week" | "weekend"
+        set.innerHTML = GOAL_ROWS.map(r => `
+          <div class="goal-row">
+            <span class="gr-name">${r.name}</span>
+            <div class="prof-inp">
+              <input id="g_${which}_${r.prop}" type="number" inputmode="numeric" min="0" step="1" data-set="${which}" data-prop="${r.prop}">
+              <span>${r.unit}</span>
+            </div>
+            ${r.gkg ? `<span class="gr-gkg empty" id="gkg_${which}_${r.prop}">—</span>` : `<span class="gr-gkg" style="visibility:hidden">—</span>`}
+          </div>`).join("");
+      });
+    }
+    // Refresca todos los g/kg a partir del peso y de cada input de macro.
+    function updateGkg() {
+      const w = parseFloat($("pWeight").value);
+      ["week", "weekend"].forEach(which => {
+        GOAL_ROWS.forEach(r => {
+          if (!r.gkg) return;
+          const el = $("gkg_" + which + "_" + r.prop);
+          const g = parseFloat($("g_" + which + "_" + r.prop).value);
+          if (w > 0 && g >= 0 && !isNaN(g)) {
+            el.textContent = (g / w).toFixed(1) + " g/kg";
+            el.classList.remove("empty");
+          } else {
+            el.textContent = "—"; el.classList.add("empty");
+          }
+        });
+      });
+    }
+    function syncSexToggle() {
+      $("pSex").querySelectorAll("button").forEach(b =>
+        b.classList.toggle("active", b.dataset.sex === DATA.profile.sex));
+    }
+    function fillProfileForm() {
+      $("pWeight").value = DATA.profile.weight;
+      $("pHeight").value = DATA.profile.height;
+      syncSexToggle();
+      ["week", "weekend"].forEach(which => {
+        GOAL_ROWS.forEach(r => { $("g_" + which + "_" + r.prop).value = DATA.goals[which][r.prop]; });
+      });
+      updateGkg();
+    }
+    function openProfile() { fillProfileForm(); showView("profile"); }
+    function closeProfile() { showView("app"); }
+
+    buildGoalSets();
+    $("settingsBtn").addEventListener("click", openProfile);
+    $("profileClose").addEventListener("click", closeProfile);
+    $("pWeight").addEventListener("input", updateGkg);
+    document.querySelectorAll(".goal-set input").forEach(inp => inp.addEventListener("input", updateGkg));
+    $("pSex").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-sex]"); if (!b) return;
+      DATA.profile.sex = b.dataset.sex; syncSexToggle();
+    });
+    $("profileSave").addEventListener("click", () => {
+      DATA.profile.weight = Math.max(0, parseFloat($("pWeight").value) || 0);
+      DATA.profile.height = Math.max(0, parseInt($("pHeight").value, 10) || 0);
+      ["week", "weekend"].forEach(which => {
+        GOAL_ROWS.forEach(r => {
+          DATA.goals[which][r.prop] = Math.max(0, parseInt($("g_" + which + "_" + r.prop).value, 10) || 0);
+        });
+      });
+      saveProfile();
+      applyActiveGoal();    // recalcula el objetivo activo según el día
+      render();
+      closeProfile();
+    });
+    enablePullToDismiss($("profile"), closeProfile);
+
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.9";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.10";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
+    loadProfile();
+    applyActiveGoal();
     loadLog();
     render();
   </script>
