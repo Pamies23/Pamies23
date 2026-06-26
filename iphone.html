@@ -49,6 +49,13 @@
        el splash, html+body pasan a color palmera para que esa franja nunca sea blanca. */
     html, body { height: 100%; }
     html { background: var(--bg); }
+    /* El rebote por inercia (overscroll) muestra el fondo del <html>. Lo pintamos
+       del color de la parte superior de la vista activa, para que al rebotar no se
+       vea blanco sino el color que hay justo antes (agua en Home, etc.). */
+    html[data-view="app"]     { background: #5A9F9F; }   /* agua de Home */
+    html[data-view="sim"]     { background: #BFE3DE; }   /* creador de recetas */
+    html[data-view="profile"] { background: #9BDBDD; }   /* tus datos */
+    html[data-view="sheet"], html[data-view="simPick"] { background: var(--bg); }
     body { background: var(--bg); min-height: 100%; overflow-x: hidden; overscroll-behavior-y: none; }
     html.splashing, html.splashing body { background: #79908B; }
     /* Con un panel abierto (sheet/simulador/modal) se bloquea el scroll del fondo
@@ -326,7 +333,7 @@
        Scroll NATURAL del documento, igual que la Home: así llegan hasta el
        borde inferior en standalone (un panel fijo no lo hacía). Solo se ve una
        a la vez (las demás van en display:none). */
-    #sheet, #sim, #simPick { display: none; }
+    #sheet, #sim, #simPick, #profile { display: none; }
     .page { min-height: 100%; background: var(--bg); }
     .page.shown, .sim.shown { display: block; animation: pageIn 0.26s ease both; }
     @keyframes pageIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
@@ -628,7 +635,7 @@
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
       <button class="avatar gear-btn" id="settingsBtn" aria-label="Tus datos">⚙</button>
-      <div class="avatar" id="version">V.16</div>
+      <div class="avatar" id="version">V.17</div>
     </header>
 
     <section class="hero">
@@ -1427,6 +1434,8 @@
         el.setAttribute("aria-hidden", on ? "false" : "true");
       });
       $("addBtn").classList.toggle("hidden", id !== "app");
+      // El fondo del overscroll (rebote) toma el color de la parte superior de la vista
+      document.documentElement.dataset.view = id;
       window.scrollTo(0, 0);
     }
 
@@ -2002,8 +2011,9 @@
     enablePullToDismiss($("profile"), closeProfile);
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.16";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.17";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
+    document.documentElement.dataset.view = "app";   // color del rebote para Home (tras el splash)
     loadProfile();
     recomputeGoalKcal();
     applyActiveGoal();
