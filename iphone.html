@@ -256,6 +256,8 @@
       letter-spacing: 0.03em; text-transform: uppercase; cursor: pointer;
     }
     .clear-filters.hidden { display: none; }
+    /* Botón rojo para borrar todos los alimentos del día (sin filtros) */
+    .clear-all { background: var(--red); color: #fff; }
 
     /* Etiquetas de cada comida (tan grandes como "Comidas de hoy") */
     .log-sub {
@@ -552,7 +554,7 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.30</div>
+      <div class="avatar" id="version">V.31</div>
     </header>
 
     <section class="hero">
@@ -585,6 +587,7 @@
   <div class="section-head">
     <h2 id="logTitle">Comidas de hoy</h2>
     <button class="clear-filters hidden" id="clearFilters">Limpiar filtros</button>
+    <button class="clear-filters clear-all hidden" id="clearAll">Borrar todo</button>
   </div>
   <div id="foodLog"></div>
 
@@ -1092,9 +1095,11 @@
           </li>`;
       };
 
-      // Botón "Limpiar filtros": visible si hay algún filtro activo
+      // Botón "Limpiar filtros": visible si hay algún filtro activo.
+      // Si no hay filtros, en su lugar aparece "Borrar todo" (si hay alimentos).
       const anyFilter = activeView !== "dia" || activeMacro || activeFood != null;
       $("clearFilters").classList.toggle("hidden", !anyFilter);
+      $("clearAll").classList.toggle("hidden", anyFilter || resolved.length === 0);
 
       const log = $("foodLog");
       if (activeMacro) {
@@ -1151,6 +1156,16 @@
 
     // Limpiar todos los filtros (vista, macro, alimento)
     $("clearFilters").addEventListener("click", () => {
+      activeView = "dia"; activeMacro = null; activeFood = null;
+      render();
+    });
+
+    // Borrar todos los alimentos registrados hoy (pide confirmación)
+    $("clearAll").addEventListener("click", () => {
+      if (!DATA.meals.length) return;
+      if (!confirm("¿Borrar todos los alimentos de hoy?")) return;
+      DATA.meals = [];
+      saveLog();
       activeView = "dia"; activeMacro = null; activeFood = null;
       render();
     });
@@ -1599,7 +1614,7 @@
     });
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.30";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.31";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadLog();
     render();
