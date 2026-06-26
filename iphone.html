@@ -256,12 +256,13 @@
       letter-spacing: 0.03em; text-transform: uppercase; cursor: pointer;
     }
     .clear-filters.hidden { display: none; }
-    .sh-actions { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+    /* Fila de acciones de filtro, colocada sobre la imagen del agua */
+    .hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
     /* Botón rojo para borrar todos los alimentos del día (sin filtros) */
     .clear-all { background: var(--red); color: #fff; }
-    /* Botón negro: normaliza los alimentos del listado a 100 g para compararlos */
-    .norm-btn { background: var(--ink); color: #fff; }
-    .norm-btn.on { background: var(--lime); color: var(--ink); }
+    /* Botón normalizar a 100 g: blanco y, al activarlo, negro (como el resto de filtros) */
+    .norm-btn { background: var(--bg); color: var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .norm-btn.on { background: var(--ink); color: #fff; box-shadow: none; }
 
     /* Etiquetas de cada comida (tan grandes como "Comidas de hoy") */
     .log-sub {
@@ -550,7 +551,7 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.3</div>
+      <div class="avatar" id="version">V.4</div>
     </header>
 
     <section class="hero">
@@ -578,15 +579,17 @@
       <button data-view="Cena">Cena</button>
       <button data-view="Snack">Snack</button>
     </div>
-  </div><!-- /.top-region -->
 
-  <div class="section-head">
-    <h2 id="logTitle">Menú</h2>
-    <div class="sh-actions">
+    <!-- Acciones de filtro (sobre la imagen del agua) -->
+    <div class="hero-actions" id="heroActions">
       <button class="clear-filters norm-btn hidden" id="normBtn">/ 100 g</button>
       <button class="clear-filters hidden" id="clearFilters">Limpiar filtros</button>
       <button class="clear-filters clear-all hidden" id="clearAll">Borrar todo</button>
     </div>
+  </div><!-- /.top-region -->
+
+  <div class="section-head">
+    <h2 id="logTitle">Menú</h2>
   </div>
   <div id="foodLog"></div>
 
@@ -976,6 +979,10 @@
       // Alimento concreto seleccionado como filtro (su idx) — exclusivo con el macro
       const foodSel = (activeFood != null) ? resolved.find(r => r.idx === activeFood) : null;
       if (activeFood != null && !foodSel) activeFood = null;
+      // Con "/ 100 g" activo, el hero y los macros tratan el alimento elegido como
+      // si tomaras 100 g de él (para comparar alimentos en igualdad de condiciones).
+      const foodSelN = foodSel ? (normalize100 ? nutri(foodSel.food, 100) : foodSel.n) : null;
+      const foodSelG = foodSel ? (normalize100 ? 100 : foodSel.grams) : 0;
 
       // Chips de vista activos
       $("viewTabs").querySelectorAll("button").forEach(b =>
@@ -992,18 +999,18 @@
       if (foodSel && activeMacro) {
         // alimento + macro: el aporte de ese macro de ese alimento
         const mm = MACROS[activeMacro];
-        const mGrams = foodSel.n[mm.prop];
+        const mGrams = foodSelN[mm.prop];
         const mKcal = Math.round(mGrams * mm.f);
         $("kcalNow").textContent = mKcal.toLocaleString("es-ES");
         $("kcalNow").classList.remove("over");
-        $("kcalSub").innerHTML = "<b>" + mGrams + " g</b> de " + mm.name + " · " + FOODS[foodSel.food].name;
+        $("kcalSub").innerHTML = "<b>" + mGrams + " g</b> de " + mm.name + " · " + FOODS[foodSel.food].name + (normalize100 ? " (100 g)" : "");
         var pctG = goal > 0 ? Math.round(mKcal / goal * 100) : 0;
         kSel = Math.min(100, pctG); $("kcalRingPct").textContent = pctG + "%";
       } else if (foodSel) {
-        const fn = foodSel.n;
+        const fn = foodSelN;
         $("kcalNow").textContent = fn.kcal.toLocaleString("es-ES");
         $("kcalNow").classList.remove("over");
-        $("kcalSub").innerHTML = "<b>" + FOODS[foodSel.food].name + "</b> · " + foodSel.grams + " g";
+        $("kcalSub").innerHTML = "<b>" + FOODS[foodSel.food].name + "</b> · " + foodSelG + " g";
         var pctG = goal > 0 ? Math.round(fn.kcal / goal * 100) : 0;
         kSel = Math.min(100, pctG); $("kcalRingPct").textContent = pctG + "%";
       } else if (activeMacro) {
@@ -1050,9 +1057,10 @@
       $("macros").innerHTML = macros.map(m => {
         const goalV = m.goal;
         const viewVal = view[m.prop];                              // total de la vista (día o comida)
-        const focusVal = foodSel ? foodSel.n[m.prop] : viewVal;    // parte resaltada (lima)
+        const focusVal = foodSel ? round1(foodSelN[m.prop]) : viewVal;  // parte resaltada (lima)
         let restVal;
-        if (foodSel) restVal = Math.max(0, viewVal - focusVal);    // lo que aportan los demás alimentos
+        // Al normalizar a 100 g comparamos el alimento solo: sin "resto".
+        if (foodSel) restVal = normalize100 ? 0 : Math.max(0, viewVal - focusVal);
         else if (!isDay) restVal = Math.max(0, sum[m.prop] - viewVal);  // resto del día
         else restVal = 0;
         const sPct = Math.min(100, Math.round(focusVal / goalV * 100));
@@ -1060,8 +1068,12 @@
         const over = focusVal > goalV;   // rojo si te pasas
         let valText;
         if (foodSel) {
-          const pctCtx = viewVal > 0 ? Math.round(focusVal / viewVal * 100) : 0;
-          valText = `${focusVal}<span> g · <span class="pct">${pctCtx}%</span> ${viewLabel}</span>`;
+          if (normalize100) {
+            valText = `${focusVal}<span> g <span class="pct">/ 100 g</span></span>`;
+          } else {
+            const pctCtx = viewVal > 0 ? Math.round(focusVal / viewVal * 100) : 0;
+            valText = `${focusVal}<span> g · <span class="pct">${pctCtx}%</span> ${viewLabel}</span>`;
+          }
         } else if (isDay) {
           valText = `${focusVal}<span> / ${goalV} g</span>`;
         } else {
@@ -1674,7 +1686,7 @@
     });
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.3";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.4";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadLog();
     render();
