@@ -256,8 +256,12 @@
       letter-spacing: 0.03em; text-transform: uppercase; cursor: pointer;
     }
     .clear-filters.hidden { display: none; }
+    .sh-actions { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
     /* Botón rojo para borrar todos los alimentos del día (sin filtros) */
     .clear-all { background: var(--red); color: #fff; }
+    /* Botón negro: normaliza los alimentos del listado a 100 g para compararlos */
+    .norm-btn { background: var(--ink); color: #fff; }
+    .norm-btn.on { background: var(--lime); color: var(--ink); }
 
     /* Etiquetas de cada comida (tan grandes como "Comidas de hoy") */
     .log-sub {
@@ -546,7 +550,7 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.2</div>
+      <div class="avatar" id="version">V.3</div>
     </header>
 
     <section class="hero">
@@ -577,9 +581,12 @@
   </div><!-- /.top-region -->
 
   <div class="section-head">
-    <h2 id="logTitle">Comidas de hoy</h2>
-    <button class="clear-filters hidden" id="clearFilters">Limpiar filtros</button>
-    <button class="clear-filters clear-all hidden" id="clearAll">Borrar todo</button>
+    <h2 id="logTitle">Menú</h2>
+    <div class="sh-actions">
+      <button class="clear-filters norm-btn hidden" id="normBtn">/ 100 g</button>
+      <button class="clear-filters hidden" id="clearFilters">Limpiar filtros</button>
+      <button class="clear-filters clear-all hidden" id="clearAll">Borrar todo</button>
+    </div>
   </div>
   <div id="foodLog"></div>
 
@@ -891,6 +898,8 @@
     let activeMacro = null;
     // Alimento concreto seleccionado como filtro: su idx | null
     let activeFood = null;
+    // Normalizar los alimentos del listado a 100 g (para comparar entre ellos)
+    let normalize100 = false;
     const MACROS = {
       p: { prop: "protein", f: 4, name: "Proteínas",     short: "prot" },
       c: { prop: "carbs",   f: 4, name: "Carbohidratos", short: "carb" },
@@ -1073,41 +1082,50 @@
       }).join("");
 
       // ---- Log de alimentos ----
+      // Con "/ 100 g" activo se muestran los valores por 100 g (para comparar).
+      const dispNutri = (r) => normalize100 ? nutri(r.food, 100) : r.n;
+      const dispGrams = (r) => normalize100 ? 100 : r.grams;
       const rowHTML = (r, macro) => {
+        const n = dispNutri(r);
         const mainVal = macro
-          ? `${r.n[MACROS[macro].prop]} <span>g ${MACROS[macro].short}</span>`
-          : `${r.n.kcal} <span>kcal</span>`;
+          ? `${n[MACROS[macro].prop]} <span>g ${MACROS[macro].short}</span>`
+          : `${n.kcal} <span>kcal</span>`;
         return `
           <li class="logf${r.idx === activeFood ? " sel" : ""}" data-idx="${r.idx}">
             <div class="logf-main">
               <div class="logf-top"><span class="logf-emoji">${FOODS[r.food].emoji}</span></div>
               <div class="logf-info">
                 <div class="logf-name">${FOODS[r.food].name}</div>
-                <div class="logf-grams">${r.grams} g</div>
+                <div class="logf-grams">${dispGrams(r)} g</div>
                 <div class="logf-kcal">${mainVal}</div>
               </div>
             </div>
           </li>`;
       };
 
-      // Botón "Limpiar filtros": visible si hay algún filtro activo.
-      // Si no hay filtros, en su lugar aparece "Borrar todo" (si hay alimentos).
-      const anyFilter = activeView !== "dia" || activeMacro || activeFood != null;
+      // Botones de la cabecera:
+      //  · "/ 100 g" (normalizar): disponible siempre que haya alimentos; es un filtro.
+      //  · "Limpiar filtros": si hay cualquier filtro activo (incluida la normalización).
+      //  · "Borrar todo": solo cuando no hay filtros y sí hay alimentos.
+      const anyFilter = activeView !== "dia" || activeMacro || activeFood != null || normalize100;
+      $("normBtn").classList.toggle("hidden", resolved.length === 0);
+      $("normBtn").classList.toggle("on", normalize100);
       $("clearFilters").classList.toggle("hidden", !anyFilter);
       $("clearAll").classList.toggle("hidden", anyFilter || resolved.length === 0);
 
       const log = $("foodLog");
       if (activeMacro) {
         // Ordena los alimentos de la vista por cuánto aportan de ese macro
+        // (por 100 g si la normalización está activa, para que el "Top" compare igual)
         const mm = MACROS[activeMacro];
         const items = (isDay ? resolved : byMeal[activeView].items)
-          .slice().sort((a, b) => b.n[mm.prop] - a.n[mm.prop]);
+          .slice().sort((a, b) => dispNutri(b)[mm.prop] - dispNutri(a)[mm.prop]);
         $("logTitle").textContent = "Top " + mm.name.toLowerCase();
         log.innerHTML = items.length
           ? `<ul class="log-list">${items.map(r => rowHTML(r, activeMacro)).join("")}</ul>`
           : `<div class="meal-empty">Sin alimentos</div>`;
       } else if (isDay) {
-        $("logTitle").textContent = "Comidas de hoy";
+        $("logTitle").textContent = "Menú";
         const blocks = MEAL_ORDER.map(t => {
           const b = byMeal[t];
           if (!b.items.length) return "";
@@ -1149,9 +1167,15 @@
       render();
     });
 
-    // Limpiar todos los filtros (vista, macro, alimento)
+    // Limpiar todos los filtros (vista, macro, alimento, normalización)
     $("clearFilters").addEventListener("click", () => {
-      activeView = "dia"; activeMacro = null; activeFood = null;
+      activeView = "dia"; activeMacro = null; activeFood = null; normalize100 = false;
+      render();
+    });
+
+    // "/ 100 g": normaliza los alimentos del listado a 100 g para compararlos
+    $("normBtn").addEventListener("click", () => {
+      normalize100 = !normalize100;
       render();
     });
 
@@ -1161,7 +1185,7 @@
       if (!confirm("¿Borrar todos los alimentos de hoy?")) return;
       DATA.meals = [];
       saveLog();
-      activeView = "dia"; activeMacro = null; activeFood = null;
+      activeView = "dia"; activeMacro = null; activeFood = null; normalize100 = false;
       render();
     });
 
@@ -1650,7 +1674,7 @@
     });
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.2";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.3";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadLog();
     render();
