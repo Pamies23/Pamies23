@@ -597,6 +597,19 @@
       font-family: var(--disp); font-size: 12px; font-weight: 600; color: var(--muted);
     }
     .prof-row.calc .pr-name { color: var(--muted); text-transform: uppercase; font-size: 12px; letter-spacing: 0.03em; }
+    /* Déficit: nombre (izq) + dos columnas (kcal, gramos) alineadas a la derecha */
+    .def-row { display: flex; align-items: baseline; gap: 8px; padding: 10px 0; border-top: 1px solid rgba(19,19,17,0.07); }
+    .def-row:first-of-type { border-top: none; }
+    .def-row.def-total { border-top: 1.5px solid rgba(19,19,17,0.18); }
+    .def-name { flex: 1; min-width: 0; font-family: var(--disp); font-weight: 700; font-size: 14px; color: var(--ink); }
+    .def-name i { font-style: normal; font-weight: 600; font-size: 11px; color: var(--muted); margin-left: 5px; }
+    .def-v { display: flex; align-items: baseline; gap: 3px; flex-shrink: 0; justify-content: flex-end; }
+    .def-v.kcal { width: 92px; }
+    .def-v.g { width: 60px; }
+    .def-v b { font-family: var(--disp); font-weight: 800; font-size: 16px; color: var(--ink); }
+    .def-v .u { font-family: var(--disp); font-size: 11px; font-weight: 600; color: var(--muted); }
+    .def-v.surplus b { color: var(--red); }
+    .def-total .def-v b { font-size: 17px; }
     /* Toggle Hombre / Mujer */
     .sex-toggle { display: flex; gap: 6px; }
     .sex-toggle button {
@@ -616,7 +629,7 @@
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
       <button class="avatar gear-btn" id="settingsBtn" aria-label="Tus datos">⚙</button>
-      <div class="avatar" id="version">V.14</div>
+      <div class="avatar" id="version">V.15</div>
     </header>
 
     <section class="hero">
@@ -860,6 +873,26 @@
       <div class="prof-card">
         <div class="prof-card-h">Fin de semana <span>Sábado y domingo</span></div>
         <div class="goal-set" data-set="weekend"></div>
+      </div>
+
+      <!-- Déficit estimado (gasto - ingesta) y peso resultante -->
+      <div class="prof-card">
+        <div class="prof-card-h">Déficit estimado <span>1 kg ≈ 7.700 kcal</span></div>
+        <div class="def-row">
+          <span class="def-name">Entre semana <i>5 días</i></span>
+          <span class="def-v kcal"><b id="defK_week">0</b><span class="u">kcal</span></span>
+          <span class="def-v g"><b id="defG_week">0</b><span class="u">g</span></span>
+        </div>
+        <div class="def-row">
+          <span class="def-name">Fin de semana <i>2 días</i></span>
+          <span class="def-v kcal"><b id="defK_weekend">0</b><span class="u">kcal</span></span>
+          <span class="def-v g"><b id="defG_weekend">0</b><span class="u">g</span></span>
+        </div>
+        <div class="def-row def-total">
+          <span class="def-name">Total semana <i>7 días</i></span>
+          <span class="def-v kcal"><b id="defK_total">0</b><span class="u">kcal</span></span>
+          <span class="def-v g"><b id="defG_total">0</b><span class="u">g</span></span>
+        </div>
       </div>
 
       <button class="confirm" id="profileSave">Guardar</button>
@@ -1879,10 +1912,25 @@
         }).join("");
       });
     }
-    // Recalcula en vivo: total quemado (global), g/kg y calorías ingeridas de cada objetivo.
+    const KCAL_PER_KG = 7700;   // 1 kg de peso ≈ 7.700 kcal
+    const intakeKcal = (which) => {
+      const v = (prop) => parseFloat($("g_" + which + "_" + prop).value) || 0;
+      return v("protein") * 4 + v("carbs") * 4 + v("fat") * 9;
+    };
+    // Pone una cifra de déficit (kcal y gramos) con su signo y color (rojo si es superávit).
+    function setDef(key, kcal) {
+      const grams = kcal / KCAL_PER_KG * 1000;
+      const sign = (n) => (n > 0 ? "+" : "") + Math.round(n).toLocaleString("es-ES");
+      $("defK_" + key).textContent = sign(kcal);
+      $("defG_" + key).textContent = sign(grams);
+      // déficit (kcal < 0 = comes menos de lo que gastas = bajas) en negro; superávit en rojo
+      [$("defK_" + key).parentElement, $("defG_" + key).parentElement].forEach(el => el.classList.toggle("surplus", kcal > 0));
+    }
+    // Recalcula en vivo: total quemado, g/kg, calorías ingeridas y déficit estimado.
     function updateCalc() {
       const w = parseFloat($("pWeight").value);
-      $("calcTotal").textContent = ((parseFloat($("pPasivo").value) || 0) + (parseFloat($("pActivo").value) || 0)).toLocaleString("es-ES");
+      const exp = (parseFloat($("pPasivo").value) || 0) + (parseFloat($("pActivo").value) || 0);
+      $("calcTotal").textContent = exp.toLocaleString("es-ES");
       ["week", "weekend"].forEach(which => {
         const v = (prop) => parseFloat($("g_" + which + "_" + prop).value) || 0;
         const protein = v("protein"), carbs = v("carbs"), fat = v("fat");
@@ -1893,6 +1941,12 @@
           else { el.textContent = "—"; el.classList.add("empty"); }
         });
       });
+      // Balance = ingesta - gasto (negativo = déficit = pierdes peso). Acumulado por días.
+      const balWeek = (intakeKcal("week") - exp) * 5;
+      const balWkd  = (intakeKcal("weekend") - exp) * 2;
+      setDef("week", balWeek);
+      setDef("weekend", balWkd);
+      setDef("total", balWeek + balWkd);
     }
     function syncSexToggle() {
       $("pSex").querySelectorAll("button").forEach(b =>
@@ -1949,7 +2003,7 @@
     enablePullToDismiss($("profile"), closeProfile);
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.14";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.15";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadProfile();
     recomputeGoalKcal();
