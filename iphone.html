@@ -398,14 +398,9 @@
     .addf-sub { font-size: 12px; color: var(--muted); margin-top: 3px; font-weight: 500; }
     .addf-kcal { font-family: var(--disp); font-size: 18px; font-weight: 800; color: var(--ink); margin-top: 8px; }
     .addf-kcal span { font-family: var(--sans); font-size: 11px; font-weight: 500; color: var(--muted); }
-    .addf-plus {
-      position: absolute; bottom: 8px; right: 8px;
-      width: 30px; height: 30px; border-radius: 50%;
-      background: var(--lime); color: var(--ink);
-      font-size: 22px; font-weight: 400; line-height: 1;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 2px 8px rgba(19,19,17,0.20);
-    }
+    /* Pie de la tarjeta: gramos abajo-izquierda, kcal abajo-derecha */
+    .addf-foot { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-top: 8px; }
+    .addf-foot .addf-sub, .addf-foot .addf-kcal { margin-top: 0; }
     .food-empty {
       grid-column: 1 / -1; background: var(--card); border-radius: var(--r-md);
       padding: 26px; text-align: center; color: var(--muted); font-size: 14px; font-weight: 500;
@@ -686,7 +681,7 @@
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
       <button class="avatar gear-btn" id="settingsBtn" aria-label="Tus datos">⚙</button>
-      <div class="avatar" id="version">V.3</div>
+      <div class="avatar" id="version">V.4</div>
     </header>
 
     <section class="hero">
@@ -1519,10 +1514,11 @@
         <div class="addf-top"><span class="addf-emoji">${emoji}</span></div>
         <div class="addf-info">
           <div class="addf-name">${name}</div>
-          <div class="addf-sub">${sub}</div>
-          <div class="addf-kcal">${kcal} <span>kcal</span></div>
+          <div class="addf-foot">
+            <span class="addf-sub">${sub}</span>
+            <span class="addf-kcal">${kcal} <span>kcal</span></span>
+          </div>
         </div>
-        <div class="addf-plus">+</div>
       </li>`;
 
     function renderFoodList() {
@@ -2062,7 +2058,7 @@
     enablePullToDismiss($("profile"), closeProfile);
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.3";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.4";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadProfile();
     recomputeGoalKcal();
