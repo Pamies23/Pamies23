@@ -531,7 +531,7 @@
     .si-name { font-family: var(--disp); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.01em; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .si-kcal { font-size: 12px; color: var(--muted); font-weight: 500; margin-top: 1px; }
     .si-grams { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-    .si-grams button { width: 26px; height: 26px; border-radius: 50%; border: none; background: var(--ink); color: #fff; font-size: 17px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .si-grams button { width: 26px; height: 26px; border-radius: 50%; border: none; background: var(--ink); color: #fff; font-size: 17px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; touch-action: none; -webkit-user-select: none; user-select: none; }
     .si-grams span { font-family: var(--disp); font-weight: 700; font-size: 12px; color: var(--ink); min-width: 40px; text-align: center; }
     .si-del { border: none; background: none; color: var(--muted); font-size: 15px; cursor: pointer; flex-shrink: 0; padding: 4px; }
     .sim-add {
@@ -551,7 +551,7 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.27</div>
+      <div class="avatar" id="version">V.28</div>
     </header>
 
     <section class="hero">
@@ -1420,7 +1420,9 @@
     }
     function closeSim() { showView("sheet"); }   // vuelve a Añadir → Recetas
 
-    function simRender() {
+    // Resumen (números, macros, anillo) — NO toca la lista de alimentos,
+    // para poder actualizar gramos sin reconstruir/saltar la pantalla.
+    function simRenderSummary() {
       const goal = DATA.goal;
       const sum = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
       simItems.forEach(it => {
@@ -1449,6 +1451,15 @@
           <div class="mini"><span class="seg" data-w="${sp}"></span></div></div>`;
       }).join("");
 
+      requestAnimationFrame(() => {
+        $("simRingSel").style.strokeDasharray = Math.min(100, pct) + " 100";
+        document.querySelectorAll('#simMacros .mini .seg').forEach(s => s.style.width = s.dataset.w + "%");
+      });
+
+      $("simSave").disabled = !simItems.length;
+    }
+
+    function simRender() {
       $("simItems").innerHTML = simItems.length ? simItems.map((it, i) => {
         const f = FOODS[it.food]; const n = nutri(it.food, it.grams);
         return `<div class="sim-item" data-i="${i}">
@@ -1458,25 +1469,51 @@
           <button class="si-del" data-act="del" aria-label="Quitar">✕</button>
         </div>`;
       }).join("") : "";
+      simRenderSummary();
+    }
 
-      requestAnimationFrame(() => {
-        $("simRingSel").style.strokeDasharray = Math.min(100, pct) + " 100";
-        document.querySelectorAll('#simMacros .mini .seg').forEach(s => s.style.width = s.dataset.w + "%");
-      });
-
-      $("simSave").disabled = !simItems.length;
+    // Actualiza en sitio los gramos/kcal de una fila concreta, sin reconstruir
+    // la lista (así el botón pulsado sigue vivo y la pantalla no salta).
+    function simUpdateRow(i) {
+      const row = $("simItems").querySelector('.sim-item[data-i="' + i + '"]');
+      if (!row) return;
+      const it = simItems[i]; const n = nutri(it.food, it.grams);
+      const gramsEl = row.querySelector(".si-grams span");
+      const kcalEl = row.querySelector(".si-kcal");
+      if (gramsEl) gramsEl.textContent = it.grams + " g";
+      if (kcalEl) kcalEl.textContent = n.kcal + " kcal";
+      simRenderSummary();
     }
 
     $("simClose").addEventListener("click", closeSim);
-    $("simItems").addEventListener("click", (e) => {
+
+    // +/− con pulsación mantenida (auto-repetición) y sin saltos de scroll.
+    let simHoldTimer = null, simRepeatTimer = null;
+    function simClearHold() {
+      clearTimeout(simHoldTimer); clearInterval(simRepeatTimer);
+      simHoldTimer = simRepeatTimer = null;
+    }
+    function simStep(i, act) {
+      if (!simItems[i]) return;
+      if (act === "plus") simItems[i].grams += 5;
+      else if (act === "minus") simItems[i].grams = Math.max(5, simItems[i].grams - 5);
+      simUpdateRow(i);
+    }
+    $("simItems").addEventListener("pointerdown", (e) => {
       const btn = e.target.closest("button[data-act]"); if (!btn) return;
       const row = e.target.closest(".sim-item"); const i = parseInt(row.dataset.i, 10);
       const act = btn.dataset.act;
-      if (act === "plus") simItems[i].grams += 10;
-      else if (act === "minus") simItems[i].grams = Math.max(5, simItems[i].grams - 10);
-      else if (act === "del") simItems.splice(i, 1);
-      simRender();
+      if (act === "del") { simItems.splice(i, 1); simRender(); return; }
+      // Evita que el navegador desplace la página al pulsar el botón.
+      e.preventDefault();
+      simClearHold();
+      simStep(i, act);                                    // primer paso inmediato
+      simHoldTimer = setTimeout(() => {                   // tras 400ms, repetición
+        simRepeatTimer = setInterval(() => simStep(i, act), 80);
+      }, 400);
     });
+    ["pointerup", "pointerleave", "pointercancel"].forEach(ev =>
+      $("simItems").addEventListener(ev, simClearHold));
 
     $("simSave").addEventListener("click", () => {
       if (!simItems.length) return;
@@ -1529,7 +1566,7 @@
     });
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.27";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.28";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadLog();
     render();
