@@ -248,16 +248,16 @@
       letter-spacing: -0.01em; text-transform: uppercase; color: var(--ink);
     }
     .section-head .sh-meta { font-family: var(--disp); font-size: 13px; font-weight: 700; color: var(--muted); }
-    /* Botón para limpiar todos los filtros (vista, macro, alimento) */
+    /* Botón para limpiar/normalizar filtros (mismo tamaño que las pestañas de arriba) */
     .clear-filters {
       border: none; background: var(--lime); color: var(--ink);
-      border-radius: 99px; padding: 7px 14px;
-      font-family: var(--disp); font-size: 12px; font-weight: 800;
-      letter-spacing: 0.03em; text-transform: uppercase; cursor: pointer;
+      border-radius: 99px; padding: 9px 17px;
+      font-family: var(--disp); font-size: 13px; font-weight: 700;
+      letter-spacing: 0.02em; text-transform: uppercase; cursor: pointer; white-space: nowrap;
     }
     .clear-filters.hidden { display: none; }
-    /* Fila de acciones de filtro, colocada sobre la imagen del agua */
-    .hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
+    /* Fila de acciones de filtro, colocada sobre la imagen del agua y pegada a la derecha */
+    .hero-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 14px; }
     /* Botón rojo para borrar todos los alimentos del día (sin filtros) */
     .clear-all { background: var(--red); color: #fff; }
     /* Botón normalizar a 100 g: blanco y, al activarlo, negro (como el resto de filtros) */
@@ -551,7 +551,7 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.4</div>
+      <div class="avatar" id="version">V.5</div>
     </header>
 
     <section class="hero">
@@ -1686,7 +1686,7 @@
     });
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.4";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.5";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadLog();
     render();
