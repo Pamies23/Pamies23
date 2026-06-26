@@ -526,17 +526,9 @@
     .sim-cat button { flex: 1 0 auto; }
     .sim-save { width: 100%; margin-top: 4px; }
 
-    .sim-items { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+    /* La lista de alimentos de la receta reutiliza las tarjetas de Home (.logf) */
+    .sim-items { margin-bottom: 12px; }
     .sim-empty { background: var(--card); border-radius: var(--r-md); padding: 20px; text-align: center; color: var(--muted); font-size: 14px; font-weight: 500; }
-    .sim-item { display: flex; align-items: center; gap: 10px; background: var(--card); border-radius: var(--r-md); padding: 9px 11px; }
-    .si-emoji { width: 36px; height: 36px; border-radius: 10px; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; }
-    .si-main { flex: 1; min-width: 0; }
-    .si-name { font-family: var(--disp); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.01em; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .si-kcal { font-size: 12px; color: var(--muted); font-weight: 500; margin-top: 1px; }
-    .si-grams { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-    .si-grams button { width: 26px; height: 26px; border-radius: 50%; border: none; background: var(--ink); color: #fff; font-size: 17px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; touch-action: none; -webkit-user-select: none; user-select: none; }
-    .si-grams span { font-family: var(--disp); font-weight: 700; font-size: 12px; color: var(--ink); min-width: 40px; text-align: center; }
-    .si-del { border: none; background: none; color: var(--muted); font-size: 15px; cursor: pointer; flex-shrink: 0; padding: 4px; }
     .sim-add {
       width: 100%; border: 1.5px dashed var(--line); background: var(--bg); color: var(--ink);
       border-radius: var(--r-md); padding: 14px; font-family: var(--disp); font-weight: 700;
@@ -554,7 +546,7 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.1</div>
+      <div class="avatar" id="version">V.2</div>
     </header>
 
     <section class="hero">
@@ -1327,8 +1319,11 @@
     }
 
     function showModal() {
-      const isRecipe = modalState.mode === "recipe";
+      const mode = modalState.mode;
+      const isRecipe = mode === "recipe";
+      const isSim = mode === "simadd" || mode === "simedit";   // dentro del creador de recetas
       $("mGramsField").style.display = isRecipe ? "none" : "";
+      $("mMeals").style.display = isSim ? "none" : "";          // en el creador no se asigna comida
       if (isRecipe) {
         const r = getRecipe(modalState.recipeKey);
         $("mEmoji").textContent = r.emoji;
@@ -1339,11 +1334,13 @@
         $("mSave").textContent = "Añadir receta";
       } else {
         const f = FOODS[modalState.foodKey];
+        const editing = mode === "edit" || mode === "simedit";
         $("mEmoji").textContent = f.emoji;
         $("mTitle").textContent = f.name;
         $("mRef").textContent = "Referencia: " + f.ration + " · " + f.kcal + " kcal";
-        $("mDelete").hidden = modalState.mode !== "edit";
-        $("mSave").textContent = modalState.mode === "edit" ? "Guardar" : "Añadir";
+        $("mDelete").hidden = !editing;
+        $("mDelete").textContent = "Eliminar";
+        $("mSave").textContent = editing ? "Guardar" : "Añadir";
       }
       syncMealPicker();
       updatePreview();
@@ -1373,6 +1370,20 @@
       if (!meal || !FOODS[meal.food]) return;
       modalState = { mode: "edit", foodKey: meal.food, idx, time: meal.time };
       $("mGrams").value = meal.grams;
+      showModal();
+    }
+    // Creador de recetas: elegir un alimento abre el modal con su info nutricional
+    function openSimAdd(foodKey) {
+      if (!FOODS[foodKey]) return;
+      modalState = { mode: "simadd", foodKey };
+      $("mGrams").value = FOODS[foodKey].base;
+      showModal();
+    }
+    function openSimEdit(i) {
+      const it = simItems[i];
+      if (!it || !FOODS[it.food]) return;
+      modalState = { mode: "simedit", foodKey: it.food, simIdx: i };
+      $("mGrams").value = it.grams;
       showModal();
     }
 
@@ -1431,6 +1442,15 @@
     modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
 
     $("mSave").addEventListener("click", () => {
+      // Creador de recetas: añade/edita el ingrediente y vuelve al simulador
+      if (modalState.mode === "simadd") {
+        simItems.push({ food: modalState.foodKey, grams: Math.max(1, currentGrams()) });
+        simRender(); closeModal(); return;
+      }
+      if (modalState.mode === "simedit") {
+        simItems[modalState.simIdx].grams = Math.max(1, currentGrams());
+        simRender(); closeModal(); return;
+      }
       if (modalState.mode === "recipe") {
         getRecipe(modalState.recipeKey).items.forEach(it => {
           if (FOODS[it.food]) DATA.meals.push({ food: it.food, time: modalState.time, grams: it.grams });
@@ -1447,6 +1467,15 @@
     });
 
     $("mDelete").addEventListener("click", () => {
+      if (modalState.mode === "simedit") {
+        const i = modalState.simIdx;
+        simItems.splice(i, 1);
+        if (simActiveFood === i) simActiveFood = null;
+        else if (simActiveFood != null && simActiveFood > i) simActiveFood--;
+        simRender();
+        closeModal();
+        return;
+      }
       if (modalState.mode === "edit") {
         DATA.meals.splice(modalState.idx, 1);
         saveLog();
@@ -1462,17 +1491,19 @@
     /* =========================================================
        SIMULADOR DE RECETAS  (crear tu propio plato y guardarlo)
        ========================================================= */
-    let simItems = [];          // [{ food, grams }]
+    let simItems = [];            // [{ food, grams }]
+    let simActiveFood = null;     // índice del alimento "enfocado" (filtro), como en Home
 
     function openSim() {
       simItems = [];
+      simActiveFood = null;
       simRender();
       showView("sim");
     }
     function closeSim() { showView("sheet"); }   // vuelve a Añadir → Recetas
 
-    // Resumen (números, macros, anillo) — NO toca la lista de alimentos,
-    // para poder actualizar gramos sin reconstruir/saltar la pantalla.
+    // Resumen (números, macros, anillo). Si hay un alimento enfocado, se muestra
+    // su aporte (lima) sobre el total de la receta (apagado), igual que en Home.
     function simRenderSummary() {
       const goal = DATA.goal;
       const sum = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
@@ -1482,89 +1513,92 @@
       });
       sum.protein = Math.round(sum.protein); sum.carbs = Math.round(sum.carbs); sum.fat = Math.round(sum.fat);
 
-      $("simNow").textContent = sum.kcal.toLocaleString("es-ES");
-      $("simNow").classList.toggle("over", sum.kcal > goal.kcal);
-      $("simGoal").textContent = "/ " + goal.kcal.toLocaleString("es-ES") + " KCAL";
-      const pct = goal.kcal > 0 ? Math.round(sum.kcal / goal.kcal * 100) : 0;
-      $("simSub").innerHTML = simItems.length ? ("<b>" + pct + "%</b> del objetivo diario") : "Añade alimentos para empezar";
-      $("simRingPct").textContent = pct + "%";
+      if (simActiveFood != null && !simItems[simActiveFood]) simActiveFood = null;
+      const foodSel = simActiveFood != null ? simItems[simActiveFood] : null;
+      const fn = foodSel ? nutri(foodSel.food, foodSel.grams) : null;
 
+      // ---- Hero ----
+      $("simGoal").textContent = "/ " + goal.kcal.toLocaleString("es-ES") + " KCAL";
+      let heroPct;
+      if (foodSel) {
+        $("simNow").textContent = Math.round(fn.kcal).toLocaleString("es-ES");
+        $("simNow").classList.remove("over");
+        $("simSub").innerHTML = "<b>" + FOODS[foodSel.food].name + "</b> · " + foodSel.grams + " g";
+        heroPct = goal.kcal > 0 ? Math.round(fn.kcal / goal.kcal * 100) : 0;
+      } else {
+        $("simNow").textContent = sum.kcal.toLocaleString("es-ES");
+        $("simNow").classList.toggle("over", sum.kcal > goal.kcal);
+        heroPct = goal.kcal > 0 ? Math.round(sum.kcal / goal.kcal * 100) : 0;
+        $("simSub").innerHTML = simItems.length ? ("<b>" + heroPct + "%</b> del objetivo diario") : "Añade alimentos para empezar";
+      }
+      $("simRingPct").textContent = heroPct + "%";
+
+      // ---- Macros ----
       const macros = [
-        { name: "Proteínas", v: sum.protein, g: goal.protein },
-        { name: "Carbohidratos", v: sum.carbs, g: goal.carbs },
-        { name: "Grasas", v: sum.fat, g: goal.fat }
+        { name: "Proteínas", prop: "protein", g: goal.protein },
+        { name: "Carbohidratos", prop: "carbs", g: goal.carbs },
+        { name: "Grasas", prop: "fat", g: goal.fat }
       ];
       $("simMacros").innerHTML = macros.map(m => {
-        const sp = Math.min(100, Math.round(m.v / m.g * 100));
-        const over = m.v > m.g;
+        const total = sum[m.prop];
+        const focus = foodSel ? round1(fn[m.prop]) : total;
+        const sp = Math.min(100, Math.round(focus / m.g * 100));
+        const restVal = foodSel ? Math.max(0, total - focus) : 0;
+        const rp = Math.min(100 - sp, Math.round(restVal / m.g * 100));
+        const over = focus > m.g;
+        let valText;
+        if (foodSel) {
+          const pctRec = total > 0 ? Math.round(focus / total * 100) : 0;
+          valText = `${focus}<span> g · <span class="pct">${pctRec}%</span> de la receta</span>`;
+        } else {
+          valText = `${focus}<span> / ${m.g} g</span>`;
+        }
         return `<div class="macro"><div class="top"><div class="name">${m.name}</div>
-          <div class="val${over ? " over" : ""}">${m.v}<span> / ${m.g} g</span></div></div>
-          <div class="mini"><span class="seg" data-w="${sp}"></span></div></div>`;
+          <div class="val${over ? " over" : ""}">${valText}</div></div>
+          <div class="mini"><span class="seg" data-w="${sp}"></span><span class="seg rest" data-w="${rp}"></span></div></div>`;
       }).join("");
 
       requestAnimationFrame(() => {
-        $("simRingSel").style.strokeDasharray = Math.min(100, pct) + " 100";
+        $("simRingSel").style.strokeDasharray = Math.min(100, heroPct) + " 100";
         document.querySelectorAll('#simMacros .mini .seg').forEach(s => s.style.width = s.dataset.w + "%");
       });
 
       $("simSave").disabled = !simItems.length;
     }
 
+    // Lista de alimentos de la receta: tarjetas grandes como en Home.
     function simRender() {
-      $("simItems").innerHTML = simItems.length ? simItems.map((it, i) => {
-        const f = FOODS[it.food]; const n = nutri(it.food, it.grams);
-        return `<div class="sim-item" data-i="${i}">
-          <div class="si-emoji">${f.emoji}</div>
-          <div class="si-main"><div class="si-name">${f.name}</div><div class="si-kcal">${n.kcal} kcal</div></div>
-          <div class="si-grams"><button data-act="minus">−</button><span>${it.grams} g</span><button data-act="plus">+</button></div>
-          <button class="si-del" data-act="del" aria-label="Quitar">✕</button>
-        </div>`;
-      }).join("") : "";
-      simRenderSummary();
-    }
-
-    // Actualiza en sitio los gramos/kcal de una fila concreta, sin reconstruir
-    // la lista (así el botón pulsado sigue vivo y la pantalla no salta).
-    function simUpdateRow(i) {
-      const row = $("simItems").querySelector('.sim-item[data-i="' + i + '"]');
-      if (!row) return;
-      const it = simItems[i]; const n = nutri(it.food, it.grams);
-      const gramsEl = row.querySelector(".si-grams span");
-      const kcalEl = row.querySelector(".si-kcal");
-      if (gramsEl) gramsEl.textContent = it.grams + " g";
-      if (kcalEl) kcalEl.textContent = n.kcal + " kcal";
+      $("simItems").innerHTML = simItems.length
+        ? `<ul class="log-list">${simItems.map((it, i) => {
+            const f = FOODS[it.food]; const n = nutri(it.food, it.grams);
+            return `<li class="logf${i === simActiveFood ? " sel" : ""}" data-i="${i}">
+              <div class="logf-main">
+                <div class="logf-top"><span class="logf-emoji">${f.emoji}</span></div>
+                <div class="logf-info">
+                  <div class="logf-name">${f.name}</div>
+                  <div class="logf-grams">${it.grams} g</div>
+                  <div class="logf-kcal">${n.kcal} <span>kcal</span></div>
+                </div>
+              </div>
+            </li>`;
+          }).join("")}</ul>`
+        : "";
       simRenderSummary();
     }
 
     $("simClose").addEventListener("click", closeSim);
 
-    // +/− con pulsación mantenida (auto-repetición) y sin saltos de scroll.
-    let simHoldTimer = null, simRepeatTimer = null;
-    function simClearHold() {
-      clearTimeout(simHoldTimer); clearInterval(simRepeatTimer);
-      simHoldTimer = simRepeatTimer = null;
-    }
-    function simStep(i, act) {
-      if (!simItems[i]) return;
-      if (act === "plus") simItems[i].grams += 10;
-      else if (act === "minus") simItems[i].grams = Math.max(5, simItems[i].grams - 10);
-      simUpdateRow(i);
-    }
-    $("simItems").addEventListener("pointerdown", (e) => {
-      const btn = e.target.closest("button[data-act]"); if (!btn) return;
-      const row = e.target.closest(".sim-item"); const i = parseInt(row.dataset.i, 10);
-      const act = btn.dataset.act;
-      if (act === "del") { simItems.splice(i, 1); simRender(); return; }
-      // Evita que el navegador desplace la página al pulsar el botón.
-      e.preventDefault();
-      simClearHold();
-      simStep(i, act);                                    // primer paso inmediato
-      simHoldTimer = setTimeout(() => {                   // tras 400ms, repetición
-        simRepeatTimer = setInterval(() => simStep(i, act), 80);
-      }, 400);
+    // Parte beige = enfocar/desenfocar ese alimento (filtro); resto = editar gramos.
+    $("simItems").addEventListener("click", (e) => {
+      const card = e.target.closest(".logf"); if (!card) return;
+      const i = parseInt(card.dataset.i, 10);
+      if (e.target.closest(".logf-top")) {
+        simActiveFood = (simActiveFood === i) ? null : i;
+        simRender();
+      } else {
+        openSimEdit(i);
+      }
     });
-    ["pointerup", "pointerleave", "pointercancel"].forEach(ev =>
-      $("simItems").addEventListener(ev, simClearHold));
 
     $("simSave").addEventListener("click", () => {
       if (!simItems.length) return;
@@ -1611,13 +1645,12 @@
     });
     $("simPickList").addEventListener("click", (e) => {
       const li = e.target.closest("[data-pick]"); if (!li) return;
-      simItems.push({ food: li.dataset.pick, grams: FOODS[li.dataset.pick].base });
-      closeSimPick();
-      simRender();
+      showView("sim");                 // volver al simulador; el modal se superpone
+      openSimAdd(li.dataset.pick);      // muestra la info nutricional antes de añadir
     });
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.1";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.2";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadLog();
     render();
