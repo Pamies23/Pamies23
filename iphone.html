@@ -580,21 +580,22 @@
     .pr-name { flex: 1; min-width: 0; font-family: var(--disp); font-weight: 700; font-size: 14px; color: var(--ink); }
     .pr-gkg { width: 56px; flex-shrink: 0; text-align: right; font-family: var(--disp); font-weight: 700; font-size: 12px; color: var(--lime-dim); }
     .pr-gkg.empty { color: transparent; }
-    .pr-val { width: 122px; flex-shrink: 0; display: flex; justify-content: flex-end; }
-    /* Cajetín blanco de entrada */
-    .prof-inp { display: flex; align-items: baseline; gap: 5px; background: var(--bg); border-radius: 10px;
-      box-shadow: inset 0 0 0 1.5px rgba(19,19,17,0.14); padding: 8px 12px; width: 100%; justify-content: flex-end; }
-    .prof-inp input {
-      width: 100%; border: none; background: none; outline: none; text-align: right;
-      font-family: var(--disp); font-weight: 800; font-size: 17px; color: var(--ink);
-      -webkit-appearance: none; -moz-appearance: textfield;
+    .pr-val { width: 126px; flex-shrink: 0; display: flex; }
+    /* El número vive en la propia fila (sin recuadro) y es grande.
+       Los números terminan TODOS en la misma línea: el número ocupa el espacio
+       flexible (alineado a la derecha) y la unidad va en una columna fija a su
+       derecha (así "g"/"kcal" quedan más o menos lejos, pero el número no se mueve). */
+    .prof-inp, .pr-calc { display: flex; align-items: baseline; width: 100%; }
+    .prof-inp input, .pr-calc b {
+      flex: 1; min-width: 0; text-align: right;
+      font-family: var(--disp); font-weight: 800; font-size: 23px; color: var(--ink); letter-spacing: -0.01em;
     }
+    .prof-inp input { border: none; background: none; outline: none; -webkit-appearance: none; -moz-appearance: textfield; }
     .prof-inp input::-webkit-outer-spin-button, .prof-inp input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-    .prof-inp .unit { font-family: var(--disp); font-size: 12px; font-weight: 600; color: var(--muted); flex-shrink: 0; }
-    /* Valor calculado (solo lectura): negro y en negrita, alineado a la derecha */
-    .pr-calc { display: flex; align-items: baseline; gap: 5px; padding: 8px 12px; }
-    .pr-calc b { font-family: var(--disp); font-weight: 800; font-size: 17px; color: var(--ink); }
-    .pr-calc .unit { font-family: var(--disp); font-size: 12px; font-weight: 600; color: var(--muted); }
+    .prof-inp .unit, .pr-calc .unit {
+      width: 36px; flex-shrink: 0; text-align: right; padding-left: 4px;
+      font-family: var(--disp); font-size: 12px; font-weight: 600; color: var(--muted);
+    }
     .prof-row.calc .pr-name { color: var(--muted); text-transform: uppercase; font-size: 12px; letter-spacing: 0.03em; }
     /* Toggle Hombre / Mujer */
     .sex-toggle { display: flex; gap: 6px; }
@@ -615,7 +616,7 @@
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
       <button class="avatar gear-btn" id="settingsBtn" aria-label="Tus datos">⚙</button>
-      <div class="avatar" id="version">V.11</div>
+      <div class="avatar" id="version">V.14</div>
     </header>
 
     <section class="hero">
@@ -831,6 +832,22 @@
             <button type="button" data-sex="mujer">Mujer</button>
           </div>
         </div>
+        <!-- Gasto energético (global: vale para entre semana y fin de semana) -->
+        <div class="prof-row">
+          <span class="pr-name">Consumo pasivo</span>
+          <span class="pr-gkg empty">—</span>
+          <div class="pr-val"><div class="prof-inp"><input id="pPasivo" type="number" inputmode="numeric" min="0" step="1"><span class="unit">kcal</span></div></div>
+        </div>
+        <div class="prof-row">
+          <span class="pr-name">Activo (deporte)</span>
+          <span class="pr-gkg empty">—</span>
+          <div class="pr-val"><div class="prof-inp"><input id="pActivo" type="number" inputmode="numeric" min="0" step="1"><span class="unit">kcal</span></div></div>
+        </div>
+        <div class="prof-row calc">
+          <span class="pr-name">Total quemado</span>
+          <span class="pr-gkg empty">—</span>
+          <div class="pr-val"><div class="pr-calc"><b id="calcTotal">0</b><span class="unit">kcal</span></div></div>
+        </div>
       </div>
 
       <!-- Objetivo entre semana -->
@@ -880,13 +897,13 @@
        ========================================================= */
     const DATA = {
       user: { name: "Verde", initial: "V" },
-      // Datos personales del usuario
-      profile: { weight: 70, height: 175, sex: "hombre" },
+      // Datos personales (pasivo/activo son globales: valen para toda la semana)
+      profile: { weight: 70, height: 175, sex: "hombre", pasivo: 1500, activo: 500 },
       // Objetivos diarios: entre semana (L-V) y fin de semana (S-D)
-      // pasivo+activo = gasto total; kcal (ingesta objetivo) se calcula con los macros.
+      // kcal (ingesta objetivo) se calcula a partir de los macros.
       goals: {
-        week:    { pasivo: 1500, activo: 500, protein: 140, carbs: 37, fat: 52, kcal: 1176 },
-        weekend: { pasivo: 1500, activo: 500, protein: 140, carbs: 37, fat: 52, kcal: 1176 }
+        week:    { protein: 140, carbs: 37, fat: 52, kcal: 1176 },
+        weekend: { protein: 140, carbs: 37, fat: 52, kcal: 1176 }
       },
       // Objetivo activo (se rellena según el día con applyActiveGoal())
       goal: { kcal: 1176, protein: 140, carbs: 37, fat: 52 },
@@ -1832,14 +1849,12 @@
        TUS DATOS  —  perfil + objetivos (entre semana / fin de semana)
        ========================================================= */
     // Filas de cada objetivo. type:"input" = editable; type:"calc" = calculado.
+    // (pasivo/activo/total son globales y viven arriba, fuera de los objetivos)
     const GOAL_ROWS = [
-      { prop: "pasivo",  name: "Consumo pasivo",   unit: "kcal", type: "input" },
-      { prop: "activo",  name: "Activo (deporte)", unit: "kcal", type: "input" },
-      { prop: "total",   name: "Total quemado",    unit: "kcal", type: "calc"  },
-      { prop: "protein", name: "Proteínas",        unit: "g",    type: "input", gkg: true },
-      { prop: "carbs",   name: "Carbohidratos",    unit: "g",    type: "input", gkg: true },
-      { prop: "fat",     name: "Grasas",           unit: "g",    type: "input", gkg: true },
-      { prop: "kcal",    name: "Calorías",         unit: "kcal", type: "calc"  }
+      { prop: "protein", name: "Proteínas",     unit: "g",    type: "input", gkg: true },
+      { prop: "carbs",   name: "Carbohidratos", unit: "g",    type: "input", gkg: true },
+      { prop: "fat",     name: "Grasas",        unit: "g",    type: "input", gkg: true },
+      { prop: "kcal",    name: "Calorías",      unit: "kcal", type: "calc"  }
     ];
     // Campos editables y propiedades guardadas de cada objetivo
     const GOAL_INPUTS = GOAL_ROWS.filter(r => r.type === "input").map(r => r.prop);
@@ -1864,13 +1879,13 @@
         }).join("");
       });
     }
-    // Recalcula en vivo g/kg, total quemado y calorías ingeridas de ambos objetivos.
+    // Recalcula en vivo: total quemado (global), g/kg y calorías ingeridas de cada objetivo.
     function updateCalc() {
       const w = parseFloat($("pWeight").value);
+      $("calcTotal").textContent = ((parseFloat($("pPasivo").value) || 0) + (parseFloat($("pActivo").value) || 0)).toLocaleString("es-ES");
       ["week", "weekend"].forEach(which => {
         const v = (prop) => parseFloat($("g_" + which + "_" + prop).value) || 0;
         const protein = v("protein"), carbs = v("carbs"), fat = v("fat");
-        $("calc_" + which + "_total").textContent = (v("pasivo") + v("activo")).toLocaleString("es-ES");
         $("calc_" + which + "_kcal").textContent = Math.round(protein * 4 + carbs * 4 + fat * 9).toLocaleString("es-ES");
         [["protein", protein], ["carbs", carbs], ["fat", fat]].forEach(([prop, g]) => {
           const el = $("gkg_" + which + "_" + prop);
@@ -1886,6 +1901,8 @@
     function fillProfileForm() {
       $("pWeight").value = DATA.profile.weight;
       $("pHeight").value = DATA.profile.height;
+      $("pPasivo").value = DATA.profile.pasivo;
+      $("pActivo").value = DATA.profile.activo;
       syncSexToggle();
       ["week", "weekend"].forEach(which => {
         GOAL_INPUTS.forEach(prop => { $("g_" + which + "_" + prop).value = DATA.goals[which][prop]; });
@@ -1899,7 +1916,16 @@
     $("settingsBtn").addEventListener("click", openProfile);
     $("profileClose").addEventListener("click", closeProfile);
     $("pWeight").addEventListener("input", updateCalc);
+    $("pPasivo").addEventListener("input", updateCalc);
+    $("pActivo").addEventListener("input", updateCalc);
     document.querySelectorAll(".goal-set input").forEach(inp => inp.addEventListener("input", updateCalc));
+
+    // Al tocar una cifra se vacía para escribir desde cero (sin tener que borrar).
+    // Si se sale sin escribir nada, se recupera el valor anterior.
+    document.querySelectorAll("#profile input[type=number]").forEach(el => {
+      el.addEventListener("focus", () => { el.dataset.prev = el.value; el.value = ""; updateCalc(); });
+      el.addEventListener("blur", () => { if (el.value === "") el.value = el.dataset.prev || ""; updateCalc(); });
+    });
     $("pSex").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-sex]"); if (!b) return;
       DATA.profile.sex = b.dataset.sex; syncSexToggle();
@@ -1907,6 +1933,8 @@
     $("profileSave").addEventListener("click", () => {
       DATA.profile.weight = Math.max(0, parseFloat($("pWeight").value) || 0);
       DATA.profile.height = Math.max(0, parseInt($("pHeight").value, 10) || 0);
+      DATA.profile.pasivo = Math.max(0, parseInt($("pPasivo").value, 10) || 0);
+      DATA.profile.activo = Math.max(0, parseInt($("pActivo").value, 10) || 0);
       ["week", "weekend"].forEach(which => {
         GOAL_INPUTS.forEach(prop => {
           DATA.goals[which][prop] = Math.max(0, parseInt($("g_" + which + "_" + prop).value, 10) || 0);
@@ -1921,7 +1949,7 @@
     enablePullToDismiss($("profile"), closeProfile);
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.11";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.14";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadProfile();
     recomputeGoalKcal();
