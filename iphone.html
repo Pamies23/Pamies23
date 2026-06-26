@@ -597,19 +597,18 @@
       font-family: var(--disp); font-size: 12px; font-weight: 600; color: var(--muted);
     }
     .prof-row.calc .pr-name { color: var(--muted); text-transform: uppercase; font-size: 12px; letter-spacing: 0.03em; }
-    /* Déficit: nombre (izq) + dos columnas (kcal, gramos) alineadas a la derecha */
-    .def-row { display: flex; align-items: baseline; gap: 8px; padding: 10px 0; border-top: 1px solid rgba(19,19,17,0.07); }
+    /* Déficit: nombre (izq) + dos columnas (kcal, gramos) con números grandes como el resto */
+    .def-row { display: flex; align-items: center; gap: 6px; padding: 10px 0; border-top: 1px solid rgba(19,19,17,0.07); }
     .def-row:first-of-type { border-top: none; }
     .def-row.def-total { border-top: 1.5px solid rgba(19,19,17,0.18); }
-    .def-name { flex: 1; min-width: 0; font-family: var(--disp); font-weight: 700; font-size: 14px; color: var(--ink); }
-    .def-name i { font-style: normal; font-weight: 600; font-size: 11px; color: var(--muted); margin-left: 5px; }
+    .def-name { flex: 1; min-width: 0; font-family: var(--disp); font-weight: 700; font-size: 14px; color: var(--ink); line-height: 1.1; }
+    .def-name i { display: block; font-style: normal; font-weight: 600; font-size: 11px; color: var(--muted); margin-top: 1px; }
     .def-v { display: flex; align-items: baseline; gap: 3px; flex-shrink: 0; justify-content: flex-end; }
-    .def-v.kcal { width: 92px; }
-    .def-v.g { width: 60px; }
-    .def-v b { font-family: var(--disp); font-weight: 800; font-size: 16px; color: var(--ink); }
-    .def-v .u { font-family: var(--disp); font-size: 11px; font-weight: 600; color: var(--muted); }
+    .def-v.kcal { width: 104px; }
+    .def-v.g { width: 64px; }
+    .def-v b { font-family: var(--disp); font-weight: 800; font-size: 23px; color: var(--ink); letter-spacing: -0.01em; }
+    .def-v .u { font-family: var(--disp); font-size: 12px; font-weight: 600; color: var(--muted); }
     .def-v.surplus b { color: var(--red); }
-    .def-total .def-v b { font-size: 17px; }
     /* Toggle Hombre / Mujer */
     .sex-toggle { display: flex; gap: 6px; }
     .sex-toggle button {
@@ -629,7 +628,7 @@
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
       <button class="avatar gear-btn" id="settingsBtn" aria-label="Tus datos">⚙</button>
-      <div class="avatar" id="version">V.15</div>
+      <div class="avatar" id="version">V.16</div>
     </header>
 
     <section class="hero">
@@ -2003,7 +2002,7 @@
     enablePullToDismiss($("profile"), closeProfile);
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.15";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.16";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadProfile();
     recomputeGoalKcal();
