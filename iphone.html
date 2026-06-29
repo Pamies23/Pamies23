@@ -633,11 +633,12 @@
     }
     .grams-field button {
       border: none; width: 42px; height: 42px; border-radius: 50%;
-      background: var(--ink); color: #fff; font-size: 24px; line-height: 1; cursor: pointer; flex-shrink: 0;
+      background: #fff; color: var(--ink); font-size: 24px; line-height: 1; cursor: pointer; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.14);
       touch-action: none; -webkit-user-select: none; user-select: none;
     }
-    .grams-field .gminus { background: var(--ink); color: #fff; }
+    .grams-field .gminus { background: #fff; color: var(--ink); }
     .grams-field .gwrap { flex: 1; text-align: center; }
     .grams-field input {
       width: 100%; border: none; background: none; outline: none;
@@ -990,7 +991,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.3</div>
+      <div class="avatar" id="version">V.4</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1068,7 +1069,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.3</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.4</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -2175,7 +2176,7 @@
     });
 
     // Deslizar hacia abajo (estando arriba del todo) cierra el panel
-    function enablePullToDismiss(el, dismiss) {
+    function enablePullToDismiss(el, dismiss, threshold = 160) {
       let startY = null, tracking = false;
       el.addEventListener("touchstart", (e) => {
         tracking = window.scrollY <= 0;
@@ -2184,12 +2185,13 @@
       el.addEventListener("touchmove", (e) => {
         if (!tracking || startY === null) return;
         if (window.scrollY > 0) { tracking = false; return; }
-        if (e.touches[0].clientY - startY > 160) { tracking = false; startY = null; dismiss(); }
+        if (e.touches[0].clientY - startY > threshold) { tracking = false; startY = null; dismiss(); }
       }, { passive: true });
       el.addEventListener("touchend", () => { tracking = false; startY = null; });
     }
-    enablePullToDismiss($("sheet"), closeSheet);
+    enablePullToDismiss($("sheet"), closeSheet, 90);      // antes 160 (intercambiado con el desplegable)
     enablePullToDismiss($("simPick"), closeSimPick);
+    enablePullToDismiss($("modal"), closeModal, 90);      // arrastrar la ficha hacia abajo la cierra
 
     $("typeTabs").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-type]"); if (!b) return;
@@ -2811,13 +2813,13 @@
       root.addEventListener("touchmove", (e) => {
         if (!tracking || startY === null) return;
         if (window.scrollY > 0) { tracking = false; return; }
-        if (e.touches[0].clientY - startY > 90) { tracking = false; startY = null; closeDayPanel(); }
+        if (e.touches[0].clientY - startY > 160) { tracking = false; startY = null; closeDayPanel(); }
       }, { passive: true });
       root.addEventListener("touchend", () => { tracking = false; startY = null; });
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.3";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.4";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
