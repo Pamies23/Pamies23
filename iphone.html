@@ -583,12 +583,13 @@
       box-shadow: 0 2px 12px rgba(0,0,0,0.06);                /* mismo aire que los demás cajetines */
     }
     .day-dial { position: relative; }
-    /* Fila de días: se desliza para cambiar de día; bordes desvanecidos */
+    /* Fila de días: se desliza para cambiar de día. El padding inferior amplía
+       el área táctil hasta cubrir la regla, para poder deslizar también sobre ella. */
     .day-strip {
       display: flex; gap: 8px; align-items: flex-start;
       overflow-x: auto; scrollbar-width: none;
       scroll-snap-type: x mandatory;
-      padding: 2px calc(50% - 22px);                          /* centra el 1º/último día */
+      padding: 2px calc(50% - 22px) 40px;
       -webkit-mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);
               mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);
     }
@@ -602,9 +603,11 @@
     }
     .day-chip.today .day-dot { background: var(--lime); color: var(--ink); }
     .day-chip.sel   .day-dot { background: var(--ink); color: #fff; }
-    /* Regla de rayitas: lima más intenso en el centro justo (marca el día seleccionado) */
+    /* Regla de rayitas: capa decorativa que NO recibe toques (deslizar sobre ella
+       mueve los días). Lima más intenso en el centro justo (día seleccionado). */
     .day-ticks {
-      height: 22px; margin-top: 18px;                         /* más distancia días ↔ barra */
+      position: absolute; left: 0; right: 0; bottom: 0; height: 22px;
+      pointer-events: none;
       background-image: repeating-linear-gradient(90deg, var(--lime) 0 2px, transparent 2px 11px);
       -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 50%, transparent 100%);
               mask-image: linear-gradient(90deg, transparent 0%, #000 50%, transparent 100%);
@@ -828,7 +831,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.11</div>
+      <div class="avatar" id="version">V.12</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -892,7 +895,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.11</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.12</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -2454,9 +2457,25 @@
       scrollDayTo(c.dataset.key, true);
     });
     $("greeting").addEventListener("click", toggleDayPanel);
+    function closeDayPanel() { $("dayPanel").classList.remove("open"); }
+    // Cerrar el desplegable deslizando la pantalla hacia abajo (como salir de "Añadir")
+    (function () {
+      let startY = null, tracking = false;
+      const root = $("app");
+      root.addEventListener("touchstart", (e) => {
+        tracking = $("dayPanel").classList.contains("open") && window.scrollY <= 0;
+        startY = tracking ? e.touches[0].clientY : null;
+      }, { passive: true });
+      root.addEventListener("touchmove", (e) => {
+        if (!tracking || startY === null) return;
+        if (window.scrollY > 0) { tracking = false; return; }
+        if (e.touches[0].clientY - startY > 70) { tracking = false; startY = null; closeDayPanel(); }
+      }, { passive: true });
+      root.addEventListener("touchend", () => { tracking = false; startY = null; });
+    })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.11";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.12";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
