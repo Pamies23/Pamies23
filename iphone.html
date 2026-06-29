@@ -463,30 +463,34 @@
     }
     .sheet-tab.active { color: var(--ink); }
 
-    /* Buscador flotante tipo "glass" (Apple): aparece al subir, se oculta al bajar */
+    /* Buscador flotante tipo "Liquid Glass" (Apple). Siempre visible, abajo a la
+       derecha (zona del pulgar). Al tocar se expande en barra de búsqueda. */
     .glass-search {
       position: fixed; left: 16px; right: 16px; z-index: 60;
       bottom: calc(env(safe-area-inset-bottom) + 18px);
-      display: flex; pointer-events: none;
-      transition: transform 0.32s cubic-bezier(.4,0,.2,1), opacity 0.28s ease;
+      display: none; pointer-events: none;
     }
-    .glass-search.scroll-hidden { transform: translateY(160%); opacity: 0; }
+    .glass-search.active { display: flex; }
     .gs-inner {
       pointer-events: auto; margin-left: auto;
-      width: 54px; height: 54px; border-radius: 27px; overflow: hidden;
+      width: 56px; height: 56px; border-radius: 28px; overflow: hidden;
       display: flex; align-items: center;
-      background: rgba(245,245,245,0.55);
-      -webkit-backdrop-filter: blur(22px) saturate(180%);
-      backdrop-filter: blur(22px) saturate(180%);
-      border: 1px solid rgba(255,255,255,0.6);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.4);
+      /* Cristal: muy translúcido + desenfoque del contenido de detrás */
+      background: rgba(255,255,255,0.22);
+      -webkit-backdrop-filter: blur(16px) saturate(190%) brightness(1.08);
+      backdrop-filter: blur(16px) saturate(190%) brightness(1.08);
+      border: 1px solid rgba(255,255,255,0.55);
+      box-shadow:
+        0 8px 26px rgba(0,0,0,0.18),
+        inset 0 1.5px 1px rgba(255,255,255,0.85),
+        inset 0 -10px 14px -6px rgba(255,255,255,0.55);
       transition: width 0.34s cubic-bezier(.4,0,.2,1);
     }
-    .glass-search.open .gs-inner { width: 100%; }
+    .glass-search.open .gs-inner { width: 100%; background: rgba(255,255,255,0.42); }
     .gs-ico {
-      flex: 0 0 54px; width: 54px; height: 54px; border: none; background: none;
+      flex: 0 0 56px; width: 56px; height: 56px; border: none; background: none;
       display: flex; align-items: center; justify-content: center;
-      font-size: 21px; opacity: 0.6; cursor: pointer;
+      color: rgba(19,19,17,0.82); cursor: pointer;
     }
     .gs-input {
       flex: 1; min-width: 0; border: none; background: none; outline: none;
@@ -962,7 +966,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.18</div>
+      <div class="avatar" id="version">V.19</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1040,7 +1044,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.18</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.19</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -1068,16 +1072,22 @@
     </div>
 
     <ul class="food-list" id="foodList"></ul>
-
-    <!-- Buscador flotante "glass": aparece al subir, se oculta al bajar -->
-    <div class="glass-search" id="glassSearch">
-      <div class="gs-inner">
-        <button class="gs-ico" id="gsIco" aria-label="Buscar">🔍</button>
-        <input id="search" class="gs-input" type="search" placeholder="Buscar…"
-               autocomplete="off" autocorrect="off" autocapitalize="none">
-      </div>
-    </div>
   </section>
+
+  <!-- Buscador flotante "Liquid Glass" (fuera de la hoja, fijo al viewport;
+       solo se muestra en la pantalla de Añadir comida). -->
+  <div class="glass-search" id="glassSearch">
+    <div class="gs-inner">
+      <button class="gs-ico" id="gsIco" aria-label="Buscar">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
+          <circle cx="10.5" cy="10.5" r="6.7"></circle>
+          <line x1="15.4" y1="15.4" x2="20.5" y2="20.5"></line>
+        </svg>
+      </button>
+      <input id="search" class="gs-input" type="search" placeholder="Buscar…"
+             autocomplete="off" autocorrect="off" autocapitalize="none">
+    </div>
+  </div>
 
   <!-- ===================== Modal de gramos (añadir / editar) ===================== -->
   <div class="modal" id="modal" aria-hidden="true">
@@ -2040,6 +2050,9 @@
       const outTimer = setTimeout(finalize, 420);   // respaldo si no llega animationend
 
       $("addBtn").classList.toggle("hidden", id !== "app");
+      // La lupa de búsqueda solo en la pantalla de Añadir comida
+      $("glassSearch").classList.toggle("active", id === "sheet");
+      if (id !== "sheet") $("glassSearch").classList.remove("open");
       window.scrollTo(0, 0);
       currentView = id;
     }
@@ -2055,8 +2068,7 @@
     function openSheet() {
       activeType = "alimentos"; activeCat = "todos";
       $("search").value = "";
-      $("glassSearch").classList.remove("open", "scroll-hidden");
-      gsLastY = 0;
+      $("glassSearch").classList.remove("open");
       syncSheetTabs();
       renderFoodList();
       showView("sheet");
@@ -2126,8 +2138,7 @@
     $("addBtn").addEventListener("click", openSheet);
     $("search").addEventListener("input", renderFoodList);
 
-    // ----- Buscador flotante "glass" -----
-    let gsLastY = 0;
+    // ----- Buscador flotante "glass" (siempre visible) -----
     $("gsIco").addEventListener("click", () => {
       const gs = $("glassSearch");
       const open = gs.classList.toggle("open");
@@ -2138,16 +2149,6 @@
     $("search").addEventListener("blur", () => {
       if (!$("search").value.trim()) $("glassSearch").classList.remove("open");
     });
-    // Mostrar al subir, ocultar al bajar (solo en la hoja de añadir)
-    window.addEventListener("scroll", () => {
-      if (currentView !== "sheet") return;
-      const gs = $("glassSearch");
-      if (gs.classList.contains("open")) { gsLastY = window.scrollY; return; }
-      const y = window.scrollY;
-      if (y > gsLastY + 5 && y > 40) gs.classList.add("scroll-hidden");        // bajando → ocultar
-      else if (y < gsLastY - 5) gs.classList.remove("scroll-hidden");          // subiendo → mostrar
-      gsLastY = y;
-    }, { passive: true });
 
     // Deslizar hacia abajo (estando arriba del todo) cierra el panel
     function enablePullToDismiss(el, dismiss) {
@@ -2792,7 +2793,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.18";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.19";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
