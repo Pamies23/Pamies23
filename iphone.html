@@ -309,8 +309,10 @@
       font-family: var(--disp); font-size: 15px; font-weight: 800;
       letter-spacing: 0.01em; text-transform: uppercase; color: var(--ink); line-height: 1.05;
     }
-    .logf-grams { font-size: 12px; color: var(--muted); margin-top: 3px; font-weight: 500; }
-    .logf-kcal { font-family: var(--disp); font-size: 18px; font-weight: 800; color: var(--ink); margin-top: 8px; }
+    /* Pie de la tarjeta: gramos (protagonista, negrita) izq · kcal (secundario) der */
+    .logf-foot { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-top: 8px; }
+    .logf-grams { font-family: var(--disp); font-size: 18px; font-weight: 800; color: var(--ink); }
+    .logf-kcal { font-family: var(--disp); font-size: 12px; font-weight: 500; color: var(--muted); }
     .logf-kcal span { font-family: var(--sans); font-size: 11px; font-weight: 500; color: var(--muted); }
 
     .meal-empty {
@@ -423,7 +425,9 @@
     .addf-kcal span { font-family: var(--sans); font-size: 11px; font-weight: 500; color: var(--muted); }
     /* Pie de la tarjeta: gramos abajo-izquierda, kcal abajo-derecha */
     .addf-foot { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-top: 8px; }
-    .addf-foot .addf-sub, .addf-foot .addf-kcal { margin-top: 0; }
+    /* gramos (protagonista, negrita) a la izquierda · kcal (secundario) a la derecha */
+    .addf-foot .addf-sub { font-family: var(--disp); font-size: 18px; font-weight: 800; color: var(--ink); margin-top: 0; }
+    .addf-foot .addf-kcal { font-size: 12px; font-weight: 500; color: var(--muted); margin-top: 0; }
     .food-empty {
       grid-column: 1 / -1; background: var(--card); border-radius: var(--r-md);
       padding: 26px; text-align: center; color: var(--muted); font-size: 14px; font-weight: 500;
@@ -719,7 +723,7 @@
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
       <button class="avatar gear-btn" id="settingsBtn" aria-label="Tus datos">⚙</button>
-      <div class="avatar" id="version">V.5</div>
+      <div class="avatar" id="version">V.6</div>
     </header>
 
     <section class="hero">
@@ -1400,8 +1404,10 @@
               <div class="logf-top"><span class="logf-emoji">${FOODS[r.food].emoji}</span></div>
               <div class="logf-info">
                 <div class="logf-name">${FOODS[r.food].name}</div>
-                <div class="logf-grams">${dispGrams(r)} g</div>
-                <div class="logf-kcal">${mainVal}</div>
+                <div class="logf-foot">
+                  <span class="logf-grams">${dispGrams(r)} g</span>
+                  <span class="logf-kcal">${mainVal}</span>
+                </div>
               </div>
             </div>
           </li>`;
@@ -1937,8 +1943,10 @@
                 <div class="logf-top"><span class="logf-emoji">${f.emoji}</span></div>
                 <div class="logf-info">
                   <div class="logf-name">${f.name}</div>
-                  <div class="logf-grams">${it.grams} g</div>
-                  <div class="logf-kcal">${n.kcal} <span>kcal</span></div>
+                  <div class="logf-foot">
+                    <span class="logf-grams">${it.grams} g</span>
+                    <span class="logf-kcal">${n.kcal} <span>kcal</span></span>
+                  </div>
                 </div>
               </div>
             </li>`;
@@ -2135,7 +2143,7 @@
     enablePullToDismiss($("profile"), closeProfile);
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.5";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.6";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadProfile();
     recomputeGoalKcal();
