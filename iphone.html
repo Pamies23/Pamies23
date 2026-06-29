@@ -590,10 +590,18 @@
     }
     .modal.open { visibility: visible; background: rgba(19,19,17,0.5); }
     .modal-card {
-      width: 100%; max-width: 460px; background: var(--bg);
+      /* Anclada DIRECTAMENTE al fondo del viewport (no depende de la altura del
+         contenedor, que en iOS standalone dejaba hueco bajo la ficha). */
+      position: fixed; left: 0; right: 0; bottom: 0; margin: 0 auto;
+      width: 100%; max-width: 460px;
+      /* Cristal (mismo efecto que la lupa) */
+      background: rgba(248,247,244,0.78);
+      -webkit-backdrop-filter: blur(34px) saturate(180%);
+      backdrop-filter: blur(34px) saturate(180%);
+      border-top: 1px solid rgba(255,255,255,0.6);
       border-radius: 24px 24px 0 0;
-      /* margen inferior justo (como el botón Hecho): sin hueco de más */
-      padding: 22px 20px max(14px, calc(env(safe-area-inset-bottom) - 6px));
+      /* padding inferior acotado: ni hueco enorme (env raro en iOS) ni pegado al borde */
+      padding: 20px 20px clamp(12px, env(safe-area-inset-bottom), 30px);
       transform: translateY(100%); transition: transform 0.3s cubic-bezier(.22,.61,.36,1);
     }
     .modal.open .modal-card { transform: translateY(0); }
@@ -665,6 +673,21 @@
     .modal-actions .m-cancel { background: var(--card); color: var(--ink); }
     .modal-actions .m-delete { background: var(--red); color: #fff; flex: 0 0 auto; padding: 16px 22px; }
     .modal-actions .m-save { background: var(--ink); color: #fff; }
+
+    /* Cristal: lo que antes era beige dentro de la ficha pasa a "Liquid Glass" */
+    .modal-emoji,
+    .grams-field,
+    .modal-meals button,
+    .modal-actions .m-cancel {
+      background: rgba(255,255,255,0.4);
+      border: 1px solid rgba(255,255,255,0.6);
+      box-shadow:
+        inset 0 1px 1px rgba(255,255,255,0.85),
+        inset 0 -9px 12px -8px rgba(255,255,255,0.6),
+        0 1px 4px rgba(0,0,0,0.05);
+    }
+    /* Pestaña de comida activa: sigue siendo negra */
+    .modal-meals button.active { background: var(--ink); border-color: var(--ink); color: #fff; box-shadow: none; }
 
     /* ---------- Simulador de recetas (misma estructura que la Home) ---------- */
     /* La imagen de la sandía va en la región superior (tras hero+macros) y
@@ -967,7 +990,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.2</div>
+      <div class="avatar" id="version">V.3</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1045,7 +1068,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.2</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.3</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -2794,7 +2817,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.2";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.3";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
