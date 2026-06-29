@@ -636,13 +636,18 @@
       padding: 10px 12px; margin-bottom: 14px;
     }
     .grams-field button {
-      border: none; width: 42px; height: 42px; border-radius: 50%;
-      background: #fff; color: var(--ink); font-size: 24px; line-height: 1; cursor: pointer; flex-shrink: 0;
+      width: 42px; height: 42px; border-radius: 50%;
+      /* Cristal (como la lupa), con el signo oscuro para que se vea bien */
+      background: rgba(255,255,255,0.34);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      backdrop-filter: blur(16px) saturate(180%);
+      border: 1px solid rgba(255,255,255,0.65);
+      box-shadow: inset 0 1px 1px rgba(255,255,255,0.9), inset 0 -8px 12px -8px rgba(255,255,255,0.65), 0 1px 4px rgba(0,0,0,0.08);
+      color: var(--ink); font-size: 24px; line-height: 1; cursor: pointer; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.14);
       touch-action: none; -webkit-user-select: none; user-select: none;
     }
-    .grams-field .gminus { background: #fff; color: var(--ink); }
+    .grams-field .gminus { background: rgba(255,255,255,0.34); color: var(--ink); }
     .grams-field .gwrap { flex: 1; text-align: center; }
     .grams-field input {
       width: 100%; border: none; background: none; outline: none;
@@ -995,7 +1000,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.9</div>
+      <div class="avatar" id="version">V.10</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1073,7 +1078,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.9</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.10</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -2856,7 +2861,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.9";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.10";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
