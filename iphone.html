@@ -575,25 +575,22 @@
     .topbar h1 { cursor: pointer; }
     .day-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.34s cubic-bezier(.22,.61,.36,1); }
     .day-panel.open { grid-template-rows: 1fr; }
-    .day-panel-inner { overflow: hidden; min-height: 0; padding-bottom: 14px; }  /* hueco a calorías = hero↔macros */
+    .day-panel-inner { overflow: hidden; min-height: 0; }   /* colapsa a 0 limpio, sin pestaña */
     .day-card {
       background: var(--bg); border-radius: var(--r-md);
-      margin: 0; padding: 14px 0 10px;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.10);
+      margin: 0 0 14px;                                       /* hueco a calorías = hero↔macros */
+      padding: 14px 0 13px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);                /* mismo aire que los demás cajetines */
     }
-    /* Dial deslizable: los días se arrastran bajo un puntero central fijo */
     .day-dial { position: relative; }
+    /* Fila de días: se desliza para cambiar de día; bordes desvanecidos */
     .day-strip {
       display: flex; gap: 8px; align-items: flex-start;
       overflow-x: auto; scrollbar-width: none;
       scroll-snap-type: x mandatory;
-      padding: 2px calc(50% - 22px) 30px;          /* centra el 1º/último día; hueco para rayitas */
-      /* Rayitas tipo regla que se desplazan junto a los días */
-      background-image: repeating-linear-gradient(90deg, var(--lime) 0 2px, transparent 2px 11px);
-      background-size: 100% 22px; background-position: left bottom; background-repeat: no-repeat;
-      background-attachment: local;
-      -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
-              mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+      padding: 2px calc(50% - 22px);                          /* centra el 1º/último día */
+      -webkit-mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);
+              mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);
     }
     .day-strip::-webkit-scrollbar { display: none; }
     .day-chip { flex: 0 0 auto; scroll-snap-align: center; border: none; background: none; cursor: pointer; padding: 0; }
@@ -605,11 +602,12 @@
     }
     .day-chip.today .day-dot { background: var(--lime); color: var(--ink); }
     .day-chip.sel   .day-dot { background: var(--ink); color: #fff; }
-    /* Puntero central fijo del dial */
-    .day-pointer {
-      position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%);
-      width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent;
-      border-bottom: 9px solid var(--ink);
+    /* Regla de rayitas: lima más intenso en el centro justo (marca el día seleccionado) */
+    .day-ticks {
+      height: 22px; margin-top: 18px;                         /* más distancia días ↔ barra */
+      background-image: repeating-linear-gradient(90deg, var(--lime) 0 2px, transparent 2px 11px);
+      -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 50%, transparent 100%);
+              mask-image: linear-gradient(90deg, transparent 0%, #000 50%, transparent 100%);
     }
 
     /* ---------- Menú lateral de perfiles (cajón que entra por la izquierda) ---------- */
@@ -830,7 +828,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.10</div>
+      <div class="avatar" id="version">V.11</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -839,7 +837,7 @@
         <div class="day-card">
           <div class="day-dial">
             <div class="day-strip" id="dayStrip"></div>
-            <span class="day-pointer"></span>
+            <div class="day-ticks"></div>
           </div>
         </div>
       </div>
@@ -894,7 +892,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.10</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.11</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -1373,12 +1371,12 @@
     function applyActiveGoal() {
       DATA.goal = isWeekendKey(selectedDate) ? DATA.goals.weekend : DATA.goals.week;
     }
-    // Etiqueta de fecha (corta) del día seleccionado: "martes 30, jun"
+    // Fecha del día seleccionado en 2 líneas: día de la semana / día + mes corto
     const todayLabel = () => {
       const d = dateFromKey(selectedDate);
       const wd = d.toLocaleDateString("es-ES", { weekday: "long" });
       const mo = d.toLocaleDateString("es-ES", { month: "short" }).replace(".", "");
-      return `${wd} ${d.getDate()}, ${mo}`;
+      return `${wd}<br>${d.getDate()} ${mo}`;
     };
 
     /* =========================================================
@@ -1439,7 +1437,7 @@
 
     function render() {
       // Cabecera — la fecha de hoy
-      $("greeting").textContent = todayLabel();
+      $("greeting").innerHTML = todayLabel();
 
       // Resolver cada comida (con su índice original) y totales del día
       const sum = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
@@ -2458,7 +2456,7 @@
     $("greeting").addEventListener("click", toggleDayPanel);
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.10";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.11";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
