@@ -571,6 +571,47 @@
     /* Botón del menú lateral: muestra la inicial de la persona activa */
     .menu-btn { border: none; cursor: pointer; font-size: 17px; }
 
+    /* ---------- Selector de día (se despliega al tocar la fecha) ---------- */
+    .topbar h1 { cursor: pointer; }
+    .day-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.34s cubic-bezier(.22,.61,.36,1); }
+    .day-panel.open { grid-template-rows: 1fr; }
+    .day-panel-inner { overflow: hidden; min-height: 0; }
+    .day-card {
+      background: var(--bg); border-radius: var(--r-md);
+      margin: 14px 0 2px; padding: 15px 12px 13px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.10);
+    }
+    .day-month {
+      font-family: var(--exp); font-weight: 900; font-size: 21px;
+      letter-spacing: -0.01em; text-align: center; margin-bottom: 13px; line-height: 1;
+    }
+    .day-month b { color: var(--lime-dim); }
+    .day-month .yr { color: var(--muted); font-weight: 900; }
+    .day-strip { display: flex; gap: 3px; overflow-x: auto; scrollbar-width: none; }
+    .day-strip::-webkit-scrollbar { display: none; }
+    .day-chip { flex: 0 0 auto; border: none; background: none; cursor: pointer; padding: 2px; }
+    .day-dot {
+      display: flex; align-items: center; justify-content: center;
+      width: 42px; height: 42px; border-radius: 50%;
+      font-family: var(--disp); font-weight: 800; font-size: 17px; color: var(--ink);
+      transition: background 0.16s ease, color 0.16s ease, transform 0.12s ease;
+    }
+    .day-chip:active .day-dot { transform: scale(0.92); }
+    .day-chip.today .day-dot { background: var(--lime); color: var(--ink); }
+    .day-chip.sel   .day-dot { background: var(--ink); color: #fff; }
+    /* Regla decorativa (dial) bajo los días */
+    .day-ruler {
+      position: relative; height: 28px; margin-top: 12px;
+      background-image: repeating-linear-gradient(90deg, var(--lime) 0 2px, transparent 2px 10px);
+      -webkit-mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);
+              mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);
+    }
+    .day-pointer {
+      position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%);
+      width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent;
+      border-bottom: 9px solid var(--lime);
+    }
+
     /* ---------- Menú lateral de perfiles (cajón que entra por la izquierda) ---------- */
     .drawer-backdrop {
       position: fixed; inset: 0; z-index: 90; background: rgba(19,19,17,0);
@@ -783,8 +824,19 @@
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
       <button class="avatar gear-btn" id="settingsBtn" aria-label="Tus datos">⚙</button>
-      <div class="avatar" id="version">V.8</div>
+      <div class="avatar" id="version">V.9</div>
     </header>
+
+    <!-- Desplegable de días (se abre al tocar la fecha) -->
+    <div class="day-panel" id="dayPanel">
+      <div class="day-panel-inner">
+        <div class="day-card">
+          <div class="day-month" id="dayMonth">Junio 2025</div>
+          <div class="day-strip" id="dayStrip"></div>
+          <div class="day-ruler"><span class="day-pointer"></span></div>
+        </div>
+      </div>
+    </div>
 
     <section class="hero">
       <div class="hero-left">
@@ -834,7 +886,7 @@
     <div class="drawer-label">Perfiles</div>
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.8</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.9</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -1208,10 +1260,22 @@
     const STORE_KEY = "verde.log.v2";
     const PROFILE_KEY = "verde.profile.v1";
     const PEOPLE_KEY = "verde.people.v1";
-    const todayKey = () => {
-      const d = new Date();
-      return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
-    };
+    const dateKeyOf = (d) => d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+    const todayKey = () => dateKeyOf(new Date());
+    const dateFromKey = (key) => { const [y, m, d] = key.split("-").map(Number); return new Date(y, m - 1, d); };
+    const dateKeyOffset = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return dateKeyOf(d); };
+    // Ventana de días editables: 3 antes de hoy … 6 después de hoy
+    const DAYS_BACK = 3, DAYS_FWD = 6;
+    function windowKeys() { const a = []; for (let n = -DAYS_BACK; n <= DAYS_FWD; n++) a.push(dateKeyOffset(n)); return a; }
+    const isWeekendKey = (key) => { const wd = dateFromKey(key).getDay(); return wd === 0 || wd === 6; };
+    const dateLabelOf = (key) => dateFromKey(key).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+    function monthYearLabel(key) {
+      const s = dateFromKey(key).toLocaleDateString("es-ES", { month: "long", year: "numeric" }); // "junio de 2025"
+      const m = s.replace(" de ", " ");                 // "junio 2025"
+      return m.charAt(0).toUpperCase() + m.slice(1);     // "Junio 2025"
+    }
+    // Día que se está viendo (por defecto hoy). No se conserva entre recargas.
+    let selectedDate = todayKey();
 
     /* ---- Personas / perfiles: cada persona guarda sus propios datos ---- */
     const DEFAULT_PROFILE = { weight: 70, height: 175, sex: "hombre", pasivo: 1500, activo: 500 };
@@ -1237,15 +1301,37 @@
     const profileKey = () => PROFILE_KEY + "." + people.active;
     const logKey = () => STORE_KEY + "." + people.active;
 
-    function loadLog() {
+    // Registro de la persona activa: { days: { "2025-6-15": [...comidas...], ... } }
+    function loadDays() {
+      let days = {};
       try {
         const raw = JSON.parse(localStorage.getItem(logKey()));
-        if (raw && raw.date === todayKey() && Array.isArray(raw.meals)) DATA.meals = raw.meals;
-        else DATA.meals = [];                // día nuevo o sin registro → vacío
-      } catch (e) { DATA.meals = []; }
+        if (raw) {
+          if (raw.days && typeof raw.days === "object") days = raw.days;
+          else if (raw.date && Array.isArray(raw.meals)) days = { [raw.date]: raw.meals };  // formato antiguo
+        }
+      } catch (e) {}
+      return days;
+    }
+    // Solo se conservan los días dentro de la ventana (los más viejos se pierden)
+    function pruneDays(days) {
+      const allowed = new Set(windowKeys());
+      const out = {};
+      Object.keys(days).forEach(k => { if (allowed.has(k) && Array.isArray(days[k]) && days[k].length) out[k] = days[k]; });
+      return out;
+    }
+    function persistDays(days) {
+      try { localStorage.setItem(logKey(), JSON.stringify({ days: pruneDays(days) })); } catch (e) {}
+    }
+    function loadLog() {
+      const days = pruneDays(loadDays());
+      persistDays(days);                       // limpia de paso los días caducados
+      DATA.meals = Array.isArray(days[selectedDate]) ? days[selectedDate].slice() : [];
     }
     function saveLog() {
-      try { localStorage.setItem(logKey(), JSON.stringify({ date: todayKey(), meals: DATA.meals })); } catch (e) {}
+      const days = loadDays();
+      days[selectedDate] = DATA.meals;
+      persistDays(days);
     }
     function loadProfile() {
       try {
@@ -1275,13 +1361,12 @@
       applyActiveGoal();
       loadLog();
     }
-    // El objetivo activo depende del día: fin de semana (sáb/dom) vs entre semana.
-    const isWeekendToday = () => { const d = new Date().getDay(); return d === 0 || d === 6; };
+    // El objetivo activo depende del DÍA SELECCIONADO: finde (sáb/dom) vs entre semana.
     function applyActiveGoal() {
-      DATA.goal = isWeekendToday() ? DATA.goals.weekend : DATA.goals.week;
+      DATA.goal = isWeekendKey(selectedDate) ? DATA.goals.weekend : DATA.goals.week;
     }
-    // Fecha de hoy en formato legible (para la cabecera de Home)
-    const todayLabel = () => new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+    // Etiqueta de fecha del día seleccionado (para la cabecera de Home)
+    const todayLabel = () => dateLabelOf(selectedDate);
 
     /* =========================================================
        RENDER
@@ -2294,14 +2379,54 @@
       switchPerson(li.dataset.id);
     });
 
+    /* =========================================================
+       SELECTOR DE DÍA  —  seguimiento de comidas por fechas
+       ========================================================= */
+    function renderDayStrip() {
+      const dt = dateFromKey(selectedDate);
+      const mo = dt.toLocaleDateString("es-ES", { month: "long" });
+      $("dayMonth").innerHTML = `<b>${mo.charAt(0).toUpperCase() + mo.slice(1)}</b> <span class="yr">${dt.getFullYear()}</span>`;
+      const tKey = todayKey();
+      $("dayStrip").innerHTML = windowKeys().map(key => {
+        const isToday = key === tKey, isSel = key === selectedDate && selectedDate !== tKey;
+        return `<button class="day-chip${isToday ? " today" : ""}${isSel ? " sel" : ""}" data-key="${key}">
+          <span class="day-dot">${key.split("-")[2]}</span></button>`;
+      }).join("");
+    }
+    function scrollDayStripToSelected() {
+      const strip = $("dayStrip");
+      const el = strip.querySelector(".day-chip.sel") || strip.querySelector(".day-chip.today");
+      if (el) strip.scrollLeft = el.offsetLeft - (strip.clientWidth - el.offsetWidth) / 2;
+    }
+    function toggleDayPanel() {
+      const open = $("dayPanel").classList.toggle("open");
+      if (open) { renderDayStrip(); requestAnimationFrame(scrollDayStripToSelected); }
+    }
+    function selectDay(key) {
+      if (key === selectedDate) return;
+      saveLog();                         // guarda el día que se estaba viendo
+      selectedDate = key;
+      activeView = "dia"; activeMacro = null; activeFood = null; normalize100 = false;
+      applyActiveGoal();
+      loadLog();                         // carga las comidas guardadas de ese día
+      renderDayStrip();                  // actualiza el resaltado (hoy/seleccionado)
+      render();                          // fecha de la cabecera + hero + menú
+    }
+    $("greeting").addEventListener("click", toggleDayPanel);
+    $("dayStrip").addEventListener("click", (e) => {
+      const c = e.target.closest(".day-chip[data-key]"); if (!c) return;
+      selectDay(c.dataset.key);
+    });
+
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.8";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.9";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
-    loadPersonData();      // carga la persona activa
+    loadPersonData();      // carga la persona activa (día de hoy)
     renderPeople();        // pinta la lista del menú lateral
     updateMenuAvatar();    // inicial de la persona activa en el botón
+    renderDayStrip();      // prepara la tira de días
     render();
   </script>
 </body>
