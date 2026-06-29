@@ -84,7 +84,7 @@
     /* ---------- Región superior con fondo de agua (corte limpio) ---------- */
     .top-region {
       position: relative;
-      margin: calc((env(safe-area-inset-top) + 12px) * -1) -18px 22px;
+      margin: calc((env(safe-area-inset-top) + 12px) * -1) -18px 8px;
       padding: calc(env(safe-area-inset-top) + 16px) 18px 22px;
       background-color: #5A9F9F;                 /* color del agua (relleno y borde superior) */
       background-image: url("water.jpg");
@@ -258,7 +258,9 @@
       position: sticky; top: env(safe-area-inset-top); z-index: 30;
       display: flex; align-items: flex-end; gap: 26px;
       background: var(--bg);
-      margin: 0 -18px 14px; padding: 11px 18px 9px;
+      /* Mismo hueco arriba (hasta el notch) que abajo (hasta la línea negra);
+         abajo sin relleno: el borde de la barra coincide con la línea negra. */
+      margin: 0 -18px 8px; padding: 7px 18px 0;
     }
     /* Al quedar pegada arriba rellena de blanco la franja del notch: así empieza
        a bajar antes de toparse con él y nunca queda tapada. */
@@ -267,7 +269,7 @@
       height: calc(env(safe-area-inset-top) + 1px); background: var(--bg);
     }
     .home-tab {
-      border: none; background: none; cursor: pointer; padding: 2px 0 8px;
+      border: none; background: none; cursor: pointer; padding: 0 0 7px;
       font-family: var(--exp); font-weight: 800; font-size: 22px;
       letter-spacing: -0.01em; text-transform: uppercase; color: var(--muted);
       position: relative; transition: color 0.15s ease;
@@ -308,6 +310,9 @@
     .shop-day.sel { background: var(--ink); }
     .shop-day.sel .sd-wd { color: rgba(255,255,255,0.55); }
     .shop-day.sel .sd-num { color: #fff; }
+    /* Hoy, cuando está seleccionado: letras y número en lima para distinguirlo */
+    .shop-day.today.sel .sd-wd,
+    .shop-day.today.sel .sd-num { color: var(--lime); }
 
     .shop-items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
     .shop-item {
@@ -898,7 +903,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.15</div>
+      <div class="avatar" id="version">V.16</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -978,7 +983,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.15</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.16</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -2686,7 +2691,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.15";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.16";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
