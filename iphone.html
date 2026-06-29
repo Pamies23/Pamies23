@@ -575,41 +575,41 @@
     .topbar h1 { cursor: pointer; }
     .day-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.34s cubic-bezier(.22,.61,.36,1); }
     .day-panel.open { grid-template-rows: 1fr; }
-    .day-panel-inner { overflow: hidden; min-height: 0; }
+    .day-panel-inner { overflow: hidden; min-height: 0; padding-bottom: 14px; }  /* hueco a calorías = hero↔macros */
     .day-card {
       background: var(--bg); border-radius: var(--r-md);
-      margin: 14px 0 2px; padding: 15px 12px 13px;
+      margin: 0; padding: 14px 0 10px;
       box-shadow: 0 4px 18px rgba(0,0,0,0.10);
     }
-    .day-month {
-      font-family: var(--exp); font-weight: 900; font-size: 21px;
-      letter-spacing: -0.01em; text-align: center; margin-bottom: 13px; line-height: 1;
+    /* Dial deslizable: los días se arrastran bajo un puntero central fijo */
+    .day-dial { position: relative; }
+    .day-strip {
+      display: flex; gap: 8px; align-items: flex-start;
+      overflow-x: auto; scrollbar-width: none;
+      scroll-snap-type: x mandatory;
+      padding: 2px calc(50% - 22px) 30px;          /* centra el 1º/último día; hueco para rayitas */
+      /* Rayitas tipo regla que se desplazan junto a los días */
+      background-image: repeating-linear-gradient(90deg, var(--lime) 0 2px, transparent 2px 11px);
+      background-size: 100% 22px; background-position: left bottom; background-repeat: no-repeat;
+      background-attachment: local;
+      -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+              mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
     }
-    .day-month b { color: var(--lime-dim); }
-    .day-month .yr { color: var(--muted); font-weight: 900; }
-    .day-strip { display: flex; gap: 3px; overflow-x: auto; scrollbar-width: none; }
     .day-strip::-webkit-scrollbar { display: none; }
-    .day-chip { flex: 0 0 auto; border: none; background: none; cursor: pointer; padding: 2px; }
+    .day-chip { flex: 0 0 auto; scroll-snap-align: center; border: none; background: none; cursor: pointer; padding: 0; }
     .day-dot {
       display: flex; align-items: center; justify-content: center;
-      width: 42px; height: 42px; border-radius: 50%;
+      width: 44px; height: 44px; border-radius: 50%;
       font-family: var(--disp); font-weight: 800; font-size: 17px; color: var(--ink);
       transition: background 0.16s ease, color 0.16s ease, transform 0.12s ease;
     }
-    .day-chip:active .day-dot { transform: scale(0.92); }
     .day-chip.today .day-dot { background: var(--lime); color: var(--ink); }
     .day-chip.sel   .day-dot { background: var(--ink); color: #fff; }
-    /* Regla decorativa (dial) bajo los días */
-    .day-ruler {
-      position: relative; height: 28px; margin-top: 12px;
-      background-image: repeating-linear-gradient(90deg, var(--lime) 0 2px, transparent 2px 10px);
-      -webkit-mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);
-              mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);
-    }
+    /* Puntero central fijo del dial */
     .day-pointer {
-      position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%);
+      position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%);
       width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent;
-      border-bottom: 9px solid var(--lime);
+      border-bottom: 9px solid var(--ink);
     }
 
     /* ---------- Menú lateral de perfiles (cajón que entra por la izquierda) ---------- */
@@ -662,6 +662,13 @@
       transition: transform 0.12s ease;
     }
     .drawer-add:active { transform: scale(0.98); }
+    .drawer-settings {
+      margin-top: 8px; border: none; background: var(--ink); color: #fff;
+      border-radius: 14px; padding: 14px; cursor: pointer;
+      font-family: var(--disp); font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 0.02em;
+      transition: transform 0.12s ease;
+    }
+    .drawer-settings:active { transform: scale(0.98); }
     .drawer-foot {
       margin-top: auto; padding-top: 20px;
       font-family: var(--disp); font-size: 12px; font-weight: 700; color: var(--muted);
@@ -823,17 +830,17 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <button class="avatar gear-btn" id="settingsBtn" aria-label="Tus datos">⚙</button>
-      <div class="avatar" id="version">V.9</div>
+      <div class="avatar" id="version">V.10</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
     <div class="day-panel" id="dayPanel">
       <div class="day-panel-inner">
         <div class="day-card">
-          <div class="day-month" id="dayMonth">Junio 2025</div>
-          <div class="day-strip" id="dayStrip"></div>
-          <div class="day-ruler"><span class="day-pointer"></span></div>
+          <div class="day-dial">
+            <div class="day-strip" id="dayStrip"></div>
+            <span class="day-pointer"></span>
+          </div>
         </div>
       </div>
     </div>
@@ -886,7 +893,8 @@
     <div class="drawer-label">Perfiles</div>
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.9</span></div>
+    <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
+    <div class="drawer-foot"><span id="drawerVersion">V.10</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -1365,8 +1373,13 @@
     function applyActiveGoal() {
       DATA.goal = isWeekendKey(selectedDate) ? DATA.goals.weekend : DATA.goals.week;
     }
-    // Etiqueta de fecha del día seleccionado (para la cabecera de Home)
-    const todayLabel = () => dateLabelOf(selectedDate);
+    // Etiqueta de fecha (corta) del día seleccionado: "martes 30, jun"
+    const todayLabel = () => {
+      const d = dateFromKey(selectedDate);
+      const wd = d.toLocaleDateString("es-ES", { weekday: "long" });
+      const mo = d.toLocaleDateString("es-ES", { month: "short" }).replace(".", "");
+      return `${wd} ${d.getDate()}, ${mo}`;
+    };
 
     /* =========================================================
        RENDER
@@ -2294,7 +2307,7 @@
     function closeProfile() { showView("app"); }
 
     buildGoalSets();
-    $("settingsBtn").addEventListener("click", openProfile);
+    $("drawerSettings").addEventListener("click", () => { closeDrawer(); openProfile(); });
     $("profileClose").addEventListener("click", closeProfile);
     $("pWeight").addEventListener("input", updateCalc);
     $("pPasivo").addEventListener("input", updateCalc);
@@ -2383,9 +2396,6 @@
        SELECTOR DE DÍA  —  seguimiento de comidas por fechas
        ========================================================= */
     function renderDayStrip() {
-      const dt = dateFromKey(selectedDate);
-      const mo = dt.toLocaleDateString("es-ES", { month: "long" });
-      $("dayMonth").innerHTML = `<b>${mo.charAt(0).toUpperCase() + mo.slice(1)}</b> <span class="yr">${dt.getFullYear()}</span>`;
       const tKey = todayKey();
       $("dayStrip").innerHTML = windowKeys().map(key => {
         const isToday = key === tKey, isSel = key === selectedDate && selectedDate !== tKey;
@@ -2393,33 +2403,62 @@
           <span class="day-dot">${key.split("-")[2]}</span></button>`;
       }).join("");
     }
-    function scrollDayStripToSelected() {
+    // Día cuyo centro está más cerca del puntero (centro del dial)
+    function centeredDayKey() {
       const strip = $("dayStrip");
-      const el = strip.querySelector(".day-chip.sel") || strip.querySelector(".day-chip.today");
-      if (el) strip.scrollLeft = el.offsetLeft - (strip.clientWidth - el.offsetWidth) / 2;
+      const center = strip.scrollLeft + strip.clientWidth / 2;
+      let best = null, bestDist = Infinity;
+      strip.querySelectorAll(".day-chip").forEach(c => {
+        const mid = c.offsetLeft + c.offsetWidth / 2;
+        const d = Math.abs(mid - center);
+        if (d < bestDist) { bestDist = d; best = c; }
+      });
+      return best ? best.dataset.key : null;
     }
-    function toggleDayPanel() {
-      const open = $("dayPanel").classList.toggle("open");
-      if (open) { renderDayStrip(); requestAnimationFrame(scrollDayStripToSelected); }
+    // Resalta en vivo el día que está bajo el puntero (negro), salvo hoy (lima)
+    function highlightCenteredDay() {
+      const key = centeredDayKey(); if (!key) return;
+      const tKey = todayKey();
+      $("dayStrip").querySelectorAll(".day-chip").forEach(c =>
+        c.classList.toggle("sel", c.dataset.key === key && key !== tKey));
     }
-    function selectDay(key) {
+    function scrollDayTo(key, smooth) {
+      const strip = $("dayStrip");
+      const el = strip.querySelector('.day-chip[data-key="' + key + '"]'); if (!el) return;
+      strip.scrollTo({ left: el.offsetLeft - (strip.clientWidth - el.offsetWidth) / 2, behavior: smooth ? "smooth" : "auto" });
+    }
+    // Carga y muestra un día (sin reconstruir la tira, para no cortar el deslizamiento)
+    function commitDay(key) {
       if (key === selectedDate) return;
-      saveLog();                         // guarda el día que se estaba viendo
+      saveLog();
       selectedDate = key;
       activeView = "dia"; activeMacro = null; activeFood = null; normalize100 = false;
       applyActiveGoal();
-      loadLog();                         // carga las comidas guardadas de ese día
-      renderDayStrip();                  // actualiza el resaltado (hoy/seleccionado)
-      render();                          // fecha de la cabecera + hero + menú
+      loadLog();
+      render();
     }
-    $("greeting").addEventListener("click", toggleDayPanel);
+    function toggleDayPanel() {
+      const open = $("dayPanel").classList.toggle("open");
+      if (open) {
+        renderDayStrip();
+        requestAnimationFrame(() => { scrollDayTo(selectedDate, false); highlightCenteredDay(); });
+      }
+    }
+    let dayScrollTimer = null;
+    $("dayStrip").addEventListener("scroll", () => {
+      highlightCenteredDay();
+      clearTimeout(dayScrollTimer);
+      dayScrollTimer = setTimeout(() => { const k = centeredDayKey(); if (k) commitDay(k); }, 130);
+    });
+    // Tocar un día lo lleva al centro (y el scroll lo selecciona)
     $("dayStrip").addEventListener("click", (e) => {
       const c = e.target.closest(".day-chip[data-key]"); if (!c) return;
-      selectDay(c.dataset.key);
+      scrollDayTo(c.dataset.key, true);
     });
+    $("greeting").addEventListener("click", toggleDayPanel);
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.9";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.10";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
