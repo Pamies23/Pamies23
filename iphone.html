@@ -271,7 +271,7 @@
       height: calc(env(safe-area-inset-top) + 2px); background: var(--bg);
     }
     .home-tab {
-      border: none; background: none; cursor: pointer; padding: 0 0 7px;
+      border: none; background: none; cursor: pointer; padding: 0 0 12px;
       font-family: var(--exp); font-weight: 800; font-size: 19px;
       letter-spacing: -0.01em; text-transform: uppercase; color: var(--muted);
       position: relative; transition: color 0.18s ease;
@@ -297,8 +297,8 @@
     .home-view[hidden] { display: none; }
     @keyframes homeSlideFwd  { from { transform: translateX(26px);  opacity: 0; } to { transform: none; opacity: 1; } }
     @keyframes homeSlideBack { from { transform: translateX(-26px); opacity: 0; } to { transform: none; opacity: 1; } }
-    .home-view.slide-fwd  { animation: homeSlideFwd  0.30s cubic-bezier(.33,1,.68,1); }
-    .home-view.slide-back { animation: homeSlideBack 0.30s cubic-bezier(.33,1,.68,1); }
+    .slide-fwd  { animation: homeSlideFwd  0.30s cubic-bezier(.33,1,.68,1); }
+    .slide-back { animation: homeSlideBack 0.30s cubic-bezier(.33,1,.68,1); }
 
     /* ---------- Compra (lista de la compra de los días marcados) ---------- */
     .shop-days {
@@ -444,6 +444,56 @@
     .sheet-close { background: none; border: none; color: var(--ink); font-family: var(--disp); font-size: 14px; font-weight: 700; cursor: pointer; padding: 4px 0; }
     .sheet-spacer { width: 48px; }
 
+    /* Línea fija Alimentos | Recetas (igual que MENÚ | COMPRA de la Home) */
+    #sheet { padding-top: env(safe-area-inset-top); }
+    .sheet-tabs {
+      position: sticky; top: env(safe-area-inset-top); z-index: 5;
+      display: flex; align-items: flex-end; gap: 24px;
+      background: var(--bg); padding: 9px 18px 0; margin: 0;
+    }
+    .sheet-tabs::before {       /* relleno blanco sobre la línea (franja del notch) */
+      content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
+      height: calc(env(safe-area-inset-top) + 2px); background: var(--bg);
+    }
+    .sheet-tab {
+      border: none; background: none; cursor: pointer; padding: 0 0 12px;
+      font-family: var(--exp); font-weight: 800; font-size: 19px;
+      letter-spacing: -0.01em; text-transform: uppercase; color: var(--muted);
+      position: relative; transition: color 0.18s ease;
+    }
+    .sheet-tab.active { color: var(--ink); }
+
+    /* Buscador flotante tipo "glass" (Apple): aparece al subir, se oculta al bajar */
+    .glass-search {
+      position: fixed; left: 16px; right: 16px; z-index: 60;
+      bottom: calc(env(safe-area-inset-bottom) + 18px);
+      display: flex; pointer-events: none;
+      transition: transform 0.32s cubic-bezier(.4,0,.2,1), opacity 0.28s ease;
+    }
+    .glass-search.scroll-hidden { transform: translateY(160%); opacity: 0; }
+    .gs-inner {
+      pointer-events: auto; margin-left: auto;
+      width: 54px; height: 54px; border-radius: 27px; overflow: hidden;
+      display: flex; align-items: center;
+      background: rgba(245,245,245,0.55);
+      -webkit-backdrop-filter: blur(22px) saturate(180%);
+      backdrop-filter: blur(22px) saturate(180%);
+      border: 1px solid rgba(255,255,255,0.6);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.4);
+      transition: width 0.34s cubic-bezier(.4,0,.2,1);
+    }
+    .glass-search.open .gs-inner { width: 100%; }
+    .gs-ico {
+      flex: 0 0 54px; width: 54px; height: 54px; border: none; background: none;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 21px; opacity: 0.6; cursor: pointer;
+    }
+    .gs-input {
+      flex: 1; min-width: 0; border: none; background: none; outline: none;
+      font-family: var(--sans); font-size: 16px; color: var(--ink); padding: 0 16px 0 0;
+      -webkit-appearance: none;
+    }
+
     /* Segmentado Alimentos / Recetas */
     .type-tabs { display: flex; gap: 8px; padding: 10px 18px 4px; flex-shrink: 0; }
     .type-tabs button {
@@ -480,7 +530,7 @@
     /* Lista de alimentos en formato cuadro, igual que la Home */
     .food-list {
       list-style: none;
-      padding: 6px 18px calc(env(safe-area-inset-bottom) + 28px);
+      padding: 6px 18px calc(env(safe-area-inset-bottom) + 96px);
       display: flex; flex-wrap: wrap; align-content: flex-start; gap: 12px;
     }
     .addf {
@@ -855,7 +905,7 @@
       /* El menú de Home: 3 columnas (en lugar de 2) para no estirar las tarjetas */
       #foodLog .log-list { grid-template-columns: repeat(3, 1fr); }
       /* Cabeceras/controles de las hojas, centrados y más anchos */
-      .sheet-head, .type-tabs, .cat-tabs, .search-wrap { max-width: 940px; margin-left: auto; margin-right: auto; }
+      .sheet-head, .sheet-tabs, .type-tabs, .cat-tabs, .search-wrap { max-width: 940px; margin-left: auto; margin-right: auto; }
       /* "Tus datos": dos columnas de tarjetas */
       .prof-body { max-width: 860px; margin: 0 auto;
         display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
@@ -912,7 +962,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.17</div>
+      <div class="avatar" id="version">V.18</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -990,7 +1040,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.17</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.18</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -1003,32 +1053,30 @@
 
   <!-- ===================== Pantalla Añadir comida ===================== -->
   <section class="page sheet" id="sheet" aria-hidden="true" style="display:none">
-    <header class="sheet-head">
-      <span class="sheet-spacer"></span>
-      <h2>Añadir comida</h2>
-      <button class="sheet-close" id="sheetClose">Cerrar</button>
-    </header>
-
-    <!-- Alimentos sueltos o recetas -->
-    <div class="type-tabs" id="typeTabs">
-      <button data-type="alimentos" class="active">Alimentos</button>
-      <button data-type="recetas">Recetas</button>
+    <!-- Línea fija: Alimentos | Recetas (como MENÚ | COMPRA) -->
+    <div class="sheet-tabs" id="typeTabs">
+      <button class="sheet-tab active" data-type="alimentos">Alimentos</button>
+      <button class="sheet-tab" data-type="recetas">Recetas</button>
+      <span class="tab-underline" id="typeUnderline"></span>
     </div>
 
-    <!-- Categorías -->
+    <!-- Categorías (filtros) -->
     <div class="cat-tabs" id="catTabs">
       <button data-cat="todos" class="active">Todos</button>
       <button data-cat="salado">Salado</button>
       <button data-cat="dulce">Dulce</button>
     </div>
 
-    <div class="search-wrap">
-      <span class="search-ico">🔍</span>
-      <input id="search" type="search" placeholder="Buscar…"
-             autocomplete="off" autocorrect="off" autocapitalize="none">
-    </div>
-
     <ul class="food-list" id="foodList"></ul>
+
+    <!-- Buscador flotante "glass": aparece al subir, se oculta al bajar -->
+    <div class="glass-search" id="glassSearch">
+      <div class="gs-inner">
+        <button class="gs-ico" id="gsIco" aria-label="Buscar">🔍</button>
+        <input id="search" class="gs-input" type="search" placeholder="Buscar…"
+               autocomplete="off" autocorrect="off" autocapitalize="none">
+      </div>
+    </div>
   </section>
 
   <!-- ===================== Modal de gramos (añadir / editar) ===================== -->
@@ -1740,7 +1788,7 @@
             <div class="log-sub">${t}</div>
             <ul class="log-list">${b.items.map(r => rowHTML(r)).join("")}</ul>`;
         }).join("");
-        log.innerHTML = blocks || `<div class="meal-empty">Aún no has registrado nada hoy</div>`;
+        log.innerHTML = blocks || "";
       } else {
         setLogTitle(activeView);
         const b = byMeal[activeView];
@@ -2007,16 +2055,27 @@
     function openSheet() {
       activeType = "alimentos"; activeCat = "todos";
       $("search").value = "";
+      $("glassSearch").classList.remove("open", "scroll-hidden");
+      gsLastY = 0;
       syncSheetTabs();
       renderFoodList();
       showView("sheet");
+      requestAnimationFrame(positionTypeUnderline);
     }
     function closeSheet() { showView("app"); }
+    function positionTypeUnderline() {
+      const tab = $("typeTabs").querySelector('[data-type="' + activeType + '"]');
+      const u = $("typeUnderline");
+      if (!tab || !u) return;
+      u.style.left = tab.offsetLeft + "px";
+      u.style.width = tab.offsetWidth + "px";
+    }
     function syncSheetTabs() {
-      $("typeTabs").querySelectorAll("button").forEach(b =>
+      $("typeTabs").querySelectorAll("button[data-type]").forEach(b =>
         b.classList.toggle("active", b.dataset.type === activeType));
       $("catTabs").querySelectorAll("button").forEach(b =>
         b.classList.toggle("active", b.dataset.cat === activeCat));
+      positionTypeUnderline();
       $("search").placeholder = activeType === "recetas" ? "Buscar receta…" : "Buscar alimento…";
     }
 
@@ -2065,8 +2124,30 @@
     }
 
     $("addBtn").addEventListener("click", openSheet);
-    $("sheetClose").addEventListener("click", closeSheet);
     $("search").addEventListener("input", renderFoodList);
+
+    // ----- Buscador flotante "glass" -----
+    let gsLastY = 0;
+    $("gsIco").addEventListener("click", () => {
+      const gs = $("glassSearch");
+      const open = gs.classList.toggle("open");
+      if (open) { setTimeout(() => $("search").focus(), 60); }
+      else { $("search").value = ""; renderFoodList(); $("search").blur(); }
+    });
+    // Al perder el foco sin texto, se recoge a lupa
+    $("search").addEventListener("blur", () => {
+      if (!$("search").value.trim()) $("glassSearch").classList.remove("open");
+    });
+    // Mostrar al subir, ocultar al bajar (solo en la hoja de añadir)
+    window.addEventListener("scroll", () => {
+      if (currentView !== "sheet") return;
+      const gs = $("glassSearch");
+      if (gs.classList.contains("open")) { gsLastY = window.scrollY; return; }
+      const y = window.scrollY;
+      if (y > gsLastY + 5 && y > 40) gs.classList.add("scroll-hidden");        // bajando → ocultar
+      else if (y < gsLastY - 5) gs.classList.remove("scroll-hidden");          // subiendo → mostrar
+      gsLastY = y;
+    }, { passive: true });
 
     // Deslizar hacia abajo (estando arriba del todo) cierra el panel
     function enablePullToDismiss(el, dismiss) {
@@ -2087,7 +2168,13 @@
 
     $("typeTabs").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-type]"); if (!b) return;
-      activeType = b.dataset.type; syncSheetTabs(); renderFoodList();
+      if (b.dataset.type === activeType) return;
+      const forward = b.dataset.type === "recetas";
+      activeType = b.dataset.type; activeCat = "todos";
+      syncSheetTabs(); renderFoodList();
+      const fl = $("foodList");
+      fl.classList.remove("slide-fwd", "slide-back"); void fl.offsetWidth;
+      fl.classList.add(forward ? "slide-fwd" : "slide-back");
     });
     $("catTabs").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-cat]"); if (!b) return;
@@ -2705,7 +2792,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.17";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.18";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
