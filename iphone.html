@@ -239,7 +239,7 @@
     .macro .val .pct { color: var(--ink); font-weight: 700; }
     /* Macro seleccionado: se resalta en negro como el cajetín de calorías */
     .macro.sel { background: var(--ink); }
-    .macro.sel .name { color: #fff; }
+    .macro.sel .name { color: rgba(255,255,255,0.55); }
     .macro.sel .val { color: #fff; }
     .macro.sel .val span, .macro.sel .val .pct { color: rgba(255,255,255,0.5); }
     .macro.sel .val.over { color: var(--red); }
@@ -464,16 +464,6 @@
       position: relative; transition: color 0.18s ease;
     }
     .sheet-tab.active { color: var(--ink); }
-    /* Selector de orden (arriba a la derecha de la línea) */
-    .sort-ctrl { margin-left: auto; display: flex; align-items: center; gap: 8px; padding-bottom: 9px; }
-    .sort-label { font-family: var(--disp); font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); min-width: 3.4em; text-align: right; }
-    .sort-arrows { display: flex; flex-direction: column; gap: 3px; }
-    .sort-arr {
-      border: none; background: var(--card); color: var(--ink);
-      width: 30px; height: 19px; border-radius: 6px; padding: 0; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .sort-arr:active { background: var(--ink); color: #fff; }
     /* Filtros a la misma distancia de la línea negra que los títulos (12px),
        y a esa misma distancia de los alimentos por debajo */
     #catTabs { padding-top: 12px; padding-bottom: 0; }
@@ -613,10 +603,7 @@
       background: rgba(250,250,250,0.55);
       -webkit-backdrop-filter: blur(42px) saturate(210%);
       backdrop-filter: blur(42px) saturate(210%);
-      /* Contorno de cristal más marcado en los bordes */
-      border: 1.5px solid rgba(255,255,255,0.85);
-      border-bottom: none;
-      box-shadow: inset 0 2px 1px -1px rgba(255,255,255,0.9), 0 -1px 24px rgba(0,0,0,0.10);
+      border-top: 1px solid rgba(255,255,255,0.7);
       border-radius: 24px 24px 0 0;
       padding: 20px 20px clamp(14px, env(safe-area-inset-bottom), 34px);
       transform: translateY(100%); transition: transform 0.3s cubic-bezier(.22,.61,.36,1);
@@ -1008,7 +995,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.8</div>
+      <div class="avatar" id="version">V.9</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1086,7 +1073,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.8</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.9</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -1104,18 +1091,6 @@
       <button class="sheet-tab active" data-type="alimentos">Alimentos</button>
       <button class="sheet-tab" data-type="recetas">Recetas</button>
       <span class="tab-underline" id="typeUnderline"></span>
-      <!-- Selector de orden -->
-      <div class="sort-ctrl">
-        <span class="sort-label" id="sortLabel">A-Z</span>
-        <span class="sort-arrows">
-          <button class="sort-arr" id="sortUp" aria-label="Orden anterior">
-            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 15 12 9 18 15"></polyline></svg>
-          </button>
-          <button class="sort-arr" id="sortDown" aria-label="Orden siguiente">
-            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-          </button>
-        </span>
-      </div>
     </div>
 
     <!-- Categorías (filtros) -->
@@ -2157,36 +2132,15 @@
         </div>
       </li>`;
 
-    // Modos de orden de la lista de alimentos/recetas
-    const SORT_MODES = [
-      { key: "az",   label: "A-Z" },
-      { key: "prot", label: "Prot", prop: "protein" },
-      { key: "carb", label: "Carb", prop: "carbs" },
-      { key: "fat",  label: "Grasa", prop: "fat" }
-    ];
-    let sortIdx = 0;
-    // Ordena entradas [clave, datos]; per100 = nutrición por 100 g de cada clave
-    function applySort(entries, per100) {
-      const m = SORT_MODES[sortIdx];
-      if (m.key === "az") entries.sort((a, b) => a[1].name.localeCompare(b[1].name, "es"));
-      else entries.sort((a, b) => per100(b[0])[m.prop] - per100(a[0])[m.prop]);
-      return entries;
-    }
-    function cycleSort(dir) {
-      sortIdx = (sortIdx + dir + SORT_MODES.length) % SORT_MODES.length;
-      $("sortLabel").textContent = SORT_MODES[sortIdx].label;
-      renderFoodList();
-    }
-
     function renderFoodList() {
       const q = $("search").value.trim().toLowerCase();
       const list = $("foodList");
 
       if (activeType === "recetas") {
         const all = Object.assign({}, RECIPES, userRecipes);
-        const entries = applySort(Object.entries(all).filter(([, r]) =>
+        const entries = Object.entries(all).filter(([, r]) =>
           (activeCat === "todos" || r.cat === activeCat) &&
-          (!q || r.name.toLowerCase().includes(q))), (k) => recipeNutri(k));
+          (!q || r.name.toLowerCase().includes(q)));
         const createCard = `
           <li class="addf addf-new" data-newrecipe="1">
             <div class="addf-top"><span class="addf-emoji">＋</span></div>
@@ -2202,9 +2156,9 @@
         return;
       }
 
-      const entries = applySort(Object.entries(FOODS).filter(([, f]) =>
+      const entries = Object.entries(FOODS).filter(([, f]) =>
         (activeCat === "todos" || f.cat === activeCat) &&
-        (!q || f.name.toLowerCase().includes(q))), (k) => nutri(k, 100));
+        (!q || f.name.toLowerCase().includes(q)));
       list.innerHTML = entries.length
         ? entries.map(([k, f]) => cardHTML(k, "data-add", f.emoji, f.name, f.ration, f.kcal)).join("")
         : `<li class="food-empty">Sin resultados</li>`;
@@ -2286,8 +2240,6 @@
       fl.classList.remove("slide-fwd", "slide-back"); void fl.offsetWidth;
       fl.classList.add(forward ? "slide-fwd" : "slide-back");
     });
-    $("sortUp").addEventListener("click", () => cycleSort(-1));
-    $("sortDown").addEventListener("click", () => cycleSort(1));
     $("catTabs").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-cat]"); if (!b) return;
       activeCat = b.dataset.cat; syncSheetTabs(); renderFoodList();
@@ -2904,7 +2856,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.8";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.9";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
