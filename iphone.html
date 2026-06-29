@@ -584,7 +584,6 @@
     /* ---------- Modal de gramos (añadir / editar) ---------- */
     .modal {
       position: fixed; inset: 0; z-index: 80;
-      min-height: 100dvh;
       display: flex; align-items: flex-end; justify-content: center;
       background: rgba(19,19,17,0); visibility: hidden;
       transition: background 0.25s ease, visibility 0.25s ease;
@@ -630,7 +629,7 @@
       display: flex; align-items: center; justify-content: center;
       touch-action: none; -webkit-user-select: none; user-select: none;
     }
-    .grams-field .gminus { background: var(--bg); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); }
+    .grams-field .gminus { background: var(--ink); color: #fff; }
     .grams-field .gwrap { flex: 1; text-align: center; }
     .grams-field input {
       width: 100%; border: none; background: none; outline: none;
@@ -968,7 +967,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.1</div>
+      <div class="avatar" id="version">V.2</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1046,7 +1045,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.1</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.2</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -2795,7 +2794,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.1";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.2";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
