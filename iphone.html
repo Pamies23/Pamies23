@@ -252,13 +252,74 @@
     .macro .val.over { color: var(--red); }
     .hero .now.over { color: var(--red); }
 
-    /* ---------- Cabecera de sección ---------- */
-    .section-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
-    .section-head h2 {
+    /* ---------- Cabecera de sección: línea fija Menú | Compra ---------- */
+    /* Se queda pegada arriba al bajar la pantalla (como las pestañas de Honest Greens). */
+    .section-head {
+      position: sticky; top: 0; z-index: 30;
+      display: flex; align-items: flex-end; gap: 26px;
+      background: var(--bg);
+      margin: 0 -18px 14px; padding: 11px 18px 9px;
+      box-shadow: 0 6px 14px -10px rgba(0,0,0,0.25);
+    }
+    .home-tab {
+      border: none; background: none; cursor: pointer; padding: 2px 0 8px;
       font-family: var(--exp); font-weight: 800; font-size: 22px;
-      letter-spacing: -0.01em; text-transform: uppercase; color: var(--ink);
+      letter-spacing: -0.01em; text-transform: uppercase; color: var(--muted);
+      position: relative; transition: color 0.15s ease;
+    }
+    .home-tab.active { color: var(--ink); }
+    .home-tab.active::after {
+      content: ""; position: absolute; left: 0; right: 0; bottom: 0;
+      height: 3px; border-radius: 2px; background: var(--ink);
     }
     .section-head .sh-meta { font-family: var(--disp); font-size: 13px; font-weight: 700; color: var(--muted); }
+
+    /* Subtítulo del menú (solo aparece cuando un filtro acota la vista: "Top proteínas", "Cena"…) */
+    .log-heading {
+      font-family: var(--exp); font-weight: 800; font-size: 20px;
+      letter-spacing: -0.01em; text-transform: uppercase; color: var(--ink);
+      margin: 0 0 12px;
+    }
+    .log-heading[hidden] { display: none; }
+
+    /* ---------- Compra (lista de la compra de los días marcados) ---------- */
+    .shop-intro { font-size: 13px; color: var(--muted); margin: 2px 0 16px; }
+    .shop-days {
+      display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+      margin: 0 -18px 18px; padding: 0 18px 2px;
+    }
+    .shop-days::-webkit-scrollbar { display: none; }
+    .shop-day {
+      flex: 0 0 auto; cursor: pointer; border: none; background: var(--card);
+      border-radius: 16px; padding: 9px 0 9px; width: 52px;
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      transition: background 0.15s ease, transform 0.12s ease;
+    }
+    .shop-day:active { transform: scale(0.96); }
+    .sd-wd { font-family: var(--disp); font-weight: 800; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+    .sd-num { font-family: var(--disp); font-weight: 800; font-size: 18px; line-height: 1; color: var(--ink); }
+    .shop-day.today { box-shadow: inset 0 0 0 2px var(--lime); }
+    .shop-day.sel { background: var(--ink); }
+    .shop-day.sel .sd-wd { color: rgba(255,255,255,0.55); }
+    .shop-day.sel .sd-num { color: #fff; }
+
+    .shop-items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+    .shop-item {
+      display: flex; align-items: center; gap: 13px;
+      background: var(--bg); border-radius: var(--r-md); padding: 14px 17px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07); cursor: pointer;
+      transition: background 0.16s ease, transform 0.12s ease;
+    }
+    .shop-item:active { transform: scale(0.995); }
+    .shop-emoji { font-size: 22px; flex-shrink: 0; line-height: 1; }
+    .shop-name { flex: 1; min-width: 0; font-family: var(--sans); font-weight: 600; font-size: 15px; color: var(--ink); }
+    .shop-grams { font-family: var(--disp); font-weight: 800; font-size: 17px; color: var(--ink); white-space: nowrap; }
+    /* Marcado como cogido en el súper: se pone en negro (no afecta a los filtros del menú) */
+    .shop-item.got { background: var(--ink); box-shadow: none; }
+    .shop-item.got .shop-emoji { filter: grayscale(1); opacity: 0.45; }
+    .shop-item.got .shop-name { color: rgba(255,255,255,0.5); text-decoration: line-through; }
+    .shop-item.got .shop-grams { color: rgba(255,255,255,0.6); text-decoration: line-through; }
+    .shop-empty { font-size: 14px; color: var(--muted); padding: 6px 2px; }
     /* Botón para limpiar/normalizar filtros (mismo tamaño que las pestañas de arriba) */
     .clear-filters {
       border: none; background: var(--lime); color: var(--ink);
@@ -810,8 +871,9 @@
       /* Columna derecha: todo lo que no es el panel */
       .app > :not(.top-region) { grid-column: 2; }
       /* Home */
-      .section-head { padding: calc(env(safe-area-inset-top) + 32px) 40px 0; margin-bottom: 16px; }
-      #foodLog { padding: 0 40px 130px; }
+      .section-head { top: 0; padding: 18px 40px 12px; margin: 0 0 14px; }
+      #menuView, #shopView { padding: 0 40px 130px; }
+      #foodLog { padding: 0; }
       .log-list { grid-template-columns: repeat(3, 1fr); }
       /* Creador de recetas */
       .sim-items { padding: calc(env(safe-area-inset-top) + 32px) 40px 0; margin-bottom: 14px; }
@@ -831,7 +893,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.12</div>
+      <div class="avatar" id="version">V.13</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -880,10 +942,24 @@
     </div>
   </div><!-- /.top-region -->
 
-  <div class="section-head">
-    <h2 id="logTitle">Menú</h2>
+  <!-- Línea fija (no desaparece al bajar): Menú | Compra -->
+  <div class="section-head" id="homeTabs">
+    <button class="home-tab active" id="tabMenu" data-tab="menu">Menú</button>
+    <button class="home-tab" id="tabShop" data-tab="compra">Compra</button>
   </div>
-  <div id="foodLog"></div>
+
+  <!-- Vista Menú (el registro del día) -->
+  <div id="menuView">
+    <div class="log-heading" id="logTitle" hidden></div>
+    <div id="foodLog"></div>
+  </div>
+
+  <!-- Vista Compra (lista de la compra de los días marcados) -->
+  <div id="shopView" hidden>
+    <div class="shop-intro">Marca los días y te sumo lo que tienes apuntado.</div>
+    <div class="shop-days" id="shopDays"></div>
+    <div class="shop-list" id="shopList"></div>
+  </div>
 
  </div><!-- /.app -->
 
@@ -895,7 +971,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.12</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.13</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -1369,6 +1445,7 @@
       recomputeGoalKcal();
       applyActiveGoal();
       loadLog();
+      loadShopGot();
     }
     // El objetivo activo depende del DÍA SELECCIONADO: finde (sáb/dom) vs entre semana.
     function applyActiveGoal() {
@@ -1631,12 +1708,12 @@
         const mm = MACROS[activeMacro];
         const items = (isDay ? resolved : byMeal[activeView].items)
           .slice().sort((a, b) => dispNutri(b)[mm.prop] - dispNutri(a)[mm.prop]);
-        $("logTitle").textContent = "Top " + mm.name.toLowerCase();
+        setLogTitle("Top " + mm.name.toLowerCase());
         log.innerHTML = items.length
           ? `<ul class="log-list">${items.map(r => rowHTML(r, activeMacro)).join("")}</ul>`
           : `<div class="meal-empty">Sin alimentos</div>`;
       } else if (isDay) {
-        $("logTitle").textContent = "Menú";
+        setLogTitle("Menú");
         const blocks = MEAL_ORDER.map(t => {
           const b = byMeal[t];
           if (!b.items.length) return "";
@@ -1646,7 +1723,7 @@
         }).join("");
         log.innerHTML = blocks || `<div class="meal-empty">Aún no has registrado nada hoy</div>`;
       } else {
-        $("logTitle").textContent = activeView;
+        setLogTitle(activeView);
         const b = byMeal[activeView];
         log.innerHTML = b.items.length
           ? `<ul class="log-list">${b.items.map(r => rowHTML(r)).join("")}</ul>`
@@ -1657,7 +1734,115 @@
       requestAnimationFrame(() => {
         document.querySelectorAll('.macro .mini .seg').forEach(s => { s.style.width = s.dataset.w + "%"; });
       });
+
+      // Si la vista Compra está abierta, mantenerla al día (cambios de comidas/día/persona)
+      if (homeTab === "compra") renderShop();
     }
+
+    // El subtítulo del menú solo aparece cuando un filtro acota la vista (no para "Menú")
+    function setLogTitle(text) {
+      const el = $("logTitle");
+      el.textContent = text;
+      el.hidden = (text === "Menú");
+    }
+
+    /* =========================================================
+       COMPRA  —  lista de la compra de los días marcados
+       ========================================================= */
+    let homeTab = "menu";                 // "menu" | "compra"
+    let shopSel = new Set([todayKey()]); // días marcados (claves de fecha); hoy por defecto
+    let shopGot = new Set();              // alimentos ya cogidos en el súper
+    const SHOPGOT_KEY = "verde.shopgot.v1";
+    const shopGotKey = () => SHOPGOT_KEY + "." + people.active;
+    function loadShopGot() {
+      shopGot = new Set();
+      try { const a = JSON.parse(localStorage.getItem(shopGotKey())); if (Array.isArray(a)) shopGot = new Set(a); } catch (e) {}
+    }
+    function saveShopGot() { try { localStorage.setItem(shopGotKey(), JSON.stringify([...shopGot])); } catch (e) {} }
+
+    // Gramos en formato bonito: 400 g · 1,2 kg
+    function fmtGrams(g) {
+      g = Math.round(g);
+      if (g >= 1000) { const kg = g / 1000; return (Math.round(kg * 10) / 10).toString().replace(".", ",") + " kg"; }
+      return g + " g";
+    }
+
+    // Suma los gramos de cada alimento en los días marcados (incluye el día actual sin guardar)
+    function shopAggregate() {
+      const days = loadDays();
+      days[selectedDate] = DATA.meals;     // refleja el día que estás editando ahora mismo
+      const totals = {};
+      shopSel.forEach(key => {
+        const meals = days[key];
+        if (!Array.isArray(meals)) return;
+        meals.forEach(m => { if (FOODS[m.food]) totals[m.food] = (totals[m.food] || 0) + (m.grams || 0); });
+      });
+      return Object.keys(totals)
+        .map(food => ({ food, grams: totals[food] }))
+        .sort((a, b) => b.grams - a.grams);
+    }
+
+    function renderShop() {
+      const tKey = todayKey();
+      // Fila de días marcables (misma ventana que el selector de fecha)
+      $("shopDays").innerHTML = windowKeys().map(key => {
+        const d = dateFromKey(key);
+        const wd = d.toLocaleDateString("es-ES", { weekday: "short" }).replace(".", "");
+        const sel = shopSel.has(key), today = key === tKey;
+        return `<button class="shop-day${sel ? " sel" : ""}${today ? " today" : ""}" data-key="${key}">
+          <span class="sd-wd">${wd}</span><span class="sd-num">${d.getDate()}</span></button>`;
+      }).join("");
+      // Lista de la compra
+      const list = $("shopList");
+      if (!shopSel.size) {
+        list.innerHTML = `<div class="shop-empty">Marca uno o más días para ver qué comprar.</div>`;
+        return;
+      }
+      const items = shopAggregate();
+      if (!items.length) {
+        list.innerHTML = `<div class="shop-empty">No hay nada apuntado en los días elegidos.</div>`;
+        return;
+      }
+      list.innerHTML = `<ul class="shop-items">${items.map(it => {
+        const got = shopGot.has(it.food);
+        return `<li class="shop-item${got ? " got" : ""}" data-food="${it.food}">
+          <span class="shop-emoji">${FOODS[it.food].emoji}</span>
+          <span class="shop-name">${FOODS[it.food].name}</span>
+          <span class="shop-grams">${fmtGrams(it.grams)}</span>
+        </li>`;
+      }).join("")}</ul>`;
+    }
+
+    function setHomeTab(tab) {
+      homeTab = tab;
+      $("tabMenu").classList.toggle("active", tab === "menu");
+      $("tabShop").classList.toggle("active", tab === "compra");
+      $("menuView").hidden = tab !== "menu";
+      $("shopView").hidden = tab !== "compra";
+      if (tab === "compra") renderShop();
+    }
+
+    $("homeTabs").addEventListener("click", (e) => {
+      const b = e.target.closest(".home-tab");
+      if (b) setHomeTab(b.dataset.tab);
+    });
+    // Marcar/desmarcar un día para la compra
+    $("shopDays").addEventListener("click", (e) => {
+      const b = e.target.closest(".shop-day[data-key]");
+      if (!b) return;
+      const k = b.dataset.key;
+      if (shopSel.has(k)) shopSel.delete(k); else shopSel.add(k);
+      renderShop();
+    });
+    // Tachar/destachar un alimento ya cogido (no afecta a los filtros del menú)
+    $("shopList").addEventListener("click", (e) => {
+      const li = e.target.closest(".shop-item[data-food]");
+      if (!li) return;
+      const f = li.dataset.food;
+      if (shopGot.has(f)) shopGot.delete(f); else shopGot.add(f);
+      saveShopGot();
+      renderShop();
+    });
 
     /* =========================================================
        SELECTOR DE VISTA (filtro de estadísticas)
@@ -2475,7 +2660,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.12";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.13";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
