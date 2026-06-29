@@ -255,11 +255,16 @@
     /* ---------- Cabecera de sección: línea fija Menú | Compra ---------- */
     /* Se queda pegada arriba al bajar la pantalla (como las pestañas de Honest Greens). */
     .section-head {
-      position: sticky; top: 0; z-index: 30;
+      position: sticky; top: env(safe-area-inset-top); z-index: 30;
       display: flex; align-items: flex-end; gap: 26px;
       background: var(--bg);
       margin: 0 -18px 14px; padding: 11px 18px 9px;
-      box-shadow: 0 6px 14px -10px rgba(0,0,0,0.25);
+    }
+    /* Al quedar pegada arriba rellena de blanco la franja del notch: así empieza
+       a bajar antes de toparse con él y nunca queda tapada. */
+    .section-head.stuck::before {
+      content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
+      height: calc(env(safe-area-inset-top) + 1px); background: var(--bg);
     }
     .home-tab {
       border: none; background: none; cursor: pointer; padding: 2px 0 8px;
@@ -281,6 +286,7 @@
       margin: 0 0 12px;
     }
     .log-heading[hidden] { display: none; }
+    #stickSentinel { height: 1px; margin-bottom: -1px; }
 
     /* ---------- Compra (lista de la compra de los días marcados) ---------- */
     .shop-intro { font-size: 13px; color: var(--muted); margin: 2px 0 16px; }
@@ -316,9 +322,8 @@
     .shop-grams { font-family: var(--disp); font-weight: 800; font-size: 17px; color: var(--ink); white-space: nowrap; }
     /* Marcado como cogido en el súper: se pone en negro (no afecta a los filtros del menú) */
     .shop-item.got { background: var(--ink); box-shadow: none; }
-    .shop-item.got .shop-emoji { filter: grayscale(1); opacity: 0.45; }
-    .shop-item.got .shop-name { color: rgba(255,255,255,0.5); text-decoration: line-through; }
-    .shop-item.got .shop-grams { color: rgba(255,255,255,0.6); text-decoration: line-through; }
+    .shop-item.got .shop-name { color: #fff; }
+    .shop-item.got .shop-grams { color: #fff; }
     .shop-empty { font-size: 14px; color: var(--muted); padding: 6px 2px; }
     /* Botón para limpiar/normalizar filtros (mismo tamaño que las pestañas de arriba) */
     .clear-filters {
@@ -893,7 +898,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.14</div>
+      <div class="avatar" id="version">V.15</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -942,6 +947,8 @@
     </div>
   </div><!-- /.top-region -->
 
+  <!-- Centinela para detectar cuándo la línea queda pegada arriba -->
+  <div id="stickSentinel" aria-hidden="true"></div>
   <!-- Línea fija (no desaparece al bajar): Menú | Compra -->
   <div class="section-head" id="homeTabs">
     <button class="home-tab active" id="tabMenu" data-tab="menu">Menú</button>
@@ -971,7 +978,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.14</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.15</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -1826,6 +1833,22 @@
       const b = e.target.closest(".home-tab");
       if (b) setHomeTab(b.dataset.tab);
     });
+
+    // Detecta cuándo la línea Menú|Compra queda pegada arriba para rellenar
+    // de blanco la franja del notch (clase .stuck).
+    (function () {
+      const head = $("homeTabs"), sentinel = $("stickSentinel");
+      if (!head || !sentinel || !("IntersectionObserver" in window)) return;
+      const probe = document.createElement("div");
+      probe.style.cssText = "position:fixed;top:0;left:0;height:env(safe-area-inset-top);visibility:hidden;pointer-events:none";
+      document.body.appendChild(probe);
+      const inset = probe.offsetHeight; probe.remove();
+      const io = new IntersectionObserver(
+        ([e]) => head.classList.toggle("stuck", e.intersectionRatio === 0),
+        { rootMargin: `-${inset}px 0px 0px 0px`, threshold: [0, 1] }
+      );
+      io.observe(sentinel);
+    })();
     // Marcar/desmarcar un día para la compra
     $("shopDays").addEventListener("click", (e) => {
       const b = e.target.closest(".shop-day[data-key]");
@@ -2663,7 +2686,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.14";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.15";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
