@@ -259,8 +259,9 @@
       display: flex; align-items: flex-end; gap: 24px;
       background: var(--bg);
       /* Mismo hueco arriba (hasta el notch) que abajo (hasta la línea negra);
-         abajo sin relleno: el borde de la barra coincide con la línea negra. */
-      margin: 0 -18px 8px; padding: 7px 18px 0;
+         abajo sin relleno: el borde de la barra coincide con la línea negra.
+         El margen inferior iguala la distancia letras→línea (12px). */
+      margin: 0 -18px 12px; padding: 7px 18px 0;
     }
     /* Relleno blanco SOBRE la barra (franja del notch). Siempre presente, pero en
        reposo queda tapado por la franja de agua (que va por encima en el apilado);
@@ -307,16 +308,17 @@
     }
     .shop-days::-webkit-scrollbar { display: none; }
     .shop-day {
-      flex: 0 0 auto; cursor: pointer; border: none; background: var(--card);
+      flex: 0 0 auto; cursor: pointer; border: none; background: var(--bg);
       border-radius: 16px; padding: 9px 0 9px; width: 52px;
       display: flex; flex-direction: column; align-items: center; gap: 3px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
       transition: background 0.15s ease, transform 0.12s ease;
     }
     .shop-day:active { transform: scale(0.96); }
     .sd-wd { font-family: var(--disp); font-weight: 800; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
     .sd-num { font-family: var(--disp); font-weight: 800; font-size: 18px; line-height: 1; color: var(--ink); }
-    .shop-day.today { box-shadow: inset 0 0 0 2px var(--lime); }
-    .shop-day.sel { background: var(--ink); }
+    .shop-day.today { box-shadow: inset 0 0 0 2px var(--lime), 0 2px 10px rgba(0,0,0,0.06); }
+    .shop-day.sel { background: var(--ink); box-shadow: none; }
     .shop-day.sel .sd-wd { color: rgba(255,255,255,0.55); }
     .shop-day.sel .sd-num { color: #fff; }
     /* Hoy, cuando está seleccionado: letras y número en lima para distinguirlo */
@@ -966,7 +968,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.19</div>
+      <div class="avatar" id="version">V.1</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1044,7 +1046,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.19</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.1</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -2793,7 +2795,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.19";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.1";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
