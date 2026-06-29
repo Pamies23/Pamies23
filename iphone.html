@@ -583,16 +583,18 @@
 
     /* ---------- Modal de gramos (añadir / editar) ---------- */
     .modal {
-      position: fixed; inset: 0; z-index: 80;
+      position: fixed; top: 0; left: 0; right: 0; z-index: 80;
+      /* Altura = área REALMENTE visible. En iOS, inset:0/100vh miden el viewport
+         de maquetación (más alto que lo visible) y dejaban hueco bajo la ficha.
+         --app-height lo fija por JS con window.innerHeight (el truco fiable). */
+      height: 100vh;
+      height: var(--app-height, 100dvh);
       display: flex; align-items: flex-end; justify-content: center;
       background: rgba(19,19,17,0); visibility: hidden;
       transition: background 0.25s ease, visibility 0.25s ease;
     }
     .modal.open { visibility: visible; background: rgba(19,19,17,0.5); }
     .modal-card {
-      /* Anclada DIRECTAMENTE al fondo del viewport (no depende de la altura del
-         contenedor, que en iOS standalone dejaba hueco bajo la ficha). */
-      position: fixed; left: 0; right: 0; bottom: 0; margin: 0 auto;
       width: 100%; max-width: 460px;
       /* Cristal (mismo efecto que la lupa) */
       background: rgba(248,247,244,0.78);
@@ -600,8 +602,7 @@
       backdrop-filter: blur(34px) saturate(180%);
       border-top: 1px solid rgba(255,255,255,0.6);
       border-radius: 24px 24px 0 0;
-      /* padding inferior acotado: ni hueco enorme (env raro en iOS) ni pegado al borde */
-      padding: 20px 20px clamp(12px, env(safe-area-inset-bottom), 30px);
+      padding: 20px 20px max(16px, env(safe-area-inset-bottom));
       transform: translateY(100%); transition: transform 0.3s cubic-bezier(.22,.61,.36,1);
     }
     .modal.open .modal-card { transform: translateY(0); }
@@ -991,7 +992,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.4</div>
+      <div class="avatar" id="version">V.5</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1069,7 +1070,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.4</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.5</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -1951,6 +1952,16 @@
     // Recoloca el subrayado si cambia el tamaño (rotación, fuentes cargadas…)
     window.addEventListener("resize", positionTabUnderline);
 
+    // Altura real visible (--app-height): arregla el "hueco" bajo las hojas/fichas
+    // en iOS, donde 100vh/inset:0 miden de más. Se actualiza con barras/teclado.
+    (function () {
+      const setAppHeight = () => document.documentElement.style.setProperty("--app-height", window.innerHeight + "px");
+      setAppHeight();
+      window.addEventListener("resize", setAppHeight);
+      window.addEventListener("orientationchange", setAppHeight);
+      if (window.visualViewport) window.visualViewport.addEventListener("resize", setAppHeight);
+    })();
+
     // Marcar/desmarcar un día para la compra
     $("shopDays").addEventListener("click", (e) => {
       const b = e.target.closest(".shop-day[data-key]");
@@ -2819,7 +2830,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.4";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.5";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
