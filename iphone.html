@@ -893,7 +893,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.13</div>
+      <div class="avatar" id="version">V.14</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -971,7 +971,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.13</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.14</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -2648,19 +2648,22 @@
       let startY = null, tracking = false;
       const root = $("app");
       root.addEventListener("touchstart", (e) => {
-        tracking = $("dayPanel").classList.contains("open") && window.scrollY <= 0;
+        // El gesto vale desde cualquier sitio MENOS el propio desplegable de días:
+        // ahí el dedo se mueve en horizontal para cambiar de día y no debe cerrarlo.
+        const onPanel = e.target.closest("#dayPanel");
+        tracking = !onPanel && $("dayPanel").classList.contains("open") && window.scrollY <= 0;
         startY = tracking ? e.touches[0].clientY : null;
       }, { passive: true });
       root.addEventListener("touchmove", (e) => {
         if (!tracking || startY === null) return;
         if (window.scrollY > 0) { tracking = false; return; }
-        if (e.touches[0].clientY - startY > 70) { tracking = false; startY = null; closeDayPanel(); }
+        if (e.touches[0].clientY - startY > 90) { tracking = false; startY = null; closeDayPanel(); }
       }, { passive: true });
       root.addEventListener("touchend", () => { tracking = false; startY = null; });
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.13";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.14";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
