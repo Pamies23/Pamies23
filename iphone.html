@@ -83,7 +83,7 @@
 
     /* ---------- Región superior con fondo de agua (corte limpio) ---------- */
     .top-region {
-      position: relative;
+      position: relative; z-index: 3;     /* va por encima de la línea fija: tapa su relleno blanco en reposo */
       margin: calc((env(safe-area-inset-top) + 12px) * -1) -18px 8px;
       padding: calc(env(safe-area-inset-top) + 16px) 18px 22px;
       background-color: #5A9F9F;                 /* color del agua (relleno y borde superior) */
@@ -255,29 +255,33 @@
     /* ---------- Cabecera de sección: línea fija Menú | Compra ---------- */
     /* Se queda pegada arriba al bajar la pantalla (como las pestañas de Honest Greens). */
     .section-head {
-      position: sticky; top: env(safe-area-inset-top); z-index: 30;
-      display: flex; align-items: flex-end; gap: 26px;
+      position: sticky; top: env(safe-area-inset-top); z-index: 2;
+      display: flex; align-items: flex-end; gap: 24px;
       background: var(--bg);
       /* Mismo hueco arriba (hasta el notch) que abajo (hasta la línea negra);
          abajo sin relleno: el borde de la barra coincide con la línea negra. */
       margin: 0 -18px 8px; padding: 7px 18px 0;
     }
-    /* Al quedar pegada arriba rellena de blanco la franja del notch: así empieza
-       a bajar antes de toparse con él y nunca queda tapada. */
-    .section-head.stuck::before {
+    /* Relleno blanco SOBRE la barra (franja del notch). Siempre presente, pero en
+       reposo queda tapado por la franja de agua (que va por encima en el apilado);
+       al bajar, el agua desaparece y este blanco cubre todo lo de arriba de la línea.
+       Así no depende de JS y nunca parpadea contenido por encima al hacer scroll. */
+    .section-head::before {
       content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
-      height: calc(env(safe-area-inset-top) + 1px); background: var(--bg);
+      height: calc(env(safe-area-inset-top) + 2px); background: var(--bg);
     }
     .home-tab {
       border: none; background: none; cursor: pointer; padding: 0 0 7px;
-      font-family: var(--exp); font-weight: 800; font-size: 22px;
+      font-family: var(--exp); font-weight: 800; font-size: 19px;
       letter-spacing: -0.01em; text-transform: uppercase; color: var(--muted);
-      position: relative; transition: color 0.15s ease;
+      position: relative; transition: color 0.18s ease;
     }
     .home-tab.active { color: var(--ink); }
-    .home-tab.active::after {
-      content: ""; position: absolute; left: 0; right: 0; bottom: 0;
-      height: 3px; border-radius: 2px; background: var(--ink);
+    /* Subrayado único que se desliza entre pestañas (transición tipo iPhone) */
+    .tab-underline {
+      position: absolute; bottom: 0; left: 0; width: 0; height: 3px;
+      border-radius: 2px; background: var(--ink);
+      transition: left 0.30s cubic-bezier(.4,0,.2,1), width 0.30s cubic-bezier(.4,0,.2,1);
     }
     .section-head .sh-meta { font-family: var(--disp); font-size: 13px; font-weight: 700; color: var(--muted); }
 
@@ -288,10 +292,15 @@
       margin: 0 0 12px;
     }
     .log-heading[hidden] { display: none; }
-    #stickSentinel { height: 1px; margin-bottom: -1px; }
+
+    /* Transición tipo iPhone al cambiar de pestaña: el contenido entra deslizándose */
+    .home-view[hidden] { display: none; }
+    @keyframes homeSlideFwd  { from { transform: translateX(26px);  opacity: 0; } to { transform: none; opacity: 1; } }
+    @keyframes homeSlideBack { from { transform: translateX(-26px); opacity: 0; } to { transform: none; opacity: 1; } }
+    .home-view.slide-fwd  { animation: homeSlideFwd  0.30s cubic-bezier(.33,1,.68,1); }
+    .home-view.slide-back { animation: homeSlideBack 0.30s cubic-bezier(.33,1,.68,1); }
 
     /* ---------- Compra (lista de la compra de los días marcados) ---------- */
-    .shop-intro { font-size: 13px; color: var(--muted); margin: 2px 0 16px; }
     .shop-days {
       display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
       margin: 0 -18px 18px; padding: 0 18px 2px;
@@ -903,7 +912,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.16</div>
+      <div class="avatar" id="version">V.17</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -952,23 +961,21 @@
     </div>
   </div><!-- /.top-region -->
 
-  <!-- Centinela para detectar cuándo la línea queda pegada arriba -->
-  <div id="stickSentinel" aria-hidden="true"></div>
   <!-- Línea fija (no desaparece al bajar): Menú | Compra -->
   <div class="section-head" id="homeTabs">
     <button class="home-tab active" id="tabMenu" data-tab="menu">Menú</button>
     <button class="home-tab" id="tabShop" data-tab="compra">Compra</button>
+    <span class="tab-underline" id="tabUnderline"></span>
   </div>
 
   <!-- Vista Menú (el registro del día) -->
-  <div id="menuView">
+  <div class="home-view" id="menuView">
     <div class="log-heading" id="logTitle" hidden></div>
     <div id="foodLog"></div>
   </div>
 
   <!-- Vista Compra (lista de la compra de los días marcados) -->
-  <div id="shopView" hidden>
-    <div class="shop-intro">Marca los días y te sumo lo que tienes apuntado.</div>
+  <div class="home-view" id="shopView" hidden>
     <div class="shop-days" id="shopDays"></div>
     <div class="shop-list" id="shopList"></div>
   </div>
@@ -983,7 +990,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.16</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.17</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -1825,35 +1832,42 @@
       }).join("")}</ul>`;
     }
 
-    function setHomeTab(tab) {
+    // Coloca el subrayado deslizante bajo la pestaña activa
+    function positionTabUnderline() {
+      const tab = homeTab === "compra" ? $("tabShop") : $("tabMenu");
+      const u = $("tabUnderline");
+      if (!tab || !u) return;
+      u.style.left = tab.offsetLeft + "px";
+      u.style.width = tab.offsetWidth + "px";
+    }
+
+    function setHomeTab(tab, animate) {
+      const changed = tab !== homeTab;
       homeTab = tab;
       $("tabMenu").classList.toggle("active", tab === "menu");
       $("tabShop").classList.toggle("active", tab === "compra");
-      $("menuView").hidden = tab !== "menu";
-      $("shopView").hidden = tab !== "compra";
+      positionTabUnderline();
+      const showMenu = tab === "menu";
+      $("menuView").hidden = !showMenu;
+      $("shopView").hidden = showMenu;
       if (tab === "compra") renderShop();
+      // Transición tipo iPhone: el contenido entrante se desliza (adelante a Compra, atrás a Menú)
+      if (changed && animate) {
+        const view = showMenu ? $("menuView") : $("shopView");
+        const dir = showMenu ? "slide-back" : "slide-fwd";
+        view.classList.remove("slide-fwd", "slide-back");
+        void view.offsetWidth;                 // reinicia la animación
+        view.classList.add(dir);
+      }
     }
 
     $("homeTabs").addEventListener("click", (e) => {
       const b = e.target.closest(".home-tab");
-      if (b) setHomeTab(b.dataset.tab);
+      if (b) setHomeTab(b.dataset.tab, true);
     });
+    // Recoloca el subrayado si cambia el tamaño (rotación, fuentes cargadas…)
+    window.addEventListener("resize", positionTabUnderline);
 
-    // Detecta cuándo la línea Menú|Compra queda pegada arriba para rellenar
-    // de blanco la franja del notch (clase .stuck).
-    (function () {
-      const head = $("homeTabs"), sentinel = $("stickSentinel");
-      if (!head || !sentinel || !("IntersectionObserver" in window)) return;
-      const probe = document.createElement("div");
-      probe.style.cssText = "position:fixed;top:0;left:0;height:env(safe-area-inset-top);visibility:hidden;pointer-events:none";
-      document.body.appendChild(probe);
-      const inset = probe.offsetHeight; probe.remove();
-      const io = new IntersectionObserver(
-        ([e]) => head.classList.toggle("stuck", e.intersectionRatio === 0),
-        { rootMargin: `-${inset}px 0px 0px 0px`, threshold: [0, 1] }
-      );
-      io.observe(sentinel);
-    })();
     // Marcar/desmarcar un día para la compra
     $("shopDays").addEventListener("click", (e) => {
       const b = e.target.closest(".shop-day[data-key]");
@@ -2691,7 +2705,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.16";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.17";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
@@ -2700,6 +2714,10 @@
     updateMenuAvatar();    // inicial de la persona activa en el botón
     renderDayStrip();      // prepara la tira de días
     render();
+    // Coloca el subrayado bajo "Menú" (cuando hay layout y fuentes listas)
+    requestAnimationFrame(positionTabUnderline);
+    ((document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve())
+      .then(() => requestAnimationFrame(positionTabUnderline));
   </script>
 </body>
 </html>
