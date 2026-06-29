@@ -568,6 +568,63 @@
 
     /* ---------- Botón de ajustes (engranaje) en la cabecera ---------- */
     .gear-btn { border: none; cursor: pointer; font-size: 20px; line-height: 1; }
+    /* Botón del menú lateral: muestra la inicial de la persona activa */
+    .menu-btn { border: none; cursor: pointer; font-size: 17px; }
+
+    /* ---------- Menú lateral de perfiles (cajón que entra por la izquierda) ---------- */
+    .drawer-backdrop {
+      position: fixed; inset: 0; z-index: 90; background: rgba(19,19,17,0);
+      visibility: hidden; transition: background 0.3s ease, visibility 0.3s ease;
+    }
+    html.drawer-open .drawer-backdrop { visibility: visible; background: rgba(19,19,17,0.45); }
+    html.drawer-open { overflow: hidden; }
+    .drawer {
+      position: fixed; top: 0; left: 0; bottom: 0; z-index: 91;
+      width: min(82vw, 330px);
+      background: var(--bg);
+      padding: calc(env(safe-area-inset-top) + 26px) 20px calc(env(safe-area-inset-bottom) + 22px);
+      padding-left: max(20px, env(safe-area-inset-left));
+      display: flex; flex-direction: column; overflow-y: auto;
+      transform: translateX(-102%);
+      transition: transform 0.34s cubic-bezier(.22,.61,.36,1);
+      box-shadow: 0 0 50px rgba(0,0,0,0.16);
+    }
+    html.drawer-open .drawer { transform: translateX(0); }
+    .drawer-brand {
+      font-family: var(--exp); font-weight: 900; font-size: 26px;
+      text-transform: uppercase; letter-spacing: -0.01em; color: var(--ink); margin-bottom: 24px;
+    }
+    .drawer-label {
+      font-family: var(--disp); font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--muted); margin-bottom: 10px;
+    }
+    .people-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+    .person {
+      display: flex; align-items: center; gap: 12px; padding: 11px 12px;
+      border-radius: 14px; cursor: pointer; transition: background 0.15s ease, transform 0.12s ease;
+    }
+    .person:active { transform: scale(0.98); }
+    .person.active { background: var(--card); }
+    .person-av {
+      width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+      background: var(--ink); color: var(--lime);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--disp); font-weight: 800; font-size: 16px;
+    }
+    .person.active .person-av { background: var(--lime); color: var(--ink); }
+    .person-name { flex: 1; min-width: 0; font-family: var(--disp); font-weight: 700; font-size: 16px; color: var(--ink); }
+    .person-check { color: var(--lime-dim); font-weight: 800; font-size: 15px; }
+    .drawer-add {
+      margin-top: 16px; border: 1.5px dashed var(--line); background: var(--bg); color: var(--ink);
+      border-radius: 14px; padding: 13px; cursor: pointer;
+      font-family: var(--disp); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.02em;
+      transition: transform 0.12s ease;
+    }
+    .drawer-add:active { transform: scale(0.98); }
+    .drawer-foot {
+      margin-top: auto; padding-top: 20px;
+      font-family: var(--disp); font-size: 12px; font-weight: 700; color: var(--muted);
+    }
 
     /* ---------- Pantalla "Tus datos" (estilo Home: imagen de fondo + cajetines blancos) ---------- */
     .profile-page {
@@ -723,9 +780,10 @@
 
   <div class="top-region">
     <header class="topbar">
+      <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
       <button class="avatar gear-btn" id="settingsBtn" aria-label="Tus datos">⚙</button>
-      <div class="avatar" id="version">V.7</div>
+      <div class="avatar" id="version">V.8</div>
     </header>
 
     <section class="hero">
@@ -768,6 +826,16 @@
   <div id="foodLog"></div>
 
  </div><!-- /.app -->
+
+  <!-- ===================== Menú lateral (perfiles) ===================== -->
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+  <aside class="drawer" id="drawer" aria-label="Perfiles">
+    <div class="drawer-brand">Real Food</div>
+    <div class="drawer-label">Perfiles</div>
+    <ul class="people-list" id="peopleList"></ul>
+    <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
+    <div class="drawer-foot"><span id="drawerVersion">V.8</span></div>
+  </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
   <div class="splash" id="splash">
@@ -1138,31 +1206,50 @@
        PERSISTENCIA  —  el registro del día aguanta recargas (localStorage)
        ========================================================= */
     const STORE_KEY = "verde.log.v2";
+    const PROFILE_KEY = "verde.profile.v1";
+    const PEOPLE_KEY = "verde.people.v1";
     const todayKey = () => {
       const d = new Date();
       return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
     };
+
+    /* ---- Personas / perfiles: cada persona guarda sus propios datos ---- */
+    const DEFAULT_PROFILE = { weight: 70, height: 175, sex: "hombre", pasivo: 1500, activo: 500 };
+    const DEFAULT_GOALS = () => ({
+      week:    { protein: 140, carbs: 37, fat: 52, kcal: 1176 },
+      weekend: { protein: 140, carbs: 37, fat: 52, kcal: 1176 }
+    });
+    let people = { active: "jose", list: [] };
+    function savePeople() { try { localStorage.setItem(PEOPLE_KEY, JSON.stringify(people)); } catch (e) {} }
+    function loadPeople() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(PEOPLE_KEY));
+        if (raw && Array.isArray(raw.list) && raw.list.length) { people = raw; return; }
+      } catch (e) {}
+      // Primer arranque: José (hereda los datos existentes) + Mai + Mónica.
+      people = { active: "jose", list: [
+        { id: "jose", name: "José" }, { id: "mai", name: "Mai" }, { id: "monica", name: "Mónica" }
+      ] };
+      const oldP = localStorage.getItem(PROFILE_KEY); if (oldP) localStorage.setItem(PROFILE_KEY + ".jose", oldP);
+      const oldL = localStorage.getItem(STORE_KEY);   if (oldL) localStorage.setItem(STORE_KEY + ".jose", oldL);
+      savePeople();
+    }
+    const profileKey = () => PROFILE_KEY + "." + people.active;
+    const logKey = () => STORE_KEY + "." + people.active;
+
     function loadLog() {
       try {
-        const raw = JSON.parse(localStorage.getItem(STORE_KEY));
-        if (raw && raw.date === todayKey() && Array.isArray(raw.meals)) {
-          DATA.meals = raw.meals;            // mismo día → recuperar
-        } else if (raw && raw.date !== todayKey()) {
-          DATA.meals = [];                   // día nuevo → empezar vacío
-        }
-      } catch (e) { /* sin almacenamiento, seguimos con los datos por defecto */ }
+        const raw = JSON.parse(localStorage.getItem(logKey()));
+        if (raw && raw.date === todayKey() && Array.isArray(raw.meals)) DATA.meals = raw.meals;
+        else DATA.meals = [];                // día nuevo o sin registro → vacío
+      } catch (e) { DATA.meals = []; }
     }
     function saveLog() {
-      try {
-        localStorage.setItem(STORE_KEY, JSON.stringify({ date: todayKey(), meals: DATA.meals }));
-      } catch (e) {}
+      try { localStorage.setItem(logKey(), JSON.stringify({ date: todayKey(), meals: DATA.meals })); } catch (e) {}
     }
-
-    // Perfil y objetivos (peso, altura, sexo y los dos objetivos diarios)
-    const PROFILE_KEY = "verde.profile.v1";
     function loadProfile() {
       try {
-        const raw = JSON.parse(localStorage.getItem(PROFILE_KEY));
+        const raw = JSON.parse(localStorage.getItem(profileKey()));
         if (raw) {
           if (raw.profile) Object.assign(DATA.profile, raw.profile);
           if (raw.goals && raw.goals.week)    Object.assign(DATA.goals.week, raw.goals.week);
@@ -1171,9 +1258,22 @@
       } catch (e) {}
     }
     function saveProfile() {
-      try {
-        localStorage.setItem(PROFILE_KEY, JSON.stringify({ profile: DATA.profile, goals: DATA.goals }));
-      } catch (e) {}
+      try { localStorage.setItem(profileKey(), JSON.stringify({ profile: DATA.profile, goals: DATA.goals })); } catch (e) {}
+    }
+    // Restablece DATA a valores por defecto (antes de cargar otra persona)
+    function resetData() {
+      DATA.profile = Object.assign({}, DEFAULT_PROFILE);
+      DATA.goals = DEFAULT_GOALS();
+      DATA.goal = Object.assign({}, DATA.goals.week);
+      DATA.meals = [];
+    }
+    // Carga toda la información de la persona activa
+    function loadPersonData() {
+      resetData();
+      loadProfile();
+      recomputeGoalKcal();
+      applyActiveGoal();
+      loadLog();
     }
     // El objetivo activo depende del día: fin de semana (sáb/dom) vs entre semana.
     const isWeekendToday = () => { const d = new Date().getDay(); return d === 0 || d === 6; };
@@ -2144,13 +2244,64 @@
     });
     enablePullToDismiss($("profile"), closeProfile);
 
+    /* =========================================================
+       MENÚ LATERAL  —  perfiles de personas (cambiar entre José, Mai…)
+       ========================================================= */
+    const personInitial = (name) => (name || "?").trim().charAt(0).toUpperCase();
+    const activePerson = () => people.list.find(p => p.id === people.active) || people.list[0];
+    function updateMenuAvatar() {
+      const a = activePerson();
+      if (a) $("menuBtn").textContent = personInitial(a.name);
+    }
+    function renderPeople() {
+      $("peopleList").innerHTML = people.list.map(pn => `
+        <li class="person${pn.id === people.active ? " active" : ""}" data-id="${pn.id}">
+          <span class="person-av">${personInitial(pn.name)}</span>
+          <span class="person-name">${pn.name}</span>
+          ${pn.id === people.active ? '<span class="person-check">✓</span>' : ''}
+        </li>`).join("");
+    }
+    function openDrawer() { renderPeople(); document.documentElement.classList.add("drawer-open"); }
+    function closeDrawer() { document.documentElement.classList.remove("drawer-open"); }
+
+    function switchPerson(id) {
+      if (id === people.active) { closeDrawer(); return; }
+      saveProfile(); saveLog();              // guarda la persona actual
+      people.active = id; savePeople();
+      loadPersonData();                      // carga la nueva (sus ajustes y su registro)
+      render(); renderPeople(); updateMenuAvatar();
+      closeDrawer();
+    }
+    function addPerson() {
+      const name = (prompt("Nombre de la persona:", "") || "").trim();
+      if (!name) return;
+      saveProfile(); saveLog();              // guarda la persona actual
+      const id = "p" + Date.now();
+      people.list.push({ id, name });
+      people.active = id; savePeople();
+      loadPersonData();                      // nueva persona: valores por defecto, registro vacío
+      saveProfile(); saveLog();              // crea ya sus registros
+      render(); renderPeople(); updateMenuAvatar();
+      closeDrawer();
+      openProfile();                         // abre "Tus datos" para que rellene sus objetivos
+    }
+
+    $("menuBtn").addEventListener("click", openDrawer);
+    $("drawerBackdrop").addEventListener("click", closeDrawer);
+    $("addPersonBtn").addEventListener("click", addPerson);
+    $("peopleList").addEventListener("click", (e) => {
+      const li = e.target.closest(".person[data-id]"); if (!li) return;
+      switchPerson(li.dataset.id);
+    });
+
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.7";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.8";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
-    loadProfile();
-    recomputeGoalKcal();
-    applyActiveGoal();
-    loadLog();
+    $("drawerVersion").textContent = APP_VERSION;
+    loadPeople();          // personas + migración de datos a "José"
+    loadPersonData();      // carga la persona activa
+    renderPeople();        // pinta la lista del menú lateral
+    updateMenuAvatar();    // inicial de la persona activa en el botón
     render();
   </script>
 </body>
