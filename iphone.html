@@ -15,6 +15,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+  <!-- Precarga de las imágenes de los paneles para que los colores estén listos al
+       entrar (sin "pop-in"): el splash y la cabecera del agua se pintan a la primera. -->
+  <link rel="preload" as="image" href="palms.jpg">
+  <link rel="preload" as="image" href="water.jpg">
+
   <style>
     :root {
       --bg:    #FFFFFF;
@@ -43,7 +48,13 @@
       color: var(--ink);
       font-family: var(--sans);
       -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      /* Tacto de app nativa: sin selección de texto accidental al tocar/mantener */
+      -webkit-user-select: none; user-select: none;
+      -webkit-touch-callout: none;
     }
+    /* Pero los campos de texto sí deben permitir selección/edición */
+    input, textarea { -webkit-user-select: text; user-select: text; }
     /* El color de fondo va en <html> (es el que se ve en el overscroll y en la
        franja inferior del área segura en standalone). Blanco en la app; durante
        el splash, html+body pasan a color palmera para que esa franja nunca sea blanca. */
@@ -197,11 +208,11 @@
     /* Se animan con stroke-dasharray, igual que las barras */
     .ring-rest {
       stroke: var(--lime-dim); stroke-dasharray: 0 100;
-      transition: stroke-dasharray 0.85s cubic-bezier(.22,.61,.36,1);
+      transition: stroke-dasharray 0.72s cubic-bezier(.22,.61,.36,1);
     }
     .ring-sel {
       stroke: var(--lime); stroke-linecap: round; stroke-dasharray: 0 100;
-      transition: stroke-dasharray 0.85s cubic-bezier(.22,.61,.36,1);
+      transition: stroke-dasharray 0.72s cubic-bezier(.22,.61,.36,1);
     }
     .ring-pct {
       position: relative;
@@ -235,7 +246,7 @@
     .macro.sel .mini { background: rgba(255,255,255,0.16); }
     /* Vía sombreada clara (como antes) */
     .macro .mini { height: 12px; border-radius: 99px; background: rgba(19,19,17,0.14); overflow: hidden; display: flex; }
-    .macro .mini .seg { height: 100%; background: var(--lime); width: 0; transition: width 0.7s cubic-bezier(.22,.61,.36,1); }
+    .macro .mini .seg { height: 100%; background: var(--lime); width: 0; transition: width 0.58s cubic-bezier(.22,.61,.36,1); }
     .macro .mini .seg.rest { background: var(--lime-dim); }
     /* Si te pasas del objetivo, el número se pone en rojo como aviso */
     .macro .val.over { color: var(--red); }
@@ -327,8 +338,20 @@
        borde inferior en standalone (un panel fijo no lo hacía). Solo se ve una
        a la vez (las demás se ocultan con display:none vía JS / markup). */
     .page { min-height: 100%; background: var(--bg); }
-    .page.shown, .sim.shown { display: block; animation: pageIn 0.26s ease both; }
-    @keyframes pageIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    .page.shown, .sim.shown { display: block; }
+    /* Transiciones de vista: la entrante entra suave; la saliente se desvanece como
+       una capa por encima (overlay fijo) para que el cambio sea fluido en ambos sentidos. */
+    .v-in  { animation: viewIn 0.34s cubic-bezier(.22,.61,.36,1) both; }
+    .v-out {
+      position: fixed; inset: 0; z-index: 70; overflow: hidden;
+      animation: viewOut 0.26s cubic-bezier(.4,0,1,1) both;
+      will-change: opacity, transform;
+    }
+    @keyframes viewIn  { from { opacity: 0; transform: translateY(12px) scale(0.992); } to { opacity: 1; transform: none; } }
+    @keyframes viewOut { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(8px) scale(0.99); } }
+    @media (prefers-reduced-motion: reduce) {
+      .v-in, .v-out { animation-duration: 0.01ms; }
+    }
 
     .sheet-head {
       display: flex; align-items: center; justify-content: space-between;
@@ -613,6 +636,21 @@
     .sex-toggle button.active { background: var(--ink); color: #fff; }
     .prof-body .confirm { margin-top: 4px; }
 
+    /* Micro-interacción: respuesta táctil al pulsar (sensación reactiva, nativa) */
+    .view-tabs button, .clear-filters, .type-tabs button, .cat-tabs button,
+    .sex-toggle button, .modal-meals button, .sheet-close, .prof-close, .gear-btn,
+    .m-cancel, .m-save, .m-delete, .si-grams button {
+      -webkit-user-select: none; user-select: none;
+    }
+    .view-tabs button:active, .clear-filters:active, .type-tabs button:active,
+    .cat-tabs button:active, .sex-toggle button:active, .modal-meals button:active,
+    .sheet-close:active, .prof-close:active, .gear-btn:active,
+    .m-cancel:active, .m-save:active, .m-delete:active {
+      transform: scale(0.94);
+    }
+    .view-tabs button, .clear-filters, .sheet-close, .prof-close, .gear-btn,
+    .m-cancel, .m-save, .m-delete { transition: transform 0.12s ease, background 0.15s ease, color 0.15s ease; }
+
     /* =========================================================
        iPad / pantallas grandes — layout propio (no un móvil estirado)
        ========================================================= */
@@ -681,7 +719,7 @@
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
       <button class="avatar gear-btn" id="settingsBtn" aria-label="Tus datos">⚙</button>
-      <div class="avatar" id="version">V.4</div>
+      <div class="avatar" id="version">V.5</div>
     </header>
 
     <section class="hero">
@@ -958,6 +996,10 @@
       document.documentElement.classList.add('standalone');
     }
 
+    /* Precarga el resto de imágenes de fondo en segundo plano (selector / recetas /
+       perfil) para que al abrir esas vistas el fondo ya esté listo, sin parpadeo. */
+    ["recipe-bg.jpg", "profile-bg.jpg"].forEach(src => { const im = new Image(); im.src = src; });
+
     /* Splash de entrada: se oculta sola tras un momento (o al tocar) */
     (function () {
       const splash = document.getElementById('splash');
@@ -970,10 +1012,15 @@
           splash.remove();
           document.documentElement.classList.remove('splashing'); // fondo blanco tras el splash
           replayStatsAnimation();                                 // anima barras y anillo al entrar
-        }, 700);
+        }, 650);
       };
-      setTimeout(dismiss, 1700);
-      splash.addEventListener('click', dismiss);
+      // Se va cuando ha pasado un mínimo Y las fuentes están listas (así la Home
+      // aparece ya con su tipografía, sin reflujo). Tope máximo por si algo tarda.
+      const minTime = new Promise(r => setTimeout(r, 1000));
+      const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+      Promise.all([minTime, fontsReady]).then(dismiss);
+      setTimeout(dismiss, 2600);                 // tope de seguridad
+      splash.addEventListener('click', dismiss); // o al tocar
     })();
 
     /* =========================================================
@@ -1470,19 +1517,49 @@
     let activeType = "alimentos";   // alimentos | recetas
     let activeCat  = "todos";       // todos | salado | dulce
 
-    // Solo una "página" visible (Home / Añadir / Simulador / Selector). Scroll
-    // natural del documento → llega al borde inferior también en standalone.
+    // Solo una "página" visible a la vez, con transición de entrada/salida fluida.
+    // "" (sin display inline) deja mandar al CSS → la Home puede ser grid en iPad.
+    const VIEWS = ["app", "sheet", "sim", "simPick", "profile"];
+    let currentView = "app";
     function showView(id) {
-      ["app", "sheet", "sim", "simPick", "profile"].forEach(v => {
-        const el = $(v), on = (v === id);
-        // "" (sin display inline) deja mandar al CSS → la Home puede ser grid en iPad;
-        // las vistas inactivas se ocultan con display:none.
-        el.style.display = on ? "" : "none";
-        if (v !== "app") el.classList.toggle("shown", on);
-        el.setAttribute("aria-hidden", on ? "false" : "true");
+      if (id === currentView) { window.scrollTo(0, 0); return; }
+      const outId = currentView, inEl = $(id), outEl = $(outId);
+
+      // Deja limpias las vistas que no intervienen (por si hubo navegación rápida)
+      VIEWS.forEach(v => {
+        if (v === id || v === outId) return;
+        const e = $(v);
+        e.classList.remove("v-in", "v-out");
+        if (v !== "app") e.classList.remove("shown");
+        e.style.display = "none";
+        e.setAttribute("aria-hidden", "true");
       });
+
+      // Entrante: visible + animación de entrada
+      inEl.classList.remove("v-out");
+      inEl.style.display = "";
+      if (id !== "app") inEl.classList.add("shown");
+      inEl.setAttribute("aria-hidden", "false");
+      inEl.classList.remove("v-in"); void inEl.offsetWidth; inEl.classList.add("v-in");
+
+      // Saliente: capa por encima que se desvanece y luego se oculta
+      outEl.classList.remove("v-in");
+      outEl.setAttribute("aria-hidden", "true");
+      outEl.classList.add("v-out");
+      const finalize = () => {
+        outEl.removeEventListener("animationend", finalize);
+        clearTimeout(outTimer);
+        if (currentView === outId) return;     // se volvió a esta vista: no ocultar
+        outEl.classList.remove("v-out");
+        if (outId !== "app") outEl.classList.remove("shown");
+        outEl.style.display = "none";
+      };
+      outEl.addEventListener("animationend", finalize);
+      const outTimer = setTimeout(finalize, 420);   // respaldo si no llega animationend
+
       $("addBtn").classList.toggle("hidden", id !== "app");
       window.scrollTo(0, 0);
+      currentView = id;
     }
 
     function defaultMeal() {
@@ -2058,7 +2135,7 @@
     enablePullToDismiss($("profile"), closeProfile);
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.4";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.5";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     loadProfile();
     recomputeGoalKcal();
