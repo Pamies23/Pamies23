@@ -151,7 +151,8 @@
     /* ---------- Selector de vista (pills, debajo de los macros) ---------- */
     .view-tabs {
       display: flex; gap: 8px; overflow-x: auto;
-      margin: 14px -18px 0; padding: 0 18px 2px;
+      /* Mismo hueco arriba (macros→filtros) que abajo (filtros→franja blanca) */
+      margin: 44px -18px 0; padding: 0 18px 2px;
       scrollbar-width: none;
     }
     .view-tabs::-webkit-scrollbar { display: none; }
@@ -424,6 +425,10 @@
        a la vez (las demás se ocultan con display:none vía JS / markup). */
     .page { min-height: 100%; background: var(--bg); }
     .page.shown, .sim.shown { display: block; }
+    /* La hoja de Añadir comida usa un fondo crema suave para que las fichas
+       glassy tengan algo que refractar (mismo lenguaje que la ficha de gramos). */
+    #sheet { background: linear-gradient(180deg, #ECE8DE 0%, #E2DDD2 60%, #DED9CD 100%); }
+    html.standalone #sheet { background-attachment: fixed; }
     /* Transiciones de vista: la entrante entra suave; la saliente se desvanece como
        una capa por encima (overlay fijo) para que el cambio sea fluido en ambos sentidos. */
     .v-in  { animation: viewIn 0.34s cubic-bezier(.22,.61,.36,1) both; }
@@ -451,11 +456,15 @@
     .sheet-tabs {
       position: sticky; top: env(safe-area-inset-top); z-index: 5;
       display: flex; align-items: flex-end; gap: 24px;
-      background: var(--bg); padding: 9px 18px 0; margin: 0;
+      /* Cabecera esmerilada: las fichas se difuminan al pasar por detrás */
+      background: rgba(236,232,222,0.68);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+              backdrop-filter: blur(20px) saturate(180%);
+      padding: 9px 18px 0; margin: 0;
     }
-    .sheet-tabs::before {       /* relleno blanco sobre la línea (franja del notch) */
+    .sheet-tabs::before {       /* relleno sobre la línea (franja del notch) */
       content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
-      height: calc(env(safe-area-inset-top) + 2px); background: var(--bg);
+      height: calc(env(safe-area-inset-top) + 2px); background: #ECE8DE;
     }
     .sheet-tab {
       border: none; background: none; cursor: pointer; padding: 0 0 12px;
@@ -556,14 +565,25 @@
       width: calc(50% - 6px);
       position: relative; cursor: pointer;
       display: flex; flex-direction: column;
-      background: var(--bg); border-radius: var(--r-md); overflow: hidden;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+      /* Ficha "Liquid Glass": translúcida + desenfoque del fondo crema */
+      background: rgba(255,255,255,0.42);
+      -webkit-backdrop-filter: blur(22px) saturate(200%);
+              backdrop-filter: blur(22px) saturate(200%);
+      border: 1px solid rgba(255,255,255,0.65);
+      border-radius: var(--r-md); overflow: hidden;
+      box-shadow:
+        0 6px 20px rgba(60,55,45,0.10),
+        inset 0 1px 1px rgba(255,255,255,0.9),
+        inset 0 -16px 20px -12px rgba(255,255,255,0.5);
       transition: transform 0.12s ease;
     }
     .addf:active { transform: scale(0.97); }
     .addf-top {
       position: relative;
-      background: var(--card); height: 124px; flex-shrink: 0;
+      /* Panel del emoji: vidrio un poco más claro, con brillo superior */
+      background: linear-gradient(160deg, rgba(255,255,255,0.5), rgba(255,255,255,0.14));
+      border-bottom: 1px solid rgba(255,255,255,0.5);
+      height: 124px; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
     }
     .addf-emoji { font-size: 50px; line-height: 1; }
@@ -571,7 +591,7 @@
     .addf-brand {
       position: absolute; right: 8px; bottom: 8px;
       width: 23px; height: 23px; border-radius: 50%; box-sizing: border-box;
-      border: 1.5px solid var(--ink); color: var(--ink);
+      border: 2.25px solid var(--ink); color: var(--ink);   /* círculo en negrita, igual que la H */
       background: rgba(255,255,255,0.7);
       display: flex; align-items: center; justify-content: center;
       font-family: var(--disp); font-weight: 800; font-size: 13px; line-height: 1;
@@ -808,8 +828,10 @@
       position: absolute; left: 0; right: 0; bottom: 0; height: 22px;
       pointer-events: none;
       background-image: repeating-linear-gradient(90deg, var(--lime) 0 2px, transparent 2px 11px);
-      -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 50%, transparent 100%);
-              mask-image: linear-gradient(90deg, transparent 0%, #000 50%, transparent 100%);
+      /* Caída brusca: el centro queda a tope y los lados se apagan rápido,
+         así la diferencia de intensidad se nota mucho más. */
+      -webkit-mask-image: linear-gradient(90deg, transparent 8%, rgba(0,0,0,0.12) 28%, #000 48%, #000 52%, rgba(0,0,0,0.12) 72%, transparent 92%);
+              mask-image: linear-gradient(90deg, transparent 8%, rgba(0,0,0,0.12) 28%, #000 48%, #000 52%, rgba(0,0,0,0.12) 72%, transparent 92%);
     }
 
     /* ---------- Menú lateral de perfiles (cajón que entra por la izquierda) ---------- */
@@ -1031,7 +1053,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.1</div>
+      <div class="avatar" id="version">V.2</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1109,7 +1131,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.1</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.2</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -2236,7 +2258,7 @@
             </div>
           </li>`;
         list.innerHTML = createCard + (entries.length
-          ? entries.map(([k, r]) => cardHTML(k, "data-recipe", r.emoji, r.name, r.items.length + " ingredientes", recipeNutri(k).kcal)).join("")
+          ? entries.map(([k, r]) => cardHTML(k, "data-recipe", r.emoji, r.name, r.items.length + " ingr.", recipeNutri(k).kcal)).join("")
           : "");
         return;
       }
@@ -2262,13 +2284,36 @@
     // Al perder el foco sin texto, se recoge a lupa
     $("search").addEventListener("blur", () => {
       if (!$("search").value.trim()) $("glassSearch").classList.remove("open");
+      positionSearchOverKeyboard();
     });
+
+    // Al abrir el teclado, la barra de búsqueda se pega justo encima de él.
+    // En iOS los elementos fixed quedan anclados al viewport de layout, así que
+    // sin esto la barra se queda demasiado arriba sobre el teclado.
+    function positionSearchOverKeyboard() {
+      const gs = $("glassSearch"), vv = window.visualViewport;
+      if (!vv) return;
+      const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      if (kb > 80 && gs.classList.contains("active")) {
+        gs.style.bottom = (kb + 12) + "px";
+      } else {
+        gs.style.bottom = "";
+      }
+    }
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", positionSearchOverKeyboard);
+      window.visualViewport.addEventListener("scroll", positionSearchOverKeyboard);
+    }
+    $("search").addEventListener("focus", () => setTimeout(positionSearchOverKeyboard, 60));
 
     // Deslizar hacia abajo (estando arriba del todo) cierra el panel
     function enablePullToDismiss(el, dismiss, threshold = 160) {
       let startY = null, tracking = false;
       el.addEventListener("touchstart", (e) => {
-        tracking = window.scrollY <= 0;
+        // No armar el cierre si el dedo empieza sobre los filtros, las pestañas o la
+        // barra de búsqueda: ahí el usuario sólo está desplazando en horizontal.
+        const onScroller = e.target.closest(".cat-tabs, .sheet-tabs, .glass-search");
+        tracking = !onScroller && window.scrollY <= 0;
         startY = tracking ? e.touches[0].clientY : null;
       }, { passive: true });
       el.addEventListener("touchmove", (e) => {
@@ -2945,7 +2990,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.1";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.2";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
