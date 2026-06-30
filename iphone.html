@@ -553,10 +553,20 @@
     }
     .addf:active { transform: scale(0.97); }
     .addf-top {
+      position: relative;
       background: var(--card); height: 124px; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
     }
     .addf-emoji { font-size: 50px; line-height: 1; }
+    /* Sello "Ⓗ" de Hacendado (estilo ®) abajo a la derecha de la miniatura */
+    .addf-brand {
+      position: absolute; right: 8px; bottom: 8px;
+      width: 19px; height: 19px; border-radius: 50%;
+      border: 1.5px solid var(--ink); color: var(--ink);
+      background: rgba(255,255,255,0.55);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--disp); font-weight: 800; font-size: 11px; line-height: 1;
+    }
     .addf-info { padding: 12px 14px 14px; flex: 1; display: flex; flex-direction: column; }
     .addf-name {
       font-family: var(--disp); font-size: 15px; font-weight: 800;
@@ -1010,7 +1020,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.17</div>
+      <div class="avatar" id="version">V.18</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1088,7 +1098,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.17</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.18</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -1111,8 +1121,14 @@
     <!-- Categorías (filtros) -->
     <div class="cat-tabs" id="catTabs">
       <button data-cat="todos" class="active">Todos</button>
-      <button data-cat="salado">Salado</button>
-      <button data-cat="dulce">Dulce</button>
+      <button data-cat="huevos">Huevos</button>
+      <button data-cat="carne">Carne</button>
+      <button data-cat="pescado">Pescado</button>
+      <button data-cat="lacteos">Lácteos</button>
+      <button data-cat="cereales">Cereales</button>
+      <button data-cat="verduras">Verduras</button>
+      <button data-cat="fruta">Fruta</button>
+      <button data-cat="grasas">Grasas</button>
     </div>
 
     <ul class="food-list" id="foodList"></ul>
@@ -1228,8 +1244,14 @@
     </header>
     <div class="cat-tabs" id="simPickCat">
       <button data-cat="todos" class="active">Todos</button>
-      <button data-cat="salado">Salado</button>
-      <button data-cat="dulce">Dulce</button>
+      <button data-cat="huevos">Huevos</button>
+      <button data-cat="carne">Carne</button>
+      <button data-cat="pescado">Pescado</button>
+      <button data-cat="lacteos">Lácteos</button>
+      <button data-cat="cereales">Cereales</button>
+      <button data-cat="verduras">Verduras</button>
+      <button data-cat="fruta">Fruta</button>
+      <button data-cat="grasas">Grasas</button>
     </div>
     <div class="search-wrap">
       <span class="search-ico">🔍</span>
@@ -1388,25 +1410,62 @@
        Añade aquí nuevos alimentos y úsalos en DATA.meals por su clave.
        ========================================================= */
     const FOODS = {
-      claras_huevo:    { name: "Claras de huevo",     emoji: "🥚", cat: "salado", base: 150, ration: "150 ml", kcal: 63,  protein: 16.5, carbs: 0.5,  fat: 0.2 },
-      jamon_serrano:   { name: "Jamón serrano",       emoji: "🍖", cat: "salado", base: 55,  ration: "55 g",   kcal: 137, protein: 18.5, carbs: 0.6,  fat: 6.7 },
-      pollo_solomillo: { name: "Solomillo de pollo",  emoji: "🍗", cat: "salado", base: 100, ration: "100 g",  kcal: 108, protein: 22,   carbs: 0.5,  fat: 1.8 },
-      fajitas:         { name: "Fajitas (sin pan)",   emoji: "🌮", cat: "salado", base: 300, ration: "300 g",  kcal: 219, protein: 26.7, carbs: 21.9, fat: 1.8 },
-      queso_cottage:   { name: "Queso Cottage",       emoji: "🧀", cat: "salado", base: 100, ration: "100 g",  kcal: 99,  protein: 14,   carbs: 1.7,  fat: 4.0 },
-      champinones:     { name: "Champiñones",         emoji: "🍄", cat: "salado", base: 100, ration: "100 g",  kcal: 20,  protein: 2.6,  carbs: 0.8,  fat: 0.6 },
-      rucula:          { name: "Rúcula",              emoji: "🥬", cat: "salado", base: 100, ration: "100 g",  kcal: 26,  protein: 3.4,  carbs: 1.0,  fat: 0.4 },
-      salmon:          { name: "Salmón",              emoji: "🐟", cat: "salado", base: 100, ration: "100 g",  kcal: 208, protein: 20,   carbs: 0,    fat: 13 },
-      hamburguesa_pollo:{ name: "Hamburguesa de pollo", emoji: "🍔", cat: "salado", base: 90,  ration: "90 g (1 hamburguesa)", kcal: 111, protein: 14,   carbs: 1.4,  fat: 5.2 },
-      carne_picada:    { name: "Carne picada (vacuno y cerdo)", emoji: "🥩", cat: "salado", base: 100, ration: "100 g",  kcal: 184, protein: 17,   carbs: 2.0,  fat: 12 },
-      lomo_embuchado:  { name: "Lomo embuchado",       emoji: "🥓", cat: "salado", base: 37.5, ration: "37,5 g (ración)", kcal: 75, protein: 14,   carbs: 0.5,  fat: 1.1 },
-      arroz:           { name: "Arroz blanco",        emoji: "🍚", cat: "salado", base: 100, ration: "100 g",  kcal: 130, protein: 2.7,  carbs: 28,   fat: 0.3 },
-      queso_viejo:     { name: "Queso viejo tostado", emoji: "🧀", cat: "salado", base: 100, ration: "100 g",  kcal: 474, protein: 27,   carbs: 1.5,  fat: 40 },
-      roquefort:       { name: "Queso Roquefort",     emoji: "🧀", cat: "salado", base: 100, ration: "100 g",  kcal: 364, protein: 19,   carbs: 0.5,  fat: 32 },
-      arandanos:       { name: "Arándanos",           emoji: "🫐", cat: "dulce",  base: 100, ration: "100 g",  kcal: 57,  protein: 0.7,  carbs: 14,   fat: 0.3 },
-      mermelada0:      { name: "Mermelada 0%",        emoji: "🍓", cat: "dulce",  base: 25,  ration: "25 g",   kcal: 10,  protein: 0.2,  carbs: 2.9,  fat: 0 },
-      platano:         { name: "Plátano",             emoji: "🍌", cat: "dulce",  base: 120, ration: "120 g",  kcal: 107, protein: 1.3,  carbs: 27,   fat: 0.3 },
-      naranja:         { name: "Naranja",             emoji: "🍊", cat: "dulce",  base: 150, ration: "150 g",  kcal: 70,  protein: 1.4,  carbs: 17,   fat: 0.2 },
-      sandia:          { name: "Sandía",              emoji: "🍉", cat: "dulce",  base: 300, ration: "300 g",  kcal: 90,  protein: 1.8,  carbs: 21,   fat: 0.3 }
+      // ---- Huevos ----
+      huevos:          { name: "Huevos",              emoji: "🥚", cat: "huevos",   base: 60,   ration: "60 g (1 ud)", kcal: 90,  protein: 7.5,  carbs: 0.3,  fat: 6.7 },
+      claras_huevo:    { name: "Claras de huevo",     emoji: "🥚", cat: "huevos",   base: 150,  ration: "150 ml", kcal: 63,  protein: 16.5, carbs: 0.5,  fat: 0.2 },
+      // ---- Carne ----
+      pavo_lonchas:    { name: "Pechuga de pavo",     emoji: "🦃", cat: "carne",    base: 30,   ration: "30 g",   kcal: 23,  protein: 5.0,  carbs: 0.4,  fat: 0.2, brand: "Hacendado" },
+      jamon_serrano:   { name: "Jamón serrano",       emoji: "🍖", cat: "carne",    base: 55,   ration: "55 g",   kcal: 137, protein: 18.5, carbs: 0.6,  fat: 6.7 },
+      pollo_solomillo: { name: "Solomillo de pollo",  emoji: "🍗", cat: "carne",    base: 100,  ration: "100 g",  kcal: 108, protein: 22,   carbs: 0.5,  fat: 1.8 },
+      fajitas:         { name: "Fajitas (sin pan)",   emoji: "🌮", cat: "carne",    base: 300,  ration: "300 g",  kcal: 219, protein: 26.7, carbs: 21.9, fat: 1.8 },
+      hamburguesa_pollo:{ name: "Hamburguesa de pollo", emoji: "🍔", cat: "carne",  base: 90,   ration: "90 g (1 ud)", kcal: 111, protein: 14, carbs: 1.4, fat: 5.2 },
+      carne_picada:    { name: "Carne picada (vacuno y cerdo)", emoji: "🥩", cat: "carne", base: 100, ration: "100 g", kcal: 184, protein: 17, carbs: 2.0, fat: 12 },
+      lomo_embuchado:  { name: "Lomo embuchado",      emoji: "🥓", cat: "carne",    base: 37.5, ration: "37,5 g", kcal: 75,  protein: 14,   carbs: 0.5,  fat: 1.1 },
+      // ---- Pescado ----
+      salmon:          { name: "Salmón",              emoji: "🐟", cat: "pescado",  base: 100,  ration: "100 g",  kcal: 208, protein: 20,   carbs: 0,    fat: 13 },
+      merluza:         { name: "Merluza",             emoji: "🐟", cat: "pescado",  base: 150,  ration: "150 g",  kcal: 198, protein: 32.1, carbs: 0.6,  fat: 6.6 },
+      gambas:          { name: "Gambas",              emoji: "🦐", cat: "pescado",  base: 100,  ration: "100 g",  kcal: 105, protein: 20.1, carbs: 0.9,  fat: 1.7 },
+      atun_natural:    { name: "Atún al natural",     emoji: "🐟", cat: "pescado",  base: 56,   ration: "56 g (1 lata)", kcal: 55, protein: 11.8, carbs: 0.5, fat: 0.7, brand: "Hacendado" },
+      sardinas:        { name: "Sardinas en aceite",  emoji: "🐟", cat: "pescado",  base: 60,   ration: "60 g",   kcal: 124, protein: 11.9, carbs: 0.2,  fat: 7.4, brand: "Hacendado" },
+      mejillones:      { name: "Mejillones al natural", emoji: "🦪", cat: "pescado", base: 55,  ration: "55 g",   kcal: 40,  protein: 6.1,  carbs: 0.6,  fat: 1.1, brand: "Hacendado" },
+      // ---- Lácteos ----
+      queso_cottage:   { name: "Queso Cottage",       emoji: "🧀", cat: "lacteos",  base: 100,  ration: "100 g",  kcal: 99,  protein: 14,   carbs: 1.7,  fat: 4.0 },
+      queso_viejo:     { name: "Queso viejo tostado", emoji: "🧀", cat: "lacteos",  base: 100,  ration: "100 g",  kcal: 474, protein: 27,   carbs: 1.5,  fat: 40 },
+      roquefort:       { name: "Queso Roquefort",     emoji: "🧀", cat: "lacteos",  base: 100,  ration: "100 g",  kcal: 364, protein: 19,   carbs: 0.5,  fat: 32 },
+      kefir:           { name: "Kéfir natural",       emoji: "🥛", cat: "lacteos",  base: 125,  ration: "125 g",  kcal: 93,  protein: 4.9,  carbs: 6.4,  fat: 5.3, brand: "Hacendado" },
+      // ---- Cereales ----
+      arroz:           { name: "Arroz blanco",        emoji: "🍚", cat: "cereales", base: 100,  ration: "100 g",  kcal: 130, protein: 2.7,  carbs: 28,   fat: 0.3 },
+      arroz_integral:  { name: "Arroz integral",      emoji: "🍚", cat: "cereales", base: 80,   ration: "80 g",   kcal: 280, protein: 6.1,  carbs: 57.6, fat: 2.2, brand: "Hacendado" },
+      arroz_basmati:   { name: "Arroz basmati",       emoji: "🍚", cat: "cereales", base: 80,   ration: "80 g",   kcal: 284, protein: 7.2,  carbs: 62.4, fat: 0.5, brand: "Hacendado" },
+      quinoa:          { name: "Quinoa",              emoji: "🌾", cat: "cereales", base: 60,   ration: "60 g",   kcal: 221, protein: 8.5,  carbs: 38.5, fat: 3.6 },
+      avena:           { name: "Copos de avena",      emoji: "🥣", cat: "cereales", base: 30,   ration: "30 g",   kcal: 113, protein: 4.2,  carbs: 17.7, fat: 2.1, brand: "Brüggen" },
+      // ---- Verduras ----
+      champinones:     { name: "Champiñones",         emoji: "🍄", cat: "verduras", base: 100,  ration: "100 g",  kcal: 20,  protein: 2.6,  carbs: 0.8,  fat: 0.6 },
+      rucula:          { name: "Rúcula",              emoji: "🥬", cat: "verduras", base: 100,  ration: "100 g",  kcal: 26,  protein: 3.4,  carbs: 1.0,  fat: 0.4 },
+      espinacas:       { name: "Espinacas",           emoji: "🥬", cat: "verduras", base: 100,  ration: "100 g",  kcal: 31,  protein: 2.6,  carbs: 1.2,  fat: 0.3 },
+      patata:          { name: "Patata",              emoji: "🥔", cat: "verduras", base: 200,  ration: "200 g",  kcal: 176, protein: 5.0,  carbs: 36,   fat: 0.4 },
+      boniato:         { name: "Boniato",             emoji: "🍠", cat: "verduras", base: 200,  ration: "200 g",  kcal: 214, protein: 3.2,  carbs: 48.4, fat: 1.2 },
+      calabacin:       { name: "Calabacín",           emoji: "🥒", cat: "verduras", base: 200,  ration: "200 g",  kcal: 32,  protein: 2.4,  carbs: 6.7,  fat: 0.4 },
+      pimiento_rojo:   { name: "Pimiento rojo",       emoji: "🫑", cat: "verduras", base: 150,  ration: "150 g",  kcal: 60,  protein: 1.7,  carbs: 10.5, fat: 0.6 },
+      cebolla:         { name: "Cebolla",             emoji: "🧅", cat: "verduras", base: 150,  ration: "150 g",  kcal: 57,  protein: 1.7,  carbs: 12.9, fat: 0.3 },
+      zanahoria:       { name: "Zanahoria",           emoji: "🥕", cat: "verduras", base: 100,  ration: "100 g",  kcal: 41,  protein: 0.7,  carbs: 9.6,  fat: 0.2 },
+      tomate:          { name: "Tomate",              emoji: "🍅", cat: "verduras", base: 150,  ration: "150 g",  kcal: 27,  protein: 1.4,  carbs: 5.9,  fat: 0.3 },
+      // ---- Fruta ----
+      arandanos:       { name: "Arándanos",           emoji: "🫐", cat: "fruta",    base: 100,  ration: "100 g",  kcal: 57,  protein: 0.7,  carbs: 14,   fat: 0.3 },
+      frutos_rojos:    { name: "Frutos rojos congelados", emoji: "🍓", cat: "fruta", base: 30,  ration: "30 g",   kcal: 12,  protein: 0.3,  carbs: 1.9,  fat: 0, brand: "Hacendado" },
+      platano:         { name: "Plátano",             emoji: "🍌", cat: "fruta",    base: 120,  ration: "120 g",  kcal: 107, protein: 1.3,  carbs: 27,   fat: 0.3 },
+      naranja:         { name: "Naranja",             emoji: "🍊", cat: "fruta",    base: 150,  ration: "150 g",  kcal: 70,  protein: 1.4,  carbs: 17,   fat: 0.2 },
+      manzana:         { name: "Manzana",             emoji: "🍎", cat: "fruta",    base: 180,  ration: "180 g",  kcal: 94,  protein: 0.5,  carbs: 24.8, fat: 0.4 },
+      kiwi:            { name: "Kiwi",                emoji: "🥝", cat: "fruta",    base: 100,  ration: "100 g",  kcal: 61,  protein: 1.1,  carbs: 14.7, fat: 0.5 },
+      sandia:          { name: "Sandía",              emoji: "🍉", cat: "fruta",    base: 300,  ration: "300 g",  kcal: 90,  protein: 1.8,  carbs: 21,   fat: 0.3 },
+      mermelada0:      { name: "Mermelada 0%",        emoji: "🍓", cat: "fruta",    base: 25,   ration: "25 g",   kcal: 10,  protein: 0.2,  carbs: 2.9,  fat: 0 },
+      // ---- Grasas ----
+      aove:            { name: "AOVE",                emoji: "🫒", cat: "grasas",   base: 10,   ration: "10 g",   kcal: 90,  protein: 0,    carbs: 0,    fat: 10, brand: "Hacendado" },
+      aguacate:        { name: "Aguacate",            emoji: "🥑", cat: "grasas",   base: 200,  ration: "200 g",  kcal: 320, protein: 4.0,  carbs: 17,   fat: 30 },
+      guacamole:       { name: "Guacamole",           emoji: "🥣", cat: "grasas",   base: 50,   ration: "50 g",   kcal: 75,  protein: 1.0,  carbs: 1.0,  fat: 7.0, brand: "Hacendado" },
+      almendras:       { name: "Almendras",           emoji: "🌰", cat: "grasas",   base: 30,   ration: "30 g",   kcal: 193, protein: 7.6,  carbs: 1.8,  fat: 16.4, brand: "Hacendado" },
+      nueces:          { name: "Nueces",              emoji: "🌰", cat: "grasas",   base: 30,   ration: "30 g",   kcal: 215, protein: 5.1,  carbs: 0.7,  fat: 20.9, brand: "Hacendado" },
+      crema_cacahuete: { name: "Crema de cacahuete",  emoji: "🥜", cat: "grasas",   base: 15,   ration: "15 g",   kcal: 93,  protein: 4.5,  carbs: 1.1,  fat: 7.5, brand: "Hacendado" }
     };
 
     /* =========================================================
@@ -1415,11 +1474,11 @@
        ========================================================= */
     const RECIPES = {
       bowl_salmon: {
-        name: "Bowl de salmón y arroz", emoji: "🐟", cat: "salado",
+        name: "Bowl de salmón y arroz", emoji: "🐟", cat: "pescado",
         items: [ { food: "salmon", grams: 180 }, { food: "arroz", grams: 150 }, { food: "rucula", grams: 40 } ]
       },
       pollo_roquefort: {
-        name: "Pollo, roquefort y rúcula", emoji: "🍗", cat: "salado",
+        name: "Pollo, roquefort y rúcula", emoji: "🍗", cat: "carne",
         items: [ { food: "pollo_solomillo", grams: 300 }, { food: "roquefort", grams: 30 }, { food: "rucula", grams: 50 } ]
       }
     };
@@ -2135,9 +2194,9 @@
       $("search").placeholder = activeType === "recetas" ? "Buscar receta…" : "Buscar alimento…";
     }
 
-    const cardHTML = (key, attr, emoji, name, sub, kcal) => `
+    const cardHTML = (key, attr, emoji, name, sub, kcal, brand) => `
       <li class="addf" ${attr}="${key}">
-        <div class="addf-top"><span class="addf-emoji">${emoji}</span></div>
+        <div class="addf-top"><span class="addf-emoji">${emoji}</span>${brand === "Hacendado" ? '<span class="addf-brand" aria-label="Hacendado">H</span>' : ""}</div>
         <div class="addf-info">
           <div class="addf-name">${name}</div>
           <div class="addf-foot">
@@ -2175,7 +2234,7 @@
         (activeCat === "todos" || f.cat === activeCat) &&
         (!q || f.name.toLowerCase().includes(q)));
       list.innerHTML = entries.length
-        ? entries.map(([k, f]) => cardHTML(k, "data-add", f.emoji, f.name, f.ration, f.kcal)).join("")
+        ? entries.map(([k, f]) => cardHTML(k, "data-add", f.emoji, f.name, f.ration, f.kcal, f.brand)).join("")
         : `<li class="food-empty">Sin resultados</li>`;
     }
 
@@ -2598,7 +2657,7 @@
       const entries = Object.entries(FOODS).filter(([, f]) =>
         (simPickCat === "todos" || f.cat === simPickCat) && (!q || f.name.toLowerCase().includes(q)));
       $("simPickList").innerHTML = entries.length
-        ? entries.map(([k, f]) => cardHTML(k, "data-pick", f.emoji, f.name, f.ration, f.kcal)).join("")
+        ? entries.map(([k, f]) => cardHTML(k, "data-pick", f.emoji, f.name, f.ration, f.kcal, f.brand)).join("")
         : `<li class="food-empty">Sin resultados</li>`;
     }
     $("simAddFood").addEventListener("click", openSimPick);
@@ -2875,7 +2934,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.17";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.18";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
