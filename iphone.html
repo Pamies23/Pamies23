@@ -722,10 +722,11 @@
        despegarse del fondo: degradado translúcido + borde + sombra marcada. */
     .rv-grampanel .grams-field {
       margin: 6px 0 18px; border-radius: 24px; padding: 12px 14px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.7), rgba(226,227,230,0.55));
-      -webkit-backdrop-filter: blur(22px) saturate(180%);
-              backdrop-filter: blur(22px) saturate(180%);
-      border: 1px solid rgba(255,255,255,0.9);
+      /* Glass más translúcido y plateado (deja ver el gris) */
+      background: linear-gradient(180deg, rgba(228,230,233,0.5), rgba(196,200,206,0.44));
+      -webkit-backdrop-filter: blur(24px) saturate(170%);
+              backdrop-filter: blur(24px) saturate(170%);
+      border: 1px solid rgba(255,255,255,0.75);
       box-shadow:
         0 14px 30px rgba(40,46,54,0.16),
         inset 0 1.5px 2px rgba(255,255,255,0.95),
@@ -738,9 +739,9 @@
       border: 1px solid rgba(255,255,255,0.95);
       box-shadow: 0 6px 14px rgba(40,46,54,0.20), inset 0 1px 1px rgba(255,255,255,0.95);
     }
-    /* Fila de ingrediente seleccionada para ajustar */
-    .rv-ing.active { color: var(--ink); }
-    .rv-ing.active .rv-ing-g { color: var(--ink); }
+    /* Fila de ingrediente seleccionada: letras y gramos en lima (estoy actuando sobre él) */
+    .rv-ing.active { color: var(--lime); font-weight: 700; }
+    .rv-ing.active .rv-ing-g { color: var(--lime); }
     .rv-ing { cursor: pointer; transition: opacity 0.12s ease; }
     .rv-ing:active { opacity: 0.55; }
 
@@ -766,10 +767,11 @@
        (como el cajetín de gramos) para que se aprecie sobre el blanco. El "+" en plata. */
     .rv-add {
       flex-shrink: 0; width: 58px; height: 58px; border-radius: 50%; cursor: pointer;
-      border: 1px solid rgba(255,255,255,0.9);
-      background: linear-gradient(180deg, rgba(255,255,255,0.7), rgba(214,216,220,0.62));
-      -webkit-backdrop-filter: blur(22px) saturate(180%);
-              backdrop-filter: blur(22px) saturate(180%);
+      border: 1px solid rgba(255,255,255,0.75);
+      /* Glass más translúcido y plateado (deja ver el gris) */
+      background: linear-gradient(180deg, rgba(228,230,233,0.5), rgba(195,199,205,0.46));
+      -webkit-backdrop-filter: blur(24px) saturate(170%);
+              backdrop-filter: blur(24px) saturate(170%);
       box-shadow:
         0 12px 26px rgba(40,46,54,0.20),
         inset 0 1.5px 2px rgba(255,255,255,0.95),
@@ -1225,7 +1227,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.17</div>
+      <div class="avatar" id="version">V.18</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1303,7 +1305,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.17</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.18</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -2797,7 +2799,7 @@
       $("rvIngredients").innerHTML = recipeView.items.map((it, i) => {
         const f = FOODS[it.food];
         return `<div class="rv-ing${recipeView.editing === i ? " active" : ""}" data-ing="${i}">`
-          + `<span>${f.emoji} ${f.name}</span><span class="rv-ing-g">${it.grams} g</span></div>`;
+          + `<span>${f.name}</span><span class="rv-ing-g">${it.grams} g</span></div>`;
       }).join("");
     }
     function recipeNutriItems(items) {
@@ -3415,7 +3417,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.17";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.18";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
