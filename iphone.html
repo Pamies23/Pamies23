@@ -599,6 +599,7 @@
     html.gram-open, html.gram-open body,
     html.gram-open .app, html.gram-open .page.shown { background: #D2D0CB; }
     .modal-card {
+      position: relative;
       width: 100%; max-width: 460px;
       /* Cristal de la V.10 (translúcido + desenfoque): los elementos se ven mejor */
       background: rgba(250,250,250,0.55);
@@ -608,6 +609,14 @@
       border-radius: 24px 24px 0 0;
       padding: 20px 20px clamp(16px, env(safe-area-inset-bottom), 30px);
       transform: translateY(100%); transition: transform 0.3s cubic-bezier(.22,.61,.36,1);
+    }
+    /* La franja de padding inferior (bajo los botones) se pinta SÓLIDA del color
+       de la banda, así coincide con el inset de abajo en cualquier contexto
+       (sobre el listado o sobre Home), donde el cristal translúcido variaba. */
+    .modal-card::after {
+      content: ""; position: absolute; left: 0; right: 0; bottom: 0;
+      height: clamp(16px, env(safe-area-inset-bottom), 30px);
+      background: #D2D0CB; pointer-events: none;
     }
     .modal.open .modal-card { transform: translateY(0); }
     .modal-top { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
@@ -1001,7 +1010,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.16</div>
+      <div class="avatar" id="version">V.17</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1079,7 +1088,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.16</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.17</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -2866,7 +2875,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.16";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.17";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
