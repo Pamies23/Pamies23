@@ -425,9 +425,11 @@
        a la vez (las demás se ocultan con display:none vía JS / markup). */
     .page { min-height: 100%; background: var(--bg); }
     .page.shown, .sim.shown { display: block; }
-    /* La hoja de Añadir comida usa un blanco roto cálido: las fichas glassy se
-       recortan sobre él con su brillo y la zona de texto va en blanco. */
-    #sheet { background: #EDEAE2; }
+    /* Paleta de la hoja: fondo gris, previsualización beige, texto sobre blanco. */
+    #sheet { background: #D7D7D5; }
+    /* Con la hoja abierta, el documento va en negro: el overscroll superior
+       (rebote al tirar hacia abajo) se ve negro, igual que la cabecera. */
+    html.sheet-open, html.sheet-open body { background: #000; }
     /* Transiciones de vista: la entrante entra suave; la saliente se desvanece como
        una capa por encima (overlay fijo) para que el cambio sea fluido en ambos sentidos. */
     .v-in  { animation: viewIn 0.34s cubic-bezier(.22,.61,.36,1) both; }
@@ -450,29 +452,24 @@
     .sheet-close { background: none; border: none; color: var(--ink); font-family: var(--disp); font-size: 14px; font-weight: 700; cursor: pointer; padding: 4px 0; }
     .sheet-spacer { width: 48px; }
 
-    /* Línea fija Alimentos | Recetas (igual que MENÚ | COMPRA de la Home) */
-    #sheet { padding-top: env(safe-area-inset-top); }
+    /* Cabecera fija Alimentos | Recetas. Negro puro, alta y cubriendo el notch:
+       la franja superior (incluida la barra de estado) queda negra al desplazar. */
+    #sheet { padding-top: 0; }
     .sheet-tabs {
-      position: sticky; top: env(safe-area-inset-top); z-index: 5;
-      display: flex; align-items: flex-end; gap: 24px;
-      /* Cabecera negra opaca: la línea de títulos y la franja del notch en negro */
-      background: var(--ink);
-      padding: 9px 18px 0; margin: 0;
-    }
-    .sheet-tabs::before {       /* relleno OPACO sobre la línea (franja del notch) */
-      content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
-      height: calc(env(safe-area-inset-top) + 2px);
-      background: var(--ink);
+      position: sticky; top: 0; z-index: 5;
+      display: flex; align-items: flex-end; gap: 26px;
+      background: #000;
+      padding: calc(env(safe-area-inset-top) + 16px) 18px 18px; margin: 0;
     }
     .sheet-tab {
-      border: none; background: none; cursor: pointer; padding: 0 0 12px;
-      font-family: var(--exp); font-weight: 800; font-size: 19px;
-      letter-spacing: -0.01em; text-transform: uppercase; color: rgba(255,255,255,0.45);
+      border: none; background: none; cursor: pointer; padding: 0;
+      font-family: var(--exp); font-weight: 800; font-size: 22px;
+      letter-spacing: -0.01em; text-transform: lowercase; color: rgba(255,255,255,0.42);
       position: relative; transition: color 0.18s ease;
     }
     .sheet-tab.active { color: #fff; }
-    /* Subrayado blanco (la cabecera es negra) */
-    .sheet-tabs .tab-underline { background: #fff; }
+    /* Subrayado blanco bajo la pestaña activa, pegado al borde inferior negro */
+    .sheet-tabs .tab-underline { background: #fff; height: 3px; bottom: 9px; }
     /* Filtros a la misma distancia de la línea negra que los títulos (12px),
        y a esa misma distancia de los alimentos por debajo */
     #catTabs { padding-top: 12px; padding-bottom: 0; }
@@ -628,21 +625,22 @@
        en qué categoría de receta estás. Pegada justo debajo de Alimentos|Recetas. */
     .rcat-tabs {
       position: sticky; z-index: 4;             /* top se fija por JS (alto de la cabecera) */
-      display: flex; gap: 22px; align-items: flex-end;
-      background: #EDEAE2; margin: 0; padding: 13px 18px 12px;
+      display: flex; gap: 24px; align-items: flex-end;
+      background: #fff; margin: 0; padding: 15px 18px 0;
       overflow-x: auto; scrollbar-width: none;
-      box-shadow: 0 1px 0 rgba(0,0,0,0.06);
+      border-bottom: 1px solid rgba(0,0,0,0.14);   /* línea fina = separación con el contenido */
     }
     .rcat-tabs::-webkit-scrollbar { display: none; }
     .rcat-tabs[hidden] { display: none; }
     .rcat {
-      flex: 0 0 auto; border: none; background: none; cursor: pointer; padding: 0;
-      font-family: var(--exp); font-weight: 800; font-size: 17px;
-      text-transform: uppercase; letter-spacing: -0.01em;
+      flex: 0 0 auto; border: none; background: none; cursor: pointer; padding: 0 0 13px;
+      font-family: var(--exp); font-weight: 800; font-size: 18px;
+      text-transform: lowercase; letter-spacing: -0.01em;
       color: var(--muted); white-space: nowrap; transition: color 0.18s ease;
     }
     .rcat.active { color: var(--ink); }
-    .rcat-tabs .tab-underline { bottom: 5px; background: var(--ink); }
+    /* Subrayado grueso pegado a la línea de separación (estilo Honest Greens) */
+    .rcat-tabs .tab-underline { bottom: -1px; height: 4px; background: var(--ink); }
 
     .rcard {
       width: 100%; list-style: none; cursor: pointer;
@@ -652,12 +650,13 @@
     }
     .rcard:active { transform: scale(0.99); }
     .rcard-img {
-      height: 196px; background: #E8E4D9;        /* beige suave tipo Honest Greens */
+      height: 244px; background: #E8E4D9;         /* beige suave tipo Honest Greens */
       display: flex; align-items: center; justify-content: center; overflow: hidden;
+      padding: 28px;                              /* margen para que el plato no toque los bordes */
     }
-    .rcard-emoji { font-size: 86px; line-height: 1; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.12)); }
+    .rcard-emoji { font-size: 84px; line-height: 1; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.12)); }
     .rcard-photo {
-      width: 188px; height: 188px; object-fit: contain;
+      width: 186px; height: 186px; max-width: 100%; max-height: 100%; object-fit: contain;
       filter: drop-shadow(0 10px 16px rgba(0,0,0,0.28));
     }
     .rcard-body { padding: 16px 18px 18px; }
@@ -1116,7 +1115,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.10</div>
+      <div class="avatar" id="version">V.11</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1194,7 +1193,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.10</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.11</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -2277,9 +2276,11 @@
       syncSheetTabs();
       renderFoodList();
       showView("sheet");
+      // El documento en negro: el rebote/overscroll superior se ve negro como la cabecera.
+      document.documentElement.classList.add("sheet-open");
       requestAnimationFrame(positionTypeUnderline);
     }
-    function closeSheet() { showView("app"); }
+    function closeSheet() { document.documentElement.classList.remove("sheet-open"); showView("app"); }
     function positionTypeUnderline() {
       const tab = $("typeTabs").querySelector('[data-type="' + activeType + '"]');
       const u = $("typeUnderline");
@@ -2336,7 +2337,8 @@
       recipeActiveCat = cats[0] || null;
     }
     function positionRecipeStickyTop() {
-      $("recipeCats").style.top = "calc(env(safe-area-inset-top) + " + $("typeTabs").offsetHeight + "px)";
+      // La cabecera ya incluye el safe-area en su alto; basta su offsetHeight.
+      $("recipeCats").style.top = $("typeTabs").offsetHeight + "px";
     }
     function positionRecipeCatUnderline() {
       const active = $("recipeCats").querySelector(".rcat.active"), u = $("recipeCatUnderline");
@@ -3134,7 +3136,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.10";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.11";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
