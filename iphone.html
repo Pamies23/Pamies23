@@ -621,6 +621,64 @@
       padding: 26px; text-align: center; color: var(--muted); font-size: 14px; font-weight: 500;
     }
 
+    /* ---------- Recetas (estilo Honest Greens): columna de tarjetas grandes ---------- */
+    .food-list.as-recipes { flex-direction: column; flex-wrap: nowrap; gap: 16px; padding-top: 8px; }
+
+    /* Barra de categorías con subrayado deslizante (scroll-spy): al bajar indica
+       en qué categoría de receta estás. Pegada justo debajo de Alimentos|Recetas. */
+    .rcat-tabs {
+      position: sticky; z-index: 4;             /* top se fija por JS (alto de la cabecera) */
+      display: flex; gap: 22px; align-items: flex-end;
+      background: #EDEAE2; margin: 0; padding: 13px 18px 12px;
+      overflow-x: auto; scrollbar-width: none;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.06);
+    }
+    .rcat-tabs::-webkit-scrollbar { display: none; }
+    .rcat-tabs[hidden] { display: none; }
+    .rcat {
+      flex: 0 0 auto; border: none; background: none; cursor: pointer; padding: 0;
+      font-family: var(--exp); font-weight: 800; font-size: 17px;
+      text-transform: uppercase; letter-spacing: -0.01em;
+      color: var(--muted); white-space: nowrap; transition: color 0.18s ease;
+    }
+    .rcat.active { color: var(--ink); }
+    .rcat-tabs .tab-underline { bottom: 5px; background: var(--ink); }
+
+    .rcard {
+      width: 100%; list-style: none; cursor: pointer;
+      background: #fff; border-radius: 22px; overflow: hidden;
+      box-shadow: 0 6px 22px rgba(40,46,54,0.10);
+      transition: transform 0.12s ease;
+    }
+    .rcard:active { transform: scale(0.99); }
+    .rcard-img {
+      height: 196px; background: #E8E4D9;        /* beige suave tipo Honest Greens */
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
+    }
+    .rcard-emoji { font-size: 86px; line-height: 1; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.12)); }
+    .rcard-photo {
+      width: 188px; height: 188px; object-fit: contain;
+      filter: drop-shadow(0 10px 16px rgba(0,0,0,0.28));
+    }
+    .rcard-body { padding: 16px 18px 18px; }
+    .rcard-name {
+      font-family: var(--exp); font-weight: 800; font-size: 22px;
+      text-transform: uppercase; letter-spacing: -0.01em; color: var(--ink); line-height: 1.02;
+    }
+    .rcard-desc { font-size: 14px; color: var(--muted); margin-top: 8px; line-height: 1.45; }
+    .rcard-foot { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 15px; }
+    .rcard-kcal { font-family: var(--disp); font-weight: 800; font-size: 19px; color: var(--ink); }
+    .rcard-kcal span { font-family: var(--sans); font-size: 12px; font-weight: 500; color: var(--muted); }
+    .rcard-macros { font-family: var(--disp); font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: 0.02em; white-space: nowrap; }
+    /* Tarjeta de crear receta al final */
+    .rcard-new {
+      background: none; box-shadow: none; border: 2px dashed rgba(19,19,17,0.22);
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      padding: 22px; color: var(--ink);
+      font-family: var(--disp); font-weight: 800; font-size: 15px;
+      text-transform: uppercase; letter-spacing: 0.02em;
+    }
+
     .sheet-foot { flex-shrink: 0; padding: 12px 18px max(12px, calc(env(safe-area-inset-bottom) - 8px)); border-top: 1px solid var(--line); background: var(--bg); }
     .confirm {
       width: 100%; border: none; background: var(--ink); color: #fff;
@@ -1058,7 +1116,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.9</div>
+      <div class="avatar" id="version">V.10</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1136,7 +1194,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.9</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.10</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -1167,6 +1225,11 @@
       <button data-cat="verduras">Verduras</button>
       <button data-cat="fruta">Fruta</button>
       <button data-cat="grasas">Grasas</button>
+    </div>
+
+    <!-- Categorías de receta con subrayado (scroll-spy). Se rellenan por JS. -->
+    <div class="rcat-tabs" id="recipeCats" hidden>
+      <span class="tab-underline" id="recipeCatUnderline"></span>
     </div>
 
     <ul class="food-list" id="foodList"></ul>
@@ -1390,7 +1453,7 @@
 
     /* Precarga el resto de imágenes de fondo en segundo plano (selector / recetas /
        perfil) para que al abrir esas vistas el fondo ya esté listo, sin parpadeo. */
-    ["recipe-bg.jpg", "profile-bg.jpg"].forEach(src => { const im = new Image(); im.src = src; });
+    ["recipe-bg.jpg", "profile-bg.jpg", "recipe-pollo-roquefort.png"].forEach(src => { const im = new Image(); im.src = src; });
 
     /* Splash de entrada: se oculta sola tras un momento (o al tocar) */
     (function () {
@@ -1517,6 +1580,7 @@
       },
       pollo_roquefort: {
         name: "Pollo, roquefort y rúcula", emoji: "🍗", cat: "carne",
+        photo: "recipe-pollo-roquefort.png",
         items: [ { food: "pollo_solomillo", grams: 300 }, { food: "roquefort", grams: 30 }, { food: "rucula", grams: 50 } ]
       }
     };
@@ -2224,12 +2288,76 @@
       u.style.width = tab.offsetWidth + "px";
     }
     function syncSheetTabs() {
+      const isRec = activeType === "recetas";
       $("typeTabs").querySelectorAll("button[data-type]").forEach(b =>
         b.classList.toggle("active", b.dataset.type === activeType));
       $("catTabs").querySelectorAll("button").forEach(b =>
         b.classList.toggle("active", b.dataset.cat === activeCat));
+      // En recetas: ocultar los filtros de pastilla y mostrar la barra de categorías
+      $("catTabs").classList.toggle("hidden", isRec);
+      $("recipeCats").hidden = !isRec;
       positionTypeUnderline();
-      $("search").placeholder = activeType === "recetas" ? "Buscar receta…" : "Buscar alimento…";
+      $("search").placeholder = isRec ? "Buscar receta…" : "Buscar alimento…";
+    }
+
+    // Etiquetas/orden de categoría (compartido con los filtros de alimentos)
+    const CAT_LABELS = { huevos:"Huevos", carne:"Carne", pescado:"Pescado", lacteos:"Lácteos", cereales:"Cereales", verduras:"Verduras", fruta:"Fruta", grasas:"Grasas" };
+    const CAT_ORDER = ["huevos","carne","pescado","lacteos","cereales","verduras","fruta","grasas"];
+    const recipeDesc = (r) => r.desc || r.items.filter(it => FOODS[it.food]).map(it => FOODS[it.food].name).join(", ");
+
+    function recipeCardHTML(key, r) {
+      const n = recipeNutri(key);
+      const media = r.photo
+        ? `<img class="rcard-photo" src="${r.photo}" alt="" loading="lazy">`
+        : `<span class="rcard-emoji">${r.emoji}</span>`;
+      return `
+        <li class="rcard" data-recipe="${key}" data-cat="${r.cat}">
+          <div class="rcard-img">${media}</div>
+          <div class="rcard-body">
+            <div class="rcard-name">${r.name}</div>
+            <div class="rcard-desc">${recipeDesc(r)}</div>
+            <div class="rcard-foot">
+              <span class="rcard-kcal">${Math.round(n.kcal)} <span>kcal</span></span>
+              <span class="rcard-macros">P ${n.protein} · C ${n.carbs} · G ${n.fat}</span>
+            </div>
+          </div>
+        </li>`;
+    }
+
+    let recipeActiveCat = null;
+    function buildRecipeCats(cats) {
+      const bar = $("recipeCats"), underline = $("recipeCatUnderline");
+      bar.querySelectorAll(".rcat").forEach(b => b.remove());
+      cats.forEach(c => {
+        const btn = document.createElement("button");
+        btn.className = "rcat"; btn.dataset.rcat = c; btn.textContent = CAT_LABELS[c] || c;
+        bar.insertBefore(btn, underline);
+      });
+      recipeActiveCat = cats[0] || null;
+    }
+    function positionRecipeStickyTop() {
+      $("recipeCats").style.top = "calc(env(safe-area-inset-top) + " + $("typeTabs").offsetHeight + "px)";
+    }
+    function positionRecipeCatUnderline() {
+      const active = $("recipeCats").querySelector(".rcat.active"), u = $("recipeCatUnderline");
+      if (!active) { u.style.width = "0px"; return; }
+      u.style.left = active.offsetLeft + "px";
+      u.style.width = active.offsetWidth + "px";
+    }
+    function updateRecipeSpy() {
+      if (activeType !== "recetas") return;
+      const bar = $("recipeCats"), headerBottom = bar.getBoundingClientRect().bottom;
+      const cards = $("foodList").querySelectorAll(".rcard[data-cat]");
+      let current = null;
+      cards.forEach(card => { if (card.getBoundingClientRect().top - headerBottom <= 12) current = card.dataset.cat; });
+      if (!current && cards[0]) current = cards[0].dataset.cat;
+      // Al llegar al fondo, marca la última categoría (si su sección es corta y no
+      // alcanza a llegar arriba del todo).
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4 && cards.length)
+        current = cards[cards.length - 1].dataset.cat;
+      recipeActiveCat = current;
+      bar.querySelectorAll(".rcat").forEach(b => b.classList.toggle("active", b.dataset.rcat === current));
+      positionRecipeCatUnderline();
     }
 
     const cardHTML = (key, attr, emoji, name, sub, kcal, brand) => `
@@ -2250,24 +2378,19 @@
 
       if (activeType === "recetas") {
         const all = Object.assign({}, RECIPES, userRecipes);
-        const entries = Object.entries(all).filter(([, r]) =>
-          (activeCat === "todos" || r.cat === activeCat) &&
-          (!q || r.name.toLowerCase().includes(q)));
-        const createCard = `
-          <li class="addf addf-new" data-newrecipe="1">
-            <div class="addf-top"><span class="addf-emoji">＋</span></div>
-            <div class="addf-info">
-              <div class="addf-name">Crear receta</div>
-              <div class="addf-sub">Monta tu plato</div>
-              <div class="addf-kcal">Simulador</div>
-            </div>
-          </li>`;
-        list.innerHTML = createCard + (entries.length
-          ? entries.map(([k, r]) => cardHTML(k, "data-recipe", r.emoji, r.name, r.items.length + " ingr.", recipeNutri(k).kcal)).join("")
-          : "");
+        let entries = Object.entries(all).filter(([, r]) => !q || r.name.toLowerCase().includes(q));
+        // agrupar por categoría en el orden canónico (para el scroll-spy)
+        entries.sort((a, b) => CAT_ORDER.indexOf(a[1].cat) - CAT_ORDER.indexOf(b[1].cat));
+        const cats = CAT_ORDER.filter(c => entries.some(([, r]) => r.cat === c));
+        buildRecipeCats(cats);
+        const createCard = `<li class="rcard rcard-new" data-newrecipe="1">＋ Crear receta</li>`;
+        list.classList.add("as-recipes");
+        list.innerHTML = entries.map(([k, r]) => recipeCardHTML(k, r)).join("") + createCard;
+        requestAnimationFrame(() => { positionRecipeStickyTop(); updateRecipeSpy(); });
         return;
       }
 
+      list.classList.remove("as-recipes");
       const entries = Object.entries(FOODS).filter(([, f]) =>
         (activeCat === "todos" || f.cat === activeCat) &&
         (!q || f.name.toLowerCase().includes(q)));
@@ -2317,7 +2440,7 @@
       el.addEventListener("touchstart", (e) => {
         // No armar el cierre si el dedo empieza sobre los filtros, las pestañas o la
         // barra de búsqueda: ahí el usuario sólo está desplazando en horizontal.
-        const onScroller = e.target.closest(".cat-tabs, .sheet-tabs, .glass-search");
+        const onScroller = e.target.closest(".cat-tabs, .rcat-tabs, .sheet-tabs, .glass-search");
         tracking = !onScroller && window.scrollY <= 0;
         startY = tracking ? e.touches[0].clientY : null;
       }, { passive: true });
@@ -2379,6 +2502,22 @@
       const b = e.target.closest("button[data-cat]"); if (!b) return;
       activeCat = b.dataset.cat; syncSheetTabs(); renderFoodList();
     });
+
+    // Tocar una categoría de receta lleva (scroll suave) a esa sección
+    $("recipeCats").addEventListener("click", (e) => {
+      const btn = e.target.closest(".rcat"); if (!btn) return;
+      const card = $("foodList").querySelector('.rcard[data-cat="' + btn.dataset.rcat + '"]');
+      if (!card) return;
+      const headerH = $("recipeCats").getBoundingClientRect().bottom;
+      window.scrollTo({ top: card.getBoundingClientRect().top + window.scrollY - headerH - 8, behavior: "smooth" });
+    });
+    // Scroll-spy: al desplazar la lista, marca la categoría visible
+    let spyTick = false;
+    window.addEventListener("scroll", () => {
+      if (activeType !== "recetas" || spyTick) return;
+      spyTick = true;
+      requestAnimationFrame(() => { updateRecipeSpy(); spyTick = false; });
+    }, { passive: true });
 
     $("foodList").addEventListener("click", (e) => {
       if (e.target.closest("[data-newrecipe]")) { openSim(); return; }
@@ -2995,7 +3134,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.9";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.10";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
