@@ -759,23 +759,27 @@
       font-family: var(--disp); font-size: 14px; font-weight: 700;
       letter-spacing: 0.04em; text-transform: uppercase; background: var(--red); color: #fff;
     }
-    /* Botón circular glass para añadir la receta (a la derecha). El "+" en plata. */
+    /* Cabecera del detalle: título a la izquierda y botón "+" a su derecha */
+    .rv-head { display: flex; align-items: center; gap: 14px; }
+    .rv-head .rv-name { flex: 1; min-width: 0; }
+    /* Botón circular glass para añadir la receta (junto al título). Glass grisáceo
+       (como el cajetín de gramos) para que se aprecie sobre el blanco. El "+" en plata. */
     .rv-add {
-      margin-left: auto; width: 66px; height: 66px; border-radius: 50%; cursor: pointer;
-      border: 1px solid rgba(255,255,255,0.75);
-      background: linear-gradient(160deg, rgba(255,255,255,0.6), rgba(206,210,216,0.42));
-      -webkit-backdrop-filter: blur(18px) saturate(180%);
-              backdrop-filter: blur(18px) saturate(180%);
+      flex-shrink: 0; width: 58px; height: 58px; border-radius: 50%; cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.9);
+      background: linear-gradient(180deg, rgba(255,255,255,0.7), rgba(214,216,220,0.62));
+      -webkit-backdrop-filter: blur(22px) saturate(180%);
+              backdrop-filter: blur(22px) saturate(180%);
       box-shadow:
-        0 10px 24px rgba(40,46,54,0.18),
-        inset 0 1.5px 1px rgba(255,255,255,0.95),
-        inset 0 -12px 16px -8px rgba(255,255,255,0.6);
+        0 12px 26px rgba(40,46,54,0.20),
+        inset 0 1.5px 2px rgba(255,255,255,0.95),
+        inset 0 -13px 16px -10px rgba(0,0,0,0.06);
       display: flex; align-items: center; justify-content: center;
       transition: transform 0.12s ease;
     }
     .rv-add:active { transform: scale(0.93); }
     .rv-add-plus {
-      font-family: var(--exp); font-weight: 300; font-size: 40px; line-height: 1;
+      font-family: var(--exp); font-weight: 300; font-size: 36px; line-height: 1;
       /* "+" plateado con brillo glass (degradado metálico) */
       background: linear-gradient(155deg, #ffffff 0%, #c4c8ce 48%, #8c939b 100%);
       -webkit-background-clip: text; background-clip: text;
@@ -1221,7 +1225,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.16</div>
+      <div class="avatar" id="version">V.17</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1299,7 +1303,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.16</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.17</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -1418,7 +1422,12 @@
       <span class="rv-emoji" id="rvEmoji"></span>
     </div>
     <div class="rv-body">
-      <h2 class="rv-name" id="rvName">Receta</h2>
+      <div class="rv-head">
+        <h2 class="rv-name" id="rvName">Receta</h2>
+        <button class="rv-add" id="rvSave" aria-label="Añadir receta">
+          <span class="rv-add-plus">+</span>
+        </button>
+      </div>
       <div class="rv-ingredients" id="rvIngredients"></div>
 
       <!-- Panel de gramos ad-hoc: se despliega (efecto calendario) encima del
@@ -1465,9 +1474,6 @@
 
       <div class="rv-actions">
         <button class="rv-delete" id="rvDelete" hidden>Eliminar</button>
-        <button class="rv-add" id="rvSave" aria-label="Añadir receta">
-          <span class="rv-add-plus">+</span>
-        </button>
       </div>
     </div>
   </section>
@@ -3409,7 +3415,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.16";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.17";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
