@@ -718,7 +718,26 @@
     .rv-grampanel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.34s cubic-bezier(.22,.61,.36,1); }
     .rv-grampanel.open { grid-template-rows: 1fr; }
     .rv-grampanel-inner { overflow: hidden; min-height: 0; }
-    .rv-grampanel .grams-field { margin: 4px 0 16px; }
+    /* En el detalle (cuerpo blanco) el cajetín necesita relieve glassy para
+       despegarse del fondo: degradado translúcido + borde + sombra marcada. */
+    .rv-grampanel .grams-field {
+      margin: 6px 0 18px; border-radius: 24px; padding: 12px 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.7), rgba(226,227,230,0.55));
+      -webkit-backdrop-filter: blur(22px) saturate(180%);
+              backdrop-filter: blur(22px) saturate(180%);
+      border: 1px solid rgba(255,255,255,0.9);
+      box-shadow:
+        0 14px 30px rgba(40,46,54,0.16),
+        inset 0 1.5px 2px rgba(255,255,255,0.95),
+        inset 0 -14px 18px -12px rgba(0,0,0,0.06);
+    }
+    /* Botones +/− como círculos blancos con sombra (neumórficos), como en la foto */
+    .rv-grampanel .grams-field button {
+      background: #fdfdfd;
+      -webkit-backdrop-filter: none; backdrop-filter: none;
+      border: 1px solid rgba(255,255,255,0.95);
+      box-shadow: 0 6px 14px rgba(40,46,54,0.20), inset 0 1px 1px rgba(255,255,255,0.95);
+    }
     /* Fila de ingrediente seleccionada para ajustar */
     .rv-ing.active { color: var(--ink); }
     .rv-ing.active .rv-ing-g { color: var(--ink); }
@@ -1202,7 +1221,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.14</div>
+      <div class="avatar" id="version">V.15</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1280,7 +1299,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.14</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.15</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -3390,7 +3409,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.14";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.15";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
