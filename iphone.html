@@ -714,7 +714,18 @@
       font-family: var(--disp); font-size: 12px; font-weight: 700; text-transform: uppercase;
       letter-spacing: 0.05em; color: var(--muted); margin-bottom: 11px;
     }
-    .rv-meals { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin-bottom: 20px; }
+    /* Panel de gramos ad-hoc: se despliega con el mismo efecto que el calendario */
+    .rv-grampanel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.34s cubic-bezier(.22,.61,.36,1); }
+    .rv-grampanel.open { grid-template-rows: 1fr; }
+    .rv-grampanel-inner { overflow: hidden; min-height: 0; }
+    .rv-grampanel .grams-field { margin: 4px 0 16px; }
+    /* Fila de ingrediente seleccionada para ajustar */
+    .rv-ing.active { color: var(--ink); }
+    .rv-ing.active .rv-ing-g { color: var(--ink); }
+    .rv-ing { cursor: pointer; transition: opacity 0.12s ease; }
+    .rv-ing:active { opacity: 0.55; }
+
+    .rv-meals { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 16px 0 0; }
     .rv-meals::-webkit-scrollbar { display: none; }
     .rv-meals button {
       flex: 1 0 auto; border: none; border-radius: 99px; padding: 11px 14px;
@@ -1170,7 +1181,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.12</div>
+      <div class="avatar" id="version">V.13</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1248,7 +1259,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.12</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.13</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -1370,12 +1381,19 @@
       <h2 class="rv-name" id="rvName">Receta</h2>
       <div class="rv-ingredients" id="rvIngredients"></div>
 
-      <div class="rv-label">¿En qué comida?</div>
-      <div class="rv-meals" id="rvMeals">
-        <button data-meal="Desayuno">Desayuno</button>
-        <button data-meal="Comida">Comida</button>
-        <button data-meal="Cena">Cena</button>
-        <button data-meal="Snack">Snack</button>
+      <!-- Panel de gramos ad-hoc: se despliega (efecto calendario) encima del
+           cajetín negro al tocar un alimento, sólo para esta vez. -->
+      <div class="rv-grampanel" id="rvGramPanel">
+        <div class="rv-grampanel-inner">
+          <div class="grams-field">
+            <button class="gminus" id="rvgMinus" aria-label="Menos">−</button>
+            <div class="gwrap">
+              <input id="rvgInput" type="number" inputmode="numeric" min="0" step="1" value="100">
+              <span class="gunit">gramos</span>
+            </div>
+            <button class="gplus" id="rvgPlus" aria-label="Más">+</button>
+          </div>
+        </div>
       </div>
 
       <div class="modal-preview">
@@ -1395,6 +1413,14 @@
           <div class="pv-n" id="rvF">0</div><div class="pv-l">Grasa</div>
           <div class="pv-ring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="pvr-track" cx="18" cy="18" r="15.915"></circle><circle class="pvr-sel" id="rvFRing" cx="18" cy="18" r="15.915"></circle></svg><span class="pv-pct" id="rvFPct">0%</span></div>
         </div>
+      </div>
+
+      <!-- El momento del día va debajo del cajetín negro -->
+      <div class="rv-meals" id="rvMeals">
+        <button data-meal="Desayuno">Desayuno</button>
+        <button data-meal="Comida">Comida</button>
+        <button data-meal="Cena">Cena</button>
+        <button data-meal="Snack">Snack</button>
       </div>
 
       <div class="rv-actions">
@@ -2549,7 +2575,7 @@
       el.addEventListener("touchstart", (e) => {
         // No armar el cierre si el dedo empieza sobre los filtros, las pestañas o la
         // barra de búsqueda: ahí el usuario sólo está desplazando en horizontal.
-        const onScroller = e.target.closest(".cat-tabs, .rcat-tabs, .sheet-tabs, .glass-search");
+        const onScroller = e.target.closest(".cat-tabs, .rcat-tabs, .sheet-tabs, .glass-search, .rv-meals, .grams-field");
         tracking = !onScroller && window.scrollY <= 0;
         startY = tracking ? e.touches[0].clientY : null;
       }, { passive: true });
@@ -2562,6 +2588,7 @@
     }
     enablePullToDismiss($("sheet"), closeSheet, 140);     // un poco más de recorrido para no salir sin querer
     enablePullToDismiss($("simPick"), closeSimPick);
+    enablePullToDismiss($("recipeView"), backToSheet, 140);   // tirar hacia abajo vuelve al listado
 
     // La ficha del alimento ACOMPAÑA al dedo al arrastrar hacia abajo, y se cierra
     // al soltar si se pasó el umbral; si no, vuelve a su sitio.
@@ -2694,11 +2721,15 @@
       showModal();
     }
     // ---- Detalle de receta a pantalla completa ----
-    let recipeView = null;   // { key, time }
+    // items: copia local de los ingredientes; las cantidades se pueden ajustar
+    // ad hoc (sólo para esta vez, no se guardan en la receta). editing: índice del
+    // ingrediente cuyo panel de gramos está desplegado (o null).
+    let recipeView = null;   // { key, time, items:[{food,grams}], editing }
     function openRecipe(recipeKey) {
       const r = getRecipe(recipeKey);
       if (!r) return;
-      recipeView = { key: recipeKey, time: defaultMeal() };
+      const items = r.items.filter(it => FOODS[it.food]).map(it => ({ food: it.food, grams: it.grams }));
+      recipeView = { key: recipeKey, time: defaultMeal(), items, editing: null, user: !!r.user };
       if (r.photo) {
         $("rvImg").src = r.photo; $("rvImg").style.display = "";
         $("rvEmoji").style.display = "none"; $("rvEmoji").textContent = "";
@@ -2707,20 +2738,37 @@
         $("rvEmoji").style.display = ""; $("rvEmoji").textContent = r.emoji;
       }
       $("rvName").textContent = r.name;
-      $("rvIngredients").innerHTML = r.items.filter(it => FOODS[it.food]).map(it =>
-        `<div class="rv-ing"><span>${FOODS[it.food].emoji} ${FOODS[it.food].name}</span><span class="rv-ing-g">${it.grams} g</span></div>`).join("");
       $("rvDelete").hidden = !r.user;            // sólo recetas propias se pueden borrar
+      $("rvGramPanel").classList.remove("open");
+      renderRecipeIngredients();
       syncRecipeMeals();
       updateRecipePreview();
       setDocTint("recipe-open");
       showView("recipeView");
+    }
+    function renderRecipeIngredients() {
+      $("rvIngredients").innerHTML = recipeView.items.map((it, i) => {
+        const f = FOODS[it.food];
+        return `<div class="rv-ing${recipeView.editing === i ? " active" : ""}" data-ing="${i}">`
+          + `<span>${f.emoji} ${f.name}</span><span class="rv-ing-g">${it.grams} g</span></div>`;
+      }).join("");
+    }
+    function recipeNutriItems(items) {
+      const sum = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+      items.forEach(it => {
+        if (!FOODS[it.food]) return;
+        const n = nutri(it.food, it.grams);
+        sum.kcal += n.kcal; sum.protein += n.protein; sum.carbs += n.carbs; sum.fat += n.fat;
+      });
+      sum.protein = round1(sum.protein); sum.carbs = round1(sum.carbs); sum.fat = round1(sum.fat);
+      return sum;
     }
     function syncRecipeMeals() {
       $("rvMeals").querySelectorAll("button").forEach(b =>
         b.classList.toggle("active", b.dataset.meal === recipeView.time));
     }
     function updateRecipePreview() {
-      const n = recipeNutri(recipeView.key);
+      const n = recipeNutriItems(recipeView.items);
       $("rvKcal").textContent = Math.round(n.kcal);
       $("rvP").textContent = n.protein; $("rvC").textContent = n.carbs; $("rvF").textContent = n.fat;
       setPvRing("rvKcal", n.kcal, DATA.goal.kcal);
@@ -2728,6 +2776,35 @@
       setPvRing("rvC", n.carbs, DATA.goal.carbs);
       setPvRing("rvF", n.fat, DATA.goal.fat);
     }
+    // Tocar un ingrediente despliega/repliega el panel de gramos para esa línea
+    $("rvIngredients").addEventListener("click", (e) => {
+      const row = e.target.closest(".rv-ing"); if (!row || !recipeView) return;
+      const i = +row.dataset.ing;
+      if (recipeView.editing === i) { recipeView.editing = null; $("rvGramPanel").classList.remove("open"); }
+      else {
+        recipeView.editing = i;
+        $("rvgInput").value = recipeView.items[i].grams;
+        $("rvGramPanel").classList.add("open");
+      }
+      renderRecipeIngredients();
+    });
+    function setRecipeGrams(v) {
+      if (recipeView == null || recipeView.editing == null) return;
+      const g = Math.max(0, v);
+      $("rvgInput").value = g;
+      recipeView.items[recipeView.editing].grams = g;
+      renderRecipeIngredients();
+      updateRecipePreview();
+    }
+    $("rvgInput").addEventListener("input", () => {
+      if (recipeView == null || recipeView.editing == null) return;
+      const v = parseInt($("rvgInput").value, 10);
+      recipeView.items[recipeView.editing].grams = isNaN(v) ? 0 : Math.max(0, v);
+      renderRecipeIngredients(); updateRecipePreview();
+    });
+    bindHold($("rvgPlus"),  () => setRecipeGrams((parseInt($("rvgInput").value, 10) || 0) + 10));
+    bindHold($("rvgMinus"), () => setRecipeGrams((parseInt($("rvgInput").value, 10) || 0) - 10));
+
     function backToSheet() { setDocTint("sheet-open"); showView("sheet"); }
     $("rvBack").addEventListener("click", backToSheet);
     $("rvCancel").addEventListener("click", backToSheet);
@@ -2736,8 +2813,10 @@
       recipeView.time = b.dataset.meal; syncRecipeMeals();
     });
     $("rvSave").addEventListener("click", () => {
-      const r = getRecipe(recipeView.key); if (!r) return;
-      r.items.forEach(it => { if (FOODS[it.food]) DATA.meals.push({ food: it.food, time: recipeView.time, grams: it.grams }); });
+      if (!recipeView) return;
+      recipeView.items.forEach(it => {
+        if (FOODS[it.food] && it.grams > 0) DATA.meals.push({ food: it.food, time: recipeView.time, grams: it.grams });
+      });
       saveLog(); render();
       setDocTint(null); showView("app");
     });
@@ -3290,7 +3369,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.12";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.13";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
