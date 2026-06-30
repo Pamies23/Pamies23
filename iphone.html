@@ -580,8 +580,12 @@
     .addf:active { transform: scale(0.97); }
     .addf-top {
       position: relative;
-      /* Panel del emoji: el vidrio más claro: el plateado se ve más a través */
-      background: linear-gradient(160deg, rgba(255,255,255,0.42), rgba(255,255,255,0.06));
+      /* Mismo color glass EXACTO que la previsualización del emoji en la ficha de
+         gramos (#BCBCBB), con el mismo brillo interior para el efecto vidrio. */
+      background: #BCBCBB;
+      box-shadow:
+        inset 0 1px 1px rgba(255,255,255,0.85),
+        inset 0 -9px 12px -8px rgba(255,255,255,0.6);
       border-bottom: 1px solid rgba(255,255,255,0.6);
       height: 124px; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
@@ -1054,7 +1058,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.7</div>
+      <div class="avatar" id="version">V.8</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1132,7 +1136,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.7</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.8</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -2991,7 +2995,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.7";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.8";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
