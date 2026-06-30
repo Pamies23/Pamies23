@@ -19,6 +19,7 @@
        entrar (sin "pop-in"): el splash y la cabecera del agua se pintan a la primera. -->
   <link rel="preload" as="image" href="palms.jpg">
   <link rel="preload" as="image" href="water.jpg">
+  <link rel="preload" as="image" href="sheet-bg.jpg">
 
   <style>
     :root {
@@ -425,10 +426,14 @@
        a la vez (las demás se ocultan con display:none vía JS / markup). */
     .page { min-height: 100%; background: var(--bg); }
     .page.shown, .sim.shown { display: block; }
-    /* La hoja de Añadir comida usa un fondo crema suave para que las fichas
-       glassy tengan algo que refractar (mismo lenguaje que la ficha de gramos). */
-    #sheet { background: linear-gradient(180deg, #ECE8DE 0%, #E2DDD2 60%, #DED9CD 100%); }
-    html.standalone #sheet { background-attachment: fixed; }
+    /* La hoja de Añadir comida lleva una foto de agua de fondo: da contraste y
+       textura para que las fichas glassy refracten algo (no un plano liso). */
+    #sheet {
+      background-color: #C9D2D6;
+      background-image: url("sheet-bg.jpg");
+      background-size: cover; background-position: center top;
+      background-repeat: no-repeat; background-attachment: fixed;
+    }
     /* Transiciones de vista: la entrante entra suave; la saliente se desvanece como
        una capa por encima (overlay fijo) para que el cambio sea fluido en ambos sentidos. */
     .v-in  { animation: viewIn 0.34s cubic-bezier(.22,.61,.36,1) both; }
@@ -456,15 +461,18 @@
     .sheet-tabs {
       position: sticky; top: env(safe-area-inset-top); z-index: 5;
       display: flex; align-items: flex-end; gap: 24px;
-      /* Cabecera esmerilada: las fichas se difuminan al pasar por detrás */
-      background: rgba(236,232,222,0.68);
-      -webkit-backdrop-filter: blur(20px) saturate(180%);
-              backdrop-filter: blur(20px) saturate(180%);
+      /* Cabecera esmerilada sobre el agua: las fichas se difuminan al pasar detrás */
+      background: rgba(255,255,255,0.55);
+      -webkit-backdrop-filter: blur(24px) saturate(170%);
+              backdrop-filter: blur(24px) saturate(170%);
       padding: 9px 18px 0; margin: 0;
     }
     .sheet-tabs::before {       /* relleno sobre la línea (franja del notch) */
       content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
-      height: calc(env(safe-area-inset-top) + 2px); background: #ECE8DE;
+      height: calc(env(safe-area-inset-top) + 2px);
+      background: rgba(255,255,255,0.55);
+      -webkit-backdrop-filter: blur(24px) saturate(170%);
+              backdrop-filter: blur(24px) saturate(170%);
     }
     .sheet-tab {
       border: none; background: none; cursor: pointer; padding: 0 0 12px;
@@ -1053,7 +1061,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.2</div>
+      <div class="avatar" id="version">V.3</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1131,7 +1139,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.2</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.3</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -2990,7 +2998,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.2";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.3";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
