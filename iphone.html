@@ -455,25 +455,24 @@
     .sheet-tabs {
       position: sticky; top: env(safe-area-inset-top); z-index: 5;
       display: flex; align-items: flex-end; gap: 24px;
-      /* Cabecera esmerilada sobre el agua: las fichas se difuminan al pasar detrás */
-      background: rgba(255,255,255,0.55);
-      -webkit-backdrop-filter: blur(24px) saturate(170%);
-              backdrop-filter: blur(24px) saturate(170%);
+      /* Cabecera negra opaca: la línea de títulos y la franja del notch en negro */
+      background: var(--ink);
       padding: 9px 18px 0; margin: 0;
     }
-    .sheet-tabs::before {       /* relleno OPACO sobre la línea (franja del notch):
-                                   tapa el contenido que asomaba por arriba al hacer scroll */
+    .sheet-tabs::before {       /* relleno OPACO sobre la línea (franja del notch) */
       content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
       height: calc(env(safe-area-inset-top) + 2px);
-      background: #CDD1D6;
+      background: var(--ink);
     }
     .sheet-tab {
       border: none; background: none; cursor: pointer; padding: 0 0 12px;
       font-family: var(--exp); font-weight: 800; font-size: 19px;
-      letter-spacing: -0.01em; text-transform: uppercase; color: var(--muted);
+      letter-spacing: -0.01em; text-transform: uppercase; color: rgba(255,255,255,0.45);
       position: relative; transition: color 0.18s ease;
     }
-    .sheet-tab.active { color: var(--ink); }
+    .sheet-tab.active { color: #fff; }
+    /* Subrayado blanco (la cabecera es negra) */
+    .sheet-tabs .tab-underline { background: #fff; }
     /* Filtros a la misma distancia de la línea negra que los títulos (12px),
        y a esa misma distancia de los alimentos por debajo */
     #catTabs { padding-top: 12px; padding-bottom: 0; }
@@ -1055,7 +1054,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.5</div>
+      <div class="avatar" id="version">V.6</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1133,7 +1132,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.5</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.6</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -2992,7 +2991,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.5";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.6";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
