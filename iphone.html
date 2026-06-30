@@ -705,10 +705,9 @@
     .rv-ingredients { margin: 18px 0 22px; }
     .rv-ing {
       display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
-      padding: 11px 0; border-bottom: 1px solid var(--line);
+      padding: 10px 0;
       font-size: 15px; color: var(--ink); font-weight: 500;
     }
-    .rv-ing:last-child { border-bottom: none; }
     .rv-ing-g { color: var(--muted); font-weight: 600; white-space: nowrap; }
     .rv-label {
       font-family: var(--disp); font-size: 12px; font-weight: 700; text-transform: uppercase;
@@ -722,11 +721,11 @@
        despegarse del fondo: degradado translúcido + borde + sombra marcada. */
     .rv-grampanel .grams-field {
       margin: 6px 0 18px; border-radius: 24px; padding: 12px 14px;
-      /* Glass más translúcido y plateado (deja ver el gris) */
-      background: linear-gradient(180deg, rgba(228,230,233,0.5), rgba(196,200,206,0.44));
-      -webkit-backdrop-filter: blur(24px) saturate(170%);
-              backdrop-filter: blur(24px) saturate(170%);
-      border: 1px solid rgba(255,255,255,0.75);
+      /* Glass gris más oscuro */
+      background: linear-gradient(180deg, rgba(150,154,161,0.66), rgba(120,124,131,0.64));
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+              backdrop-filter: blur(24px) saturate(160%);
+      border: 1px solid rgba(255,255,255,0.45);
       box-shadow:
         0 14px 30px rgba(40,46,54,0.16),
         inset 0 1.5px 2px rgba(255,255,255,0.95),
@@ -739,9 +738,9 @@
       border: 1px solid rgba(255,255,255,0.95);
       box-shadow: 0 6px 14px rgba(40,46,54,0.20), inset 0 1px 1px rgba(255,255,255,0.95);
     }
-    /* Fila de ingrediente seleccionada: letras y gramos en lima (estoy actuando sobre él) */
-    .rv-ing.active { color: var(--lime); font-weight: 700; }
-    .rv-ing.active .rv-ing-g { color: var(--lime); }
+    /* Fila de ingrediente seleccionada: letras y gramos en negro intenso y en negrita */
+    .rv-ing.active { color: #000; font-weight: 800; }
+    .rv-ing.active .rv-ing-g { color: #000; font-weight: 800; }
     .rv-ing { cursor: pointer; transition: opacity 0.12s ease; }
     .rv-ing:active { opacity: 0.55; }
 
@@ -767,26 +766,24 @@
        (como el cajetín de gramos) para que se aprecie sobre el blanco. El "+" en plata. */
     .rv-add {
       flex-shrink: 0; width: 58px; height: 58px; border-radius: 50%; cursor: pointer;
-      border: 1px solid rgba(255,255,255,0.75);
-      /* Glass más translúcido y plateado (deja ver el gris) */
-      background: linear-gradient(180deg, rgba(228,230,233,0.5), rgba(195,199,205,0.46));
-      -webkit-backdrop-filter: blur(24px) saturate(170%);
-              backdrop-filter: blur(24px) saturate(170%);
+      border: 1px solid rgba(255,255,255,0.45);
+      /* Glass gris más oscuro (a juego con el cajetín) */
+      background: linear-gradient(180deg, rgba(150,154,161,0.66), rgba(118,122,129,0.66));
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+              backdrop-filter: blur(24px) saturate(160%);
       box-shadow:
-        0 12px 26px rgba(40,46,54,0.20),
-        inset 0 1.5px 2px rgba(255,255,255,0.95),
-        inset 0 -13px 16px -10px rgba(0,0,0,0.06);
+        0 12px 26px rgba(40,46,54,0.24),
+        inset 0 1.5px 2px rgba(255,255,255,0.6),
+        inset 0 -13px 16px -10px rgba(0,0,0,0.10);
       display: flex; align-items: center; justify-content: center;
       transition: transform 0.12s ease;
     }
     .rv-add:active { transform: scale(0.93); }
     .rv-add-plus {
       font-family: var(--exp); font-weight: 300; font-size: 36px; line-height: 1;
-      /* "+" plateado con brillo glass (degradado metálico) */
-      background: linear-gradient(155deg, #ffffff 0%, #c4c8ce 48%, #8c939b 100%);
-      -webkit-background-clip: text; background-clip: text;
-      -webkit-text-fill-color: transparent; color: transparent;
-      filter: drop-shadow(0 1px 1px rgba(255,255,255,0.65));
+      /* "+" blanco para compensar el glass oscuro */
+      color: #fff; -webkit-text-fill-color: #fff;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
       margin-top: -3px;                       /* centra ópticamente el signo */
     }
 
@@ -1227,7 +1224,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.18</div>
+      <div class="avatar" id="version">V.19</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1305,7 +1302,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.18</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.19</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -3417,7 +3414,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.18";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.19";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
