@@ -734,15 +734,36 @@
       background: var(--card); color: var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     }
     .rv-meals button.active { background: var(--ink); color: #fff; box-shadow: none; }
-    .rv-actions { display: flex; gap: 10px; margin-top: 18px; }
-    .rv-actions button {
-      flex: 1; border: none; border-radius: 99px; padding: 17px;
+    .rv-actions { display: flex; align-items: center; gap: 10px; margin-top: 22px; }
+    .rv-delete {
+      border: none; border-radius: 99px; padding: 15px 22px; cursor: pointer;
       font-family: var(--disp); font-size: 14px; font-weight: 700;
-      letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer;
+      letter-spacing: 0.04em; text-transform: uppercase; background: var(--red); color: #fff;
     }
-    .rv-cancel { background: var(--card); color: var(--ink); }
-    .rv-save { background: var(--ink); color: #fff; }
-    .rv-delete { background: var(--red); color: #fff; flex: 0 0 auto; padding: 17px 22px; }
+    /* Botón circular glass para añadir la receta (a la derecha). El "+" en plata. */
+    .rv-add {
+      margin-left: auto; width: 66px; height: 66px; border-radius: 50%; cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.75);
+      background: linear-gradient(160deg, rgba(255,255,255,0.6), rgba(206,210,216,0.42));
+      -webkit-backdrop-filter: blur(18px) saturate(180%);
+              backdrop-filter: blur(18px) saturate(180%);
+      box-shadow:
+        0 10px 24px rgba(40,46,54,0.18),
+        inset 0 1.5px 1px rgba(255,255,255,0.95),
+        inset 0 -12px 16px -8px rgba(255,255,255,0.6);
+      display: flex; align-items: center; justify-content: center;
+      transition: transform 0.12s ease;
+    }
+    .rv-add:active { transform: scale(0.93); }
+    .rv-add-plus {
+      font-family: var(--exp); font-weight: 300; font-size: 40px; line-height: 1;
+      /* "+" plateado con brillo glass (degradado metálico) */
+      background: linear-gradient(155deg, #ffffff 0%, #c4c8ce 48%, #8c939b 100%);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent; color: transparent;
+      filter: drop-shadow(0 1px 1px rgba(255,255,255,0.65));
+      margin-top: -3px;                       /* centra ópticamente el signo */
+    }
 
     .sheet-foot { flex-shrink: 0; padding: 12px 18px max(12px, calc(env(safe-area-inset-bottom) - 8px)); border-top: 1px solid var(--line); background: var(--bg); }
     .confirm {
@@ -1181,7 +1202,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.13</div>
+      <div class="avatar" id="version">V.14</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1259,7 +1280,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.13</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.14</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -1425,8 +1446,9 @@
 
       <div class="rv-actions">
         <button class="rv-delete" id="rvDelete" hidden>Eliminar</button>
-        <button class="rv-cancel" id="rvCancel">Cancelar</button>
-        <button class="rv-save" id="rvSave">Añadir receta</button>
+        <button class="rv-add" id="rvSave" aria-label="Añadir receta">
+          <span class="rv-add-plus">+</span>
+        </button>
       </div>
     </div>
   </section>
@@ -2807,7 +2829,6 @@
 
     function backToSheet() { setDocTint("sheet-open"); showView("sheet"); }
     $("rvBack").addEventListener("click", backToSheet);
-    $("rvCancel").addEventListener("click", backToSheet);
     $("rvMeals").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-meal]"); if (!b || !recipeView) return;
       recipeView.time = b.dataset.meal; syncRecipeMeals();
@@ -3369,7 +3390,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.13";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.14";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
