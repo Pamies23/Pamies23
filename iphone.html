@@ -430,7 +430,9 @@
     /* Con la hoja abierta, el documento va en negro: el overscroll superior
        (rebote al tirar hacia abajo) se ve negro, igual que la cabecera. */
     html.sheet-open, html.sheet-open body { background: #000; }
-    html.recipe-open, html.recipe-open body { background: #E8E4D9; }   /* beige bajo el detalle */
+    /* Bajo el detalle, el documento va en blanco: el rebote INFERIOR cuadra con la
+       tarjeta. El rebote SUPERIOR lo cubre el beige de la foto (ver .rv-photo::before). */
+    html.recipe-open, html.recipe-open body { background: #fff; }
     /* Transiciones de vista: la entrante entra suave; la saliente se desvanece como
        una capa por encima (overlay fijo) para que el cambio sea fluido en ambos sentidos. */
     .v-in  { animation: viewIn 0.34s cubic-bezier(.22,.61,.36,1) both; }
@@ -686,6 +688,11 @@
       padding: calc(env(safe-area-inset-top) + 8px) 0 0;
       min-height: 44vh; display: flex; align-items: center; justify-content: center;
     }
+    /* Prolonga el beige hacia arriba para que el rebote SUPERIOR cuadre con la foto */
+    .rv-photo::before {
+      content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
+      height: 100vh; background: #E8E4D9;
+    }
     .rv-back {
       position: absolute; top: calc(env(safe-area-inset-top) + 12px); left: 18px; z-index: 2;
       border: none; background: none; cursor: pointer; line-height: 1;
@@ -717,26 +724,22 @@
     .rv-grampanel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.34s cubic-bezier(.22,.61,.36,1); }
     .rv-grampanel.open { grid-template-rows: 1fr; }
     .rv-grampanel-inner { overflow: hidden; min-height: 0; }
-    /* En el detalle (cuerpo blanco) el cajetín necesita relieve glassy para
-       despegarse del fondo: degradado translúcido + borde + sombra marcada. */
+    /* Material claro tipo Apple (menús/toolbars): gris-blanco translúcido, muy
+       desenfocado, borde fino y sombra suave. Símbolos oscuros. */
     .rv-grampanel .grams-field {
-      margin: 6px 0 18px; border-radius: 24px; padding: 12px 14px;
-      /* Glass gris más oscuro */
-      background: linear-gradient(180deg, rgba(150,154,161,0.66), rgba(120,124,131,0.64));
-      -webkit-backdrop-filter: blur(24px) saturate(160%);
-              backdrop-filter: blur(24px) saturate(160%);
-      border: 1px solid rgba(255,255,255,0.45);
-      box-shadow:
-        0 14px 30px rgba(40,46,54,0.16),
-        inset 0 1.5px 2px rgba(255,255,255,0.95),
-        inset 0 -14px 18px -12px rgba(0,0,0,0.06);
+      margin: 6px 0 18px; border-radius: 22px; padding: 12px 14px;
+      background: rgba(245,245,247,0.75);
+      -webkit-backdrop-filter: blur(30px) saturate(180%);
+              backdrop-filter: blur(30px) saturate(180%);
+      border: 1px solid rgba(255,255,255,0.55);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 14px 32px rgba(0,0,0,0.13);
     }
-    /* Botones +/− como círculos blancos con sombra (neumórficos), como en la foto */
+    /* Botones +/− como círculos blancos limpios con sombra suave (estilo iOS) */
     .rv-grampanel .grams-field button {
-      background: #fdfdfd;
+      background: #fff;
       -webkit-backdrop-filter: none; backdrop-filter: none;
-      border: 1px solid rgba(255,255,255,0.95);
-      box-shadow: 0 6px 14px rgba(40,46,54,0.20), inset 0 1px 1px rgba(255,255,255,0.95);
+      border: 1px solid rgba(0,0,0,0.04);
+      box-shadow: 0 1px 1px rgba(0,0,0,0.04), 0 4px 10px rgba(0,0,0,0.10);
     }
     /* Fila de ingrediente seleccionada: letras y gramos en negro intenso y en negrita */
     .rv-ing.active { color: #000; font-weight: 800; }
@@ -766,24 +769,19 @@
        (como el cajetín de gramos) para que se aprecie sobre el blanco. El "+" en plata. */
     .rv-add {
       flex-shrink: 0; width: 58px; height: 58px; border-radius: 50%; cursor: pointer;
-      border: 1px solid rgba(255,255,255,0.45);
-      /* Glass gris más oscuro (a juego con el cajetín) */
-      background: linear-gradient(180deg, rgba(150,154,161,0.66), rgba(118,122,129,0.66));
-      -webkit-backdrop-filter: blur(24px) saturate(160%);
-              backdrop-filter: blur(24px) saturate(160%);
-      box-shadow:
-        0 12px 26px rgba(40,46,54,0.24),
-        inset 0 1.5px 2px rgba(255,255,255,0.6),
-        inset 0 -13px 16px -10px rgba(0,0,0,0.10);
+      /* Mismo material claro tipo Apple que el cajetín */
+      background: rgba(245,245,247,0.78);
+      -webkit-backdrop-filter: blur(30px) saturate(180%);
+              backdrop-filter: blur(30px) saturate(180%);
+      border: 1px solid rgba(255,255,255,0.55);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 12px 28px rgba(0,0,0,0.14);
       display: flex; align-items: center; justify-content: center;
       transition: transform 0.12s ease;
     }
     .rv-add:active { transform: scale(0.93); }
     .rv-add-plus {
-      font-family: var(--exp); font-weight: 300; font-size: 36px; line-height: 1;
-      /* "+" blanco para compensar el glass oscuro */
-      color: #fff; -webkit-text-fill-color: #fff;
-      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
+      font-family: var(--exp); font-weight: 300; font-size: 38px; line-height: 1;
+      color: var(--ink); -webkit-text-fill-color: var(--ink);   /* símbolo oscuro */
       margin-top: -3px;                       /* centra ópticamente el signo */
     }
 
@@ -1224,7 +1222,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.19</div>
+      <div class="avatar" id="version">V.20</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1302,7 +1300,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.19</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.20</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -3414,7 +3412,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.19";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.20";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
