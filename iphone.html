@@ -607,9 +607,12 @@
       backdrop-filter: blur(42px) saturate(210%);
       border-top: 1px solid rgba(255,255,255,0.7);
       border-radius: 24px 24px 0 0;
-      /* El padding inferior incluye el safe-area: el cristal de la ficha llena esa
-         franja (sobre el fondo oscuro del modal), así no se ve blanco bajo los botones. */
-      padding: 20px 20px calc(env(safe-area-inset-bottom, 0px) + 16px);
+      /* La ficha es position:fixed, que se ancla POR ENCIMA del inset inferior
+         (home bar / barra de URL). Con margin-bottom negativo extendemos el
+         cristal de la ficha por debajo de ese borde para que cubra esa franja,
+         y el padding deja el contenido por encima del inset. */
+      margin-bottom: calc(env(safe-area-inset-bottom, 0px) * -1);
+      padding: 20px 20px calc(env(safe-area-inset-bottom, 0px) + 14px);
       transform: translateY(100%); transition: transform 0.3s cubic-bezier(.22,.61,.36,1);
     }
     .modal.open .modal-card { transform: translateY(0); }
@@ -1004,7 +1007,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.12</div>
+      <div class="avatar" id="version">V.13</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1082,7 +1085,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.12</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.13</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -2869,7 +2872,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.12";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.13";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
