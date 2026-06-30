@@ -430,6 +430,7 @@
     /* Con la hoja abierta, el documento va en negro: el overscroll superior
        (rebote al tirar hacia abajo) se ve negro, igual que la cabecera. */
     html.sheet-open, html.sheet-open body { background: #000; }
+    html.recipe-open, html.recipe-open body { background: #E8E4D9; }   /* beige bajo el detalle */
     /* Transiciones de vista: la entrante entra suave; la saliente se desvanece como
        una capa por encima (overlay fijo) para que el cambio sea fluido en ambos sentidos. */
     .v-in  { animation: viewIn 0.34s cubic-bezier(.22,.61,.36,1) both; }
@@ -464,7 +465,7 @@
     .sheet-tab {
       border: none; background: none; cursor: pointer; padding: 0;
       font-family: var(--exp); font-weight: 800; font-size: 22px;
-      letter-spacing: -0.01em; text-transform: lowercase; color: rgba(255,255,255,0.42);
+      letter-spacing: -0.01em; text-transform: none; color: rgba(255,255,255,0.42);
       position: relative; transition: color 0.18s ease;
     }
     .sheet-tab.active { color: #fff; }
@@ -635,7 +636,7 @@
     .rcat {
       flex: 0 0 auto; border: none; background: none; cursor: pointer; padding: 0 0 13px;
       font-family: var(--exp); font-weight: 800; font-size: 18px;
-      text-transform: lowercase; letter-spacing: -0.01em;
+      text-transform: none; letter-spacing: -0.01em;
       color: var(--muted); white-space: nowrap; transition: color 0.18s ease;
     }
     .rcat.active { color: var(--ink); }
@@ -677,6 +678,60 @@
       font-family: var(--disp); font-weight: 800; font-size: 15px;
       text-transform: uppercase; letter-spacing: 0.02em;
     }
+
+    /* ---------- Detalle de receta a pantalla completa (estilo Honest Greens) ---------- */
+    .recipe-view { min-height: 100%; background: #fff; }
+    .rv-photo {
+      position: relative; background: #E8E4D9;     /* beige a sangre, de pared a pared */
+      padding: calc(env(safe-area-inset-top) + 8px) 0 0;
+      min-height: 44vh; display: flex; align-items: center; justify-content: center;
+    }
+    .rv-back {
+      position: absolute; top: calc(env(safe-area-inset-top) + 12px); left: 18px; z-index: 2;
+      border: none; background: none; cursor: pointer; line-height: 1;
+      font-size: 27px; color: var(--ink); padding: 4px;
+    }
+    .rv-img {
+      width: min(72vw, 350px); height: auto; object-fit: contain;
+      filter: drop-shadow(0 14px 22px rgba(0,0,0,0.30));
+      padding: 18px 0 34px;                        /* margen del plato */
+    }
+    .rv-emoji { font-size: 128px; line-height: 1; padding: 18px 0 34px; }
+    .rv-body { background: #fff; padding: 24px 20px calc(env(safe-area-inset-bottom) + 26px); }
+    .rv-name {
+      font-family: var(--exp); font-weight: 800; font-size: 26px;
+      text-transform: uppercase; letter-spacing: -0.01em; color: var(--ink); line-height: 1.04;
+    }
+    .rv-ingredients { margin: 18px 0 22px; }
+    .rv-ing {
+      display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+      padding: 11px 0; border-bottom: 1px solid var(--line);
+      font-size: 15px; color: var(--ink); font-weight: 500;
+    }
+    .rv-ing:last-child { border-bottom: none; }
+    .rv-ing-g { color: var(--muted); font-weight: 600; white-space: nowrap; }
+    .rv-label {
+      font-family: var(--disp); font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--muted); margin-bottom: 11px;
+    }
+    .rv-meals { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin-bottom: 20px; }
+    .rv-meals::-webkit-scrollbar { display: none; }
+    .rv-meals button {
+      flex: 1 0 auto; border: none; border-radius: 99px; padding: 11px 14px;
+      font-family: var(--disp); font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
+      text-transform: uppercase; white-space: nowrap; cursor: pointer; transition: all 0.15s ease;
+      background: var(--card); color: var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .rv-meals button.active { background: var(--ink); color: #fff; box-shadow: none; }
+    .rv-actions { display: flex; gap: 10px; margin-top: 18px; }
+    .rv-actions button {
+      flex: 1; border: none; border-radius: 99px; padding: 17px;
+      font-family: var(--disp); font-size: 14px; font-weight: 700;
+      letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer;
+    }
+    .rv-cancel { background: var(--card); color: var(--ink); }
+    .rv-save { background: var(--ink); color: #fff; }
+    .rv-delete { background: var(--red); color: #fff; flex: 0 0 auto; padding: 17px 22px; }
 
     .sheet-foot { flex-shrink: 0; padding: 12px 18px max(12px, calc(env(safe-area-inset-bottom) - 8px)); border-top: 1px solid var(--line); background: var(--bg); }
     .confirm {
@@ -1115,7 +1170,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.11</div>
+      <div class="avatar" id="version">V.12</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1193,7 +1248,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.11</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.12</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -1303,6 +1358,52 @@
       </div>
     </div>
   </div>
+
+  <!-- ===================== Detalle de receta (pantalla completa) ===================== -->
+  <section class="page recipe-view" id="recipeView" aria-hidden="true" style="display:none">
+    <div class="rv-photo">
+      <button class="rv-back" id="rvBack" aria-label="Volver">←</button>
+      <img class="rv-img" id="rvImg" alt="">
+      <span class="rv-emoji" id="rvEmoji"></span>
+    </div>
+    <div class="rv-body">
+      <h2 class="rv-name" id="rvName">Receta</h2>
+      <div class="rv-ingredients" id="rvIngredients"></div>
+
+      <div class="rv-label">¿En qué comida?</div>
+      <div class="rv-meals" id="rvMeals">
+        <button data-meal="Desayuno">Desayuno</button>
+        <button data-meal="Comida">Comida</button>
+        <button data-meal="Cena">Cena</button>
+        <button data-meal="Snack">Snack</button>
+      </div>
+
+      <div class="modal-preview">
+        <div class="pv-cell">
+          <div class="pv-n kcal" id="rvKcal">0</div><div class="pv-l">kcal</div>
+          <div class="pv-ring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="pvr-track" cx="18" cy="18" r="15.915"></circle><circle class="pvr-sel" id="rvKcalRing" cx="18" cy="18" r="15.915"></circle></svg><span class="pv-pct" id="rvKcalPct">0%</span></div>
+        </div>
+        <div class="pv-cell">
+          <div class="pv-n" id="rvP">0</div><div class="pv-l">Prot</div>
+          <div class="pv-ring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="pvr-track" cx="18" cy="18" r="15.915"></circle><circle class="pvr-sel" id="rvPRing" cx="18" cy="18" r="15.915"></circle></svg><span class="pv-pct" id="rvPPct">0%</span></div>
+        </div>
+        <div class="pv-cell">
+          <div class="pv-n" id="rvC">0</div><div class="pv-l">Carb</div>
+          <div class="pv-ring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="pvr-track" cx="18" cy="18" r="15.915"></circle><circle class="pvr-sel" id="rvCRing" cx="18" cy="18" r="15.915"></circle></svg><span class="pv-pct" id="rvCPct">0%</span></div>
+        </div>
+        <div class="pv-cell">
+          <div class="pv-n" id="rvF">0</div><div class="pv-l">Grasa</div>
+          <div class="pv-ring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="pvr-track" cx="18" cy="18" r="15.915"></circle><circle class="pvr-sel" id="rvFRing" cx="18" cy="18" r="15.915"></circle></svg><span class="pv-pct" id="rvFPct">0%</span></div>
+        </div>
+      </div>
+
+      <div class="rv-actions">
+        <button class="rv-delete" id="rvDelete" hidden>Eliminar</button>
+        <button class="rv-cancel" id="rvCancel">Cancelar</button>
+        <button class="rv-save" id="rvSave">Añadir receta</button>
+      </div>
+    </div>
+  </section>
 
   <!-- ===================== Simulador de recetas (estructura tipo Home) ===================== -->
   <section class="app sim" id="sim" aria-hidden="true" style="display:none">
@@ -2215,7 +2316,7 @@
 
     // Solo una "página" visible a la vez, con transición de entrada/salida fluida.
     // "" (sin display inline) deja mandar al CSS → la Home puede ser grid en iPad.
-    const VIEWS = ["app", "sheet", "sim", "simPick", "profile"];
+    const VIEWS = ["app", "sheet", "recipeView", "sim", "simPick", "profile"];
     let currentView = "app";
     function showView(id) {
       if (id === currentView) { window.scrollTo(0, 0); return; }
@@ -2277,10 +2378,16 @@
       renderFoodList();
       showView("sheet");
       // El documento en negro: el rebote/overscroll superior se ve negro como la cabecera.
-      document.documentElement.classList.add("sheet-open");
+      setDocTint("sheet-open");
       requestAnimationFrame(positionTypeUnderline);
     }
-    function closeSheet() { document.documentElement.classList.remove("sheet-open"); showView("app"); }
+    // Tinta del documento por vista (para que el overscroll superior no asome blanco)
+    function setDocTint(cls) {
+      const h = document.documentElement;
+      h.classList.remove("sheet-open", "recipe-open");
+      if (cls) h.classList.add(cls);
+    }
+    function closeSheet() { setDocTint(null); showView("app"); }
     function positionTypeUnderline() {
       const tab = $("typeTabs").querySelector('[data-type="' + activeType + '"]');
       const u = $("typeUnderline");
@@ -2586,11 +2693,58 @@
       $("mGrams").value = FOODS[foodKey].base;
       showModal();
     }
+    // ---- Detalle de receta a pantalla completa ----
+    let recipeView = null;   // { key, time }
     function openRecipe(recipeKey) {
-      if (!getRecipe(recipeKey)) return;
-      modalState = { mode: "recipe", recipeKey, time: defaultMeal() };
-      showModal();
+      const r = getRecipe(recipeKey);
+      if (!r) return;
+      recipeView = { key: recipeKey, time: defaultMeal() };
+      if (r.photo) {
+        $("rvImg").src = r.photo; $("rvImg").style.display = "";
+        $("rvEmoji").style.display = "none"; $("rvEmoji").textContent = "";
+      } else {
+        $("rvImg").removeAttribute("src"); $("rvImg").style.display = "none";
+        $("rvEmoji").style.display = ""; $("rvEmoji").textContent = r.emoji;
+      }
+      $("rvName").textContent = r.name;
+      $("rvIngredients").innerHTML = r.items.filter(it => FOODS[it.food]).map(it =>
+        `<div class="rv-ing"><span>${FOODS[it.food].emoji} ${FOODS[it.food].name}</span><span class="rv-ing-g">${it.grams} g</span></div>`).join("");
+      $("rvDelete").hidden = !r.user;            // sólo recetas propias se pueden borrar
+      syncRecipeMeals();
+      updateRecipePreview();
+      setDocTint("recipe-open");
+      showView("recipeView");
     }
+    function syncRecipeMeals() {
+      $("rvMeals").querySelectorAll("button").forEach(b =>
+        b.classList.toggle("active", b.dataset.meal === recipeView.time));
+    }
+    function updateRecipePreview() {
+      const n = recipeNutri(recipeView.key);
+      $("rvKcal").textContent = Math.round(n.kcal);
+      $("rvP").textContent = n.protein; $("rvC").textContent = n.carbs; $("rvF").textContent = n.fat;
+      setPvRing("rvKcal", n.kcal, DATA.goal.kcal);
+      setPvRing("rvP", n.protein, DATA.goal.protein);
+      setPvRing("rvC", n.carbs, DATA.goal.carbs);
+      setPvRing("rvF", n.fat, DATA.goal.fat);
+    }
+    function backToSheet() { setDocTint("sheet-open"); showView("sheet"); }
+    $("rvBack").addEventListener("click", backToSheet);
+    $("rvCancel").addEventListener("click", backToSheet);
+    $("rvMeals").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-meal]"); if (!b || !recipeView) return;
+      recipeView.time = b.dataset.meal; syncRecipeMeals();
+    });
+    $("rvSave").addEventListener("click", () => {
+      const r = getRecipe(recipeView.key); if (!r) return;
+      r.items.forEach(it => { if (FOODS[it.food]) DATA.meals.push({ food: it.food, time: recipeView.time, grams: it.grams }); });
+      saveLog(); render();
+      setDocTint(null); showView("app");
+    });
+    $("rvDelete").addEventListener("click", () => {
+      if (userRecipes[recipeView.key]) { delete userRecipes[recipeView.key]; saveRecipes(); renderFoodList(); }
+      backToSheet();
+    });
     function openEdit(idx) {
       const meal = DATA.meals[idx];
       if (!meal || !FOODS[meal.food]) return;
@@ -3136,7 +3290,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.11";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.12";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
