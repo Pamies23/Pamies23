@@ -593,26 +593,18 @@
       transition: background 0.25s ease, visibility 0.25s ease;
     }
     .modal.open { visibility: visible; background: rgba(19,19,17,0.34); }
-    /* La franja blanca de abajo era la página (en flujo, que SÍ llega al borde
-       físico en Safari) asomando bajo la ficha FIJA (que se ancla por encima de
-       la barra de URL). La teñimos del tono del cristal de la ficha para que se
-       funda y no se vea blanca. */
+    /* La ficha es SÓLIDA (mismo color que rellena la página por debajo): así la
+       franja del inset inferior, que en una ficha fija deja ver la página detrás,
+       queda EXACTAMENTE del mismo color que la ficha y no se distingue —igual que
+       el listado de alimentos, que es todo blanco y llega abajo sin franja. */
     html.gram-open, html.gram-open body,
-    html.gram-open .app, html.gram-open .page.shown { background: #DAD8D3; }
+    html.gram-open .app, html.gram-open .page.shown { background: #EAE8E3; }
     .modal-card {
       width: 100%; max-width: 460px;
-      /* Cristal MÁS notorio: más translúcido + desenfoque y saturación más fuertes */
-      background: rgba(250,250,250,0.55);
-      -webkit-backdrop-filter: blur(42px) saturate(210%);
-      backdrop-filter: blur(42px) saturate(210%);
-      border-top: 1px solid rgba(255,255,255,0.7);
+      background: #EAE8E3;
+      border-top: 1px solid rgba(255,255,255,0.8);
       border-radius: 24px 24px 0 0;
-      /* La ficha es position:fixed y se ancla POR ENCIMA del inset inferior
-         (home bar / barra de URL de Safari). Extendemos el cristal 56px por
-         debajo de ese borde para que cubra esa franja; el contenido queda a
-         16px del borde visible (look "a sangre"). */
-      margin-bottom: -56px;
-      padding: 20px 20px 72px;
+      padding: 20px 20px clamp(16px, env(safe-area-inset-bottom), 30px);
       transform: translateY(100%); transition: transform 0.3s cubic-bezier(.22,.61,.36,1);
     }
     .modal.open .modal-card { transform: translateY(0); }
@@ -1007,7 +999,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.14</div>
+      <div class="avatar" id="version">V.15</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1085,7 +1077,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.14</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.15</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -2872,7 +2864,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.14";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.15";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
