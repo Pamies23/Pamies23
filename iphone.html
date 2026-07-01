@@ -456,10 +456,14 @@
     .sheet-spacer { width: 48px; }
 
     /* Cabecera fija Alimentos | Recetas. Negro puro, alta y cubriendo el notch:
-       la franja superior (incluida la barra de estado) queda negra al desplazar. */
+       la franja superior (incluida la barra de estado) queda negra al desplazar.
+       Sticky en el WRAPPER (una sola fuente de verdad): así la cabecera negra y la
+       barra de categorías se mueven siempre juntas, sin desincronizarse cuando
+       Safari colapsa/expande la barra de direcciones al desplazar. */
     #sheet { padding-top: 0; }
+    .sheet-head-sticky { position: sticky; top: 0; z-index: 5; }
     .sheet-tabs {
-      position: sticky; top: 0; z-index: 5;
+      position: relative;             /* para el ::before del notch */
       display: flex; align-items: flex-end; gap: 26px;
       background: #000;
       padding: calc(env(safe-area-inset-top) + 16px) 18px 18px; margin: 0;
@@ -607,9 +611,9 @@
     .food-list.as-recipes { flex-direction: column; flex-wrap: nowrap; gap: 16px; padding-top: 8px; }
 
     /* Barra de categorías con subrayado deslizante (scroll-spy): al bajar indica
-       en qué categoría de receta estás. Pegada justo debajo de Alimentos|Recetas. */
+       en qué categoría de receta estás. Va en el flujo normal, justo debajo de
+       Alimentos|Recetas, dentro del mismo wrapper sticky (ver .sheet-head-sticky). */
     .rcat-tabs {
-      position: sticky; z-index: 4;             /* top se fija por JS (alto de la cabecera) */
       display: flex; gap: 24px; align-items: flex-end;
       background: #fff; margin: 0; padding: 15px 18px 0;
       overflow-x: auto; scrollbar-width: none;
@@ -1204,7 +1208,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.21</div>
+      <div class="avatar" id="version">V.22</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1282,7 +1286,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.21</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.22</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -1295,29 +1299,34 @@
 
   <!-- ===================== Pantalla Añadir comida ===================== -->
   <section class="page sheet" id="sheet" aria-hidden="true" style="display:none">
-    <!-- Línea fija: Alimentos | Recetas (como MENÚ | COMPRA) -->
-    <div class="sheet-tabs" id="typeTabs">
-      <button class="sheet-tab active" data-type="alimentos">Alimentos</button>
-      <button class="sheet-tab" data-type="recetas">Recetas</button>
-      <span class="tab-underline" id="typeUnderline"></span>
-    </div>
+    <!-- Cabecera pegajosa única: Alimentos|Recetas + categorías van juntas en un
+         solo bloque sticky, así no hay dos "top" independientes que se desincronicen
+         cuando Safari colapsa/expande la barra de direcciones al desplazar. -->
+    <div class="sheet-head-sticky" id="sheetHeadSticky">
+      <!-- Línea fija: Alimentos | Recetas (como MENÚ | COMPRA) -->
+      <div class="sheet-tabs" id="typeTabs">
+        <button class="sheet-tab active" data-type="alimentos">Alimentos</button>
+        <button class="sheet-tab" data-type="recetas">Recetas</button>
+        <span class="tab-underline" id="typeUnderline"></span>
+      </div>
 
-    <!-- Categorías (filtros) -->
-    <div class="cat-tabs" id="catTabs">
-      <button data-cat="todos" class="active">Todos</button>
-      <button data-cat="huevos">Huevos</button>
-      <button data-cat="carne">Carne</button>
-      <button data-cat="pescado">Pescado</button>
-      <button data-cat="lacteos">Lácteos</button>
-      <button data-cat="cereales">Cereales</button>
-      <button data-cat="verduras">Verduras</button>
-      <button data-cat="fruta">Fruta</button>
-      <button data-cat="grasas">Grasas</button>
-    </div>
+      <!-- Categorías (filtros, en desuso desde que Alimentos usa la barra de abajo) -->
+      <div class="cat-tabs hidden" id="catTabs">
+        <button data-cat="todos" class="active">Todos</button>
+        <button data-cat="huevos">Huevos</button>
+        <button data-cat="carne">Carne</button>
+        <button data-cat="pescado">Pescado</button>
+        <button data-cat="lacteos">Lácteos</button>
+        <button data-cat="cereales">Cereales</button>
+        <button data-cat="verduras">Verduras</button>
+        <button data-cat="fruta">Fruta</button>
+        <button data-cat="grasas">Grasas</button>
+      </div>
 
-    <!-- Categorías de receta con subrayado (scroll-spy). Se rellenan por JS. -->
-    <div class="rcat-tabs" id="recipeCats" hidden>
-      <span class="tab-underline" id="recipeCatUnderline"></span>
+      <!-- Categorías con subrayado (scroll-spy). Se rellenan por JS. -->
+      <div class="rcat-tabs" id="recipeCats" hidden>
+        <span class="tab-underline" id="recipeCatUnderline"></span>
+      </div>
     </div>
 
     <ul class="food-list" id="foodList"></ul>
@@ -2494,10 +2503,6 @@
       });
       recipeActiveCat = cats[0] || null;
     }
-    function positionRecipeStickyTop() {
-      // La cabecera ya incluye el safe-area en su alto; basta su offsetHeight.
-      $("recipeCats").style.top = $("typeTabs").offsetHeight + "px";
-    }
     function positionRecipeCatUnderline() {
       const active = $("recipeCats").querySelector(".rcat.active"), u = $("recipeCatUnderline");
       if (!active) { u.style.width = "0px"; return; }
@@ -2515,9 +2520,26 @@
       // alcanza a llegar arriba del todo).
       if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4 && cards.length)
         current = cards[cards.length - 1].dataset.cat;
+      const changed = current !== recipeActiveCat;
       recipeActiveCat = current;
       bar.querySelectorAll(".rcat").forEach(b => b.classList.toggle("active", b.dataset.rcat === current));
       positionRecipeCatUnderline();
+      // Si la categoría activa cambió y su botón queda fuera de la vista horizontal
+      // de la barra, la desplazamos para que se vea (sin tocar el scroll vertical).
+      if (changed) {
+        const activeBtn = bar.querySelector(".rcat.active");
+        if (activeBtn) scrollCatIntoView(bar, activeBtn);
+      }
+    }
+    // Desplaza horizontalmente la barra de categorías para que 'btn' quede visible
+    function scrollCatIntoView(bar, btn) {
+      const barRect = bar.getBoundingClientRect(), btnRect = btn.getBoundingClientRect();
+      const margin = 18;
+      if (btnRect.left < barRect.left + margin) {
+        bar.scrollBy({ left: btnRect.left - barRect.left - margin, behavior: "smooth" });
+      } else if (btnRect.right > barRect.right - margin) {
+        bar.scrollBy({ left: btnRect.right - barRect.right + margin, behavior: "smooth" });
+      }
     }
 
     const cardHTML = (key, attr, emoji, name, sub, kcal, brand, cat) => `
@@ -2544,7 +2566,7 @@
         const createCard = `<li class="rcard rcard-new" data-newrecipe="1">＋ Crear receta</li>`;
         list.classList.add("as-recipes");
         list.innerHTML = entries.map(([k, r]) => recipeCardHTML(k, r)).join("") + createCard;
-        requestAnimationFrame(() => { positionRecipeStickyTop(); updateSpy(); });
+        requestAnimationFrame(updateSpy);
         return;
       }
 
@@ -2557,7 +2579,7 @@
       list.innerHTML = entries.length
         ? entries.map(([k, f]) => cardHTML(k, "data-add", f.emoji, f.name, f.ration, f.kcal, f.brand, f.cat)).join("")
         : `<li class="food-empty">Sin resultados</li>`;
-      requestAnimationFrame(() => { positionRecipeStickyTop(); updateSpy(); });
+      requestAnimationFrame(updateSpy);
     }
 
     $("addBtn").addEventListener("click", openSheet);
@@ -3395,7 +3417,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.21";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.22";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
