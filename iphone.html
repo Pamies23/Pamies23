@@ -612,8 +612,14 @@
 
     /* Barra de categorías con subrayado deslizante (scroll-spy): al bajar indica
        en qué categoría de receta estás. Va en el flujo normal, justo debajo de
-       Alimentos|Recetas, dentro del mismo wrapper sticky (ver .sheet-head-sticky). */
+       Alimentos|Recetas, dentro del mismo wrapper sticky (ver .sheet-head-sticky).
+       "position: relative" es IMPRESCINDIBLE: es lo que ancla el subrayado
+       (position: absolute) a las coordenadas de ESTA barra (que además desplaza
+       en horizontal); sin esto el subrayado se ancla al wrapper exterior y se
+       queda "flotando" en un sitio fijo mientras las categorías se desplazan
+       por debajo (el bug de "tierra de nadie"). */
     .rcat-tabs {
+      position: relative;
       display: flex; gap: 24px; align-items: flex-end;
       background: #fff; margin: 0; padding: 15px 18px 0;
       overflow-x: auto; scrollbar-width: none;
@@ -1208,7 +1214,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.22</div>
+      <div class="avatar" id="version">V.23</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1286,7 +1292,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.22</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.23</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -2531,14 +2537,16 @@
         if (activeBtn) scrollCatIntoView(bar, activeBtn);
       }
     }
-    // Desplaza horizontalmente la barra de categorías para que 'btn' quede visible
+    // Desplaza horizontalmente la barra de categorías para que 'btn' quede visible.
+    // Usa offsetLeft (coordenadas propias de la barra) en vez de getBoundingClientRect:
+    // así el cálculo no depende del scroll ya aplicado y es estable de un tirón al siguiente.
     function scrollCatIntoView(bar, btn) {
-      const barRect = bar.getBoundingClientRect(), btnRect = btn.getBoundingClientRect();
       const margin = 18;
-      if (btnRect.left < barRect.left + margin) {
-        bar.scrollBy({ left: btnRect.left - barRect.left - margin, behavior: "smooth" });
-      } else if (btnRect.right > barRect.right - margin) {
-        bar.scrollBy({ left: btnRect.right - barRect.right + margin, behavior: "smooth" });
+      const left = btn.offsetLeft, right = left + btn.offsetWidth;
+      if (left < bar.scrollLeft + margin) {
+        bar.scrollTo({ left: Math.max(0, left - margin), behavior: "smooth" });
+      } else if (right > bar.scrollLeft + bar.clientWidth - margin) {
+        bar.scrollTo({ left: right - bar.clientWidth + margin, behavior: "smooth" });
       }
     }
 
@@ -2687,13 +2695,21 @@
       activeCat = b.dataset.cat; syncSheetTabs(); renderFoodList();
     });
 
-    // Tocar una categoría lleva (scroll suave) a esa sección
+    // Tocar una categoría la marca activa al momento y desplaza tanto la barra
+    // (para que el botón quede bien centrado) como el contenido (scroll suave
+    // a esa sección). Mientras solo arrastras la barra con el dedo para mirar
+    // otras categorías, nada de esto ocurre: el subrayado se queda donde está.
     $("recipeCats").addEventListener("click", (e) => {
       const btn = e.target.closest(".rcat"); if (!btn) return;
+      const bar = $("recipeCats");
+      recipeActiveCat = btn.dataset.rcat;
+      bar.querySelectorAll(".rcat").forEach(b => b.classList.toggle("active", b === btn));
+      positionRecipeCatUnderline();
+      scrollCatIntoView(bar, btn);
       const sel = '.addf[data-cat="' + btn.dataset.rcat + '"], .rcard[data-cat="' + btn.dataset.rcat + '"]';
       const card = $("foodList").querySelector(sel);
       if (!card) return;
-      const headerH = $("recipeCats").getBoundingClientRect().bottom;
+      const headerH = bar.getBoundingClientRect().bottom;
       window.scrollTo({ top: card.getBoundingClientRect().top + window.scrollY - headerH - 8, behavior: "smooth" });
     });
     // Scroll-spy: al desplazar la lista, marca la categoría visible
@@ -3417,7 +3433,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.22";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.23";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
