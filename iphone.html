@@ -461,14 +461,7 @@
        barra de categorías se mueven siempre juntas, sin desincronizarse cuando
        Safari colapsa/expande la barra de direcciones al desplazar. */
     #sheet { padding-top: 0; }
-    .sheet-head-sticky {
-      position: sticky; top: 0; z-index: 5;
-      /* Fuerza su propia capa de composición: en iOS, un sticky que contiene un
-         scroller horizontal (la barra de categorías) puede "vibrar" al desplazar
-         si Safari lo repinta en vez de recolocarlo por compositor. */
-      -webkit-transform: translateZ(0); transform: translateZ(0);
-      will-change: transform;
-    }
+    .sheet-head-sticky { position: sticky; top: 0; z-index: 5; }
     .sheet-tabs {
       position: relative;             /* para el ::before del notch */
       display: flex; align-items: flex-end; gap: 26px;
@@ -592,13 +585,12 @@
     /* Sello "Ⓗ" de Hacendado (estilo ®, sombreado) abajo a la derecha de la miniatura */
     .addf-brand {
       position: absolute; right: 8px; bottom: 8px;
-      width: 23px; height: 23px; border-radius: 50%; box-sizing: border-box;
-      border: 2.25px solid var(--ink); color: var(--ink);   /* círculo en negrita, igual que la H */
-      background: rgba(255,255,255,0.7);
+      width: 27px; height: 27px; border-radius: 50%; box-sizing: border-box;
+      border: 2.5px solid var(--ink); color: var(--ink);    /* círculo en negrita, igual que la H */
+      background: #E8E4D9;                          /* mismo color que el fondo (la miniatura) */
       display: flex; align-items: center; justify-content: center;
-      font-family: var(--disp); font-weight: 800; font-size: 13px; line-height: 1;
+      font-family: var(--disp); font-weight: 800; font-size: 15px; line-height: 1;
       padding-top: 1.5px;                          /* centra ópticamente la H */
-      box-shadow: 0 1px 3px rgba(0,0,0,0.28);      /* sombreada como la ® */
     }
     /* Zona de texto en blanco: nombre grande + ración + kcal (estilo Honest Greens) */
     .addf-info { background: #fff; padding: 13px 15px 15px; flex: 1; display: flex; flex-direction: column; }
@@ -629,7 +621,11 @@
       position: relative;
       display: flex; gap: 24px; align-items: flex-end;
       background: #fff; margin: 0; padding: 15px 18px 0;
-      overflow-x: auto; scrollbar-width: none;
+      /* overflow-y: hidden es IMPRESCINDIBLE: "overflow-x: auto" hace que el
+         navegador calcule también "overflow-y: auto", así que cualquier píxel
+         que sobresalga por abajo (el subrayado) volvía la barra desplazable en
+         vertical y "temblaba" (las palabras subían y bajaban al hacer scroll). */
+      overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
       border-bottom: 1px solid rgba(0,0,0,0.14);   /* línea fina = separación con el contenido */
     }
     .rcat-tabs::-webkit-scrollbar { display: none; }
@@ -641,8 +637,9 @@
       color: var(--muted); white-space: nowrap; transition: color 0.18s ease;
     }
     .rcat.active { color: var(--ink); }
-    /* Subrayado grueso pegado a la línea de separación (estilo Honest Greens) */
-    .rcat-tabs .tab-underline { bottom: -1px; height: 4px; background: var(--ink); }
+    /* Subrayado grueso pegado a la línea de separación (estilo Honest Greens).
+       "bottom: 0" (no -1px) para no desbordar la barra por abajo. */
+    .rcat-tabs .tab-underline { bottom: 0; height: 4px; background: var(--ink); }
 
     .rcard {
       width: 100%; list-style: none; cursor: pointer;
@@ -779,7 +776,6 @@
     .rv-add-plus {
       font-family: var(--exp); font-weight: 300; font-size: 38px; line-height: 1;
       color: var(--ink); -webkit-text-fill-color: var(--ink);   /* símbolo oscuro */
-      margin-top: -3px;                       /* centra ópticamente el signo */
     }
 
     .sheet-foot { flex-shrink: 0; padding: 12px 18px max(12px, calc(env(safe-area-inset-bottom) - 8px)); border-top: 1px solid var(--line); background: var(--bg); }
@@ -1219,7 +1215,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.26</div>
+      <div class="avatar" id="version">V.27</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1297,7 +1293,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.26</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.27</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -3484,7 +3480,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.26";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.27";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
