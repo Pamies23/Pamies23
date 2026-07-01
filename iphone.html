@@ -149,23 +149,25 @@
     }
 
     /* ---------- Selector de vista (pills, debajo de los macros) ---------- */
+    /* Barra de comidas con subrayado, igual que las categorías de Alimentos.
+       Va dentro del bloque pegajoso, justo debajo de la barra negra Menú|Compra. */
     .view-tabs {
-      display: flex; gap: 8px; overflow-x: auto;
-      /* Hueco macros→filtros al ritmo estándar de la app (igual que hero→macros) */
-      margin: 14px -18px 0; padding: 0 18px 2px;
-      scrollbar-width: none;
+      position: relative;
+      display: flex; gap: 24px; align-items: flex-end;
+      background: #fff; margin: 0; padding: 15px 18px 0;
+      overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
+      border-bottom: 1px solid rgba(0,0,0,0.14);
     }
+    .view-tabs[hidden] { display: none; }
     .view-tabs::-webkit-scrollbar { display: none; }
     .view-tabs button {
-      flex: 0 0 auto; cursor: pointer;
-      border: none; background: var(--bg); color: var(--ink);
-      border-radius: 99px; padding: 9px 17px;
-      font-family: var(--disp); font-size: 13px; font-weight: 800;
-      letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-      transition: all 0.15s ease;
+      flex: 0 0 auto; border: none; background: none; cursor: pointer; padding: 0 0 13px;
+      font-family: var(--exp); font-weight: 800; font-size: 18px;
+      text-transform: none; letter-spacing: -0.01em;
+      color: var(--muted); white-space: nowrap; transition: color 0.18s ease;
     }
-    .view-tabs button.active { background: var(--ink); color: #fff; }
+    .view-tabs button.active { color: var(--ink); }
+    .view-tabs .tab-underline { bottom: 0; height: 4px; background: var(--ink); }
 
     /* ---------- Hero: contador de calorías (tarjeta negra) ---------- */
     /* Dos columnas: izquierda datos, derecha anillo de progreso */
@@ -254,31 +256,30 @@
     .hero .now.over { color: var(--red); }
 
     /* ---------- Cabecera de sección: línea fija Menú | Compra ---------- */
-    /* Se queda pegada arriba al bajar la pantalla (como las pestañas de Honest Greens). */
-    .section-head {
+    /* Cabecera fija del Home, mismo patrón que Alimentos|Recetas: pestañas negras
+       Menú|Compra + barra de comidas con subrayado, en un solo bloque pegajoso. */
+    .home-head-sticky {
       position: sticky; top: env(safe-area-inset-top); z-index: 2;
-      display: flex; align-items: flex-end; gap: 24px;
-      background: var(--bg);
-      /* Mismo hueco arriba (hasta el notch) que abajo (hasta la línea negra);
-         abajo sin relleno: el borde de la barra coincide con la línea negra.
-         El margen inferior iguala la distancia letras→línea (12px). */
-      margin: 0 -18px 12px; padding: 7px 18px 0;
+      margin: 0 -18px 12px;
     }
-    /* Relleno blanco SOBRE la barra (franja del notch). Siempre presente, pero en
-       reposo queda tapado por la franja de agua (que va por encima en el apilado);
-       al bajar, el agua desaparece y este blanco cubre todo lo de arriba de la línea.
-       Así no depende de JS y nunca parpadea contenido por encima al hacer scroll. */
-    .section-head::before {
+    /* Relleno NEGRO sobre la barra (franja del notch). En reposo lo tapa el agua
+       (que va por encima); al bajar cubre todo lo de arriba. No depende de JS. */
+    .home-head-sticky::before {
       content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
-      height: calc(env(safe-area-inset-top) + 2px); background: var(--bg);
+      height: calc(env(safe-area-inset-top) + 2px); background: #000;
+    }
+    .section-head {
+      display: flex; align-items: flex-end; gap: 26px;
+      background: #000; padding: 16px 18px 16px;
     }
     .home-tab {
-      border: none; background: none; cursor: pointer; padding: 0 0 12px;
-      font-family: var(--exp); font-weight: 800; font-size: 19px;
-      letter-spacing: -0.01em; text-transform: uppercase; color: var(--muted);
+      border: none; background: none; cursor: pointer; padding: 0;
+      font-family: var(--exp); font-weight: 800; font-size: 22px;
+      letter-spacing: -0.01em; text-transform: none; color: rgba(255,255,255,0.42);
       position: relative; transition: color 0.18s ease;
     }
-    .home-tab.active { color: var(--ink); }
+    /* Pestaña activa en lima, como en Alimentos|Recetas */
+    .home-tab.active { color: var(--lime); }
     /* Subrayado único que se desliza entre pestañas (transición tipo iPhone) */
     .tab-underline {
       position: absolute; bottom: 0; left: 0; width: 0; height: 3px;
@@ -1181,7 +1182,9 @@
       /* Columna derecha: todo lo que no es el panel */
       .app > :not(.top-region) { grid-column: 2; }
       /* Home */
-      .section-head { top: 0; padding: 18px 40px 12px; margin: 0 0 14px; }
+      .home-head-sticky { top: 0; margin: 0 0 14px; }
+      .section-head { padding: 18px 40px 16px; }
+      .view-tabs { padding-left: 40px; padding-right: 40px; }
       #menuView, #shopView { padding: 0 40px 130px; }
       #foodLog { padding: 0; }
       .log-list { grid-template-columns: repeat(3, 1fr); }
@@ -1203,7 +1206,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.2</div>
+      <div class="avatar" id="version">V.3</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1236,14 +1239,6 @@
 
     <section class="macros" id="macros"></section>
 
-    <!-- Filtros (debajo de los macros) -->
-    <div class="view-tabs" id="viewTabs">
-      <button data-view="Desayuno">Desayuno</button>
-      <button data-view="Comida">Comida</button>
-      <button data-view="Cena">Cena</button>
-      <button data-view="Snack">Snack</button>
-    </div>
-
     <!-- Acciones de filtro (sobre la imagen del agua) -->
     <div class="hero-actions" id="heroActions">
       <button class="clear-filters norm-btn hidden" id="normBtn">/ 100 g</button>
@@ -1252,11 +1247,21 @@
     </div>
   </div><!-- /.top-region -->
 
-  <!-- Línea fija (no desaparece al bajar): Menú | Compra -->
-  <div class="section-head" id="homeTabs">
-    <button class="home-tab active" id="tabMenu" data-tab="menu">Menú</button>
-    <button class="home-tab" id="tabShop" data-tab="compra">Compra</button>
-    <span class="tab-underline" id="tabUnderline"></span>
+  <!-- Cabecera fija del Home (como Alimentos|Recetas): pestañas negras Menú|Compra
+       + barra de comidas con subrayado, todo en un mismo bloque pegajoso. -->
+  <div class="home-head-sticky" id="homeHeadSticky">
+    <div class="section-head" id="homeTabs">
+      <button class="home-tab active" id="tabMenu" data-tab="menu">Menú</button>
+      <button class="home-tab" id="tabShop" data-tab="compra">Compra</button>
+    </div>
+    <!-- Comidas con subrayado (como las categorías de Alimentos). Solo en Menú. -->
+    <div class="view-tabs" id="viewTabs">
+      <button data-view="Desayuno">Desayuno</button>
+      <button data-view="Comida">Comida</button>
+      <button data-view="Cena">Cena</button>
+      <button data-view="Snack">Snack</button>
+      <span class="tab-underline" id="viewUnderline"></span>
+    </div>
   </div>
 
   <!-- Vista Menú (el registro del día) -->
@@ -1281,7 +1286,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.2</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.3</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -1996,9 +2001,10 @@
       const foodSelN = foodSel ? (normalize100 ? nutri(foodSel.food, 100) : foodSel.n) : null;
       const foodSelG = foodSel ? (normalize100 ? 100 : foodSel.grams) : 0;
 
-      // Chips de vista activos
+      // Comidas activas + subrayado bajo la activa (o ninguno si no hay filtro)
       $("viewTabs").querySelectorAll("button").forEach(b =>
         b.classList.toggle("active", b.dataset.view === activeView));
+      positionTabUnderline();
 
       // ---- Contador de calorías (hero) ----
       // La 2ª línea es SIEMPRE "/ XXXX KCAL" (objetivo diario) con tamaño fijo,
@@ -2252,12 +2258,14 @@
     }
 
     // Coloca el subrayado deslizante bajo la pestaña activa
+    // Coloca el subrayado bajo la comida activa de la barra (o lo oculta si no hay
+    // filtro). La barra de comidas solo existe en la pestaña Menú.
     function positionTabUnderline() {
-      const tab = homeTab === "compra" ? $("tabShop") : $("tabMenu");
-      const u = $("tabUnderline");
-      if (!tab || !u) return;
-      u.style.left = tab.offsetLeft + "px";
-      u.style.width = tab.offsetWidth + "px";
+      const active = $("viewTabs").querySelector("button.active"), u = $("viewUnderline");
+      if (!u) return;
+      if (!active) { u.style.width = "0px"; return; }
+      u.style.left = active.offsetLeft + "px";
+      u.style.width = active.offsetWidth + "px";
     }
 
     function setHomeTab(tab, animate) {
@@ -2265,10 +2273,11 @@
       homeTab = tab;
       $("tabMenu").classList.toggle("active", tab === "menu");
       $("tabShop").classList.toggle("active", tab === "compra");
-      positionTabUnderline();
       const showMenu = tab === "menu";
+      $("viewTabs").hidden = !showMenu;          // las comidas solo en Menú
       $("menuView").hidden = !showMenu;
       $("shopView").hidden = showMenu;
+      positionTabUnderline();
       if (tab === "compra") renderShop();
       // Transición tipo iPhone: el contenido entrante se desliza (adelante a Compra, atrás a Menú)
       if (changed && animate) {
@@ -3468,7 +3477,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.2";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.3";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
