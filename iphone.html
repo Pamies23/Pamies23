@@ -803,67 +803,65 @@
        oscuro del modal) para que la franja del inset por debajo de la ficha fija
        se confunda con la ficha y no se vea una banda. */
     html.gram-open, html.gram-open body,
-    html.gram-open .app, html.gram-open .page.shown { background: #D2D0CB; }
+    html.gram-open .app, html.gram-open .page.shown { background: #fff; }
     .modal-card {
       position: relative;
       width: 100%; max-width: 460px;
-      /* Cristal de la V.10 (translúcido + desenfoque): los elementos se ven mejor */
-      background: rgba(250,250,250,0.55);
-      -webkit-backdrop-filter: blur(42px) saturate(210%);
-      backdrop-filter: blur(42px) saturate(210%);
-      border-top: 1px solid rgba(255,255,255,0.7);
+      /* Ficha blanca (misma paleta que el detalle de receta) */
+      background: #fff;
+      border-top: 1px solid var(--line);
       border-radius: 24px 24px 0 0;
       padding: 20px 20px clamp(16px, env(safe-area-inset-bottom), 30px);
       transform: translateY(100%); transition: transform 0.3s cubic-bezier(.22,.61,.36,1);
     }
-    /* La franja de padding inferior (bajo los botones) se pinta SÓLIDA del color
-       de la banda, así coincide con el inset de abajo en cualquier contexto
-       (sobre el listado o sobre Home), donde el cristal translúcido variaba. */
+    /* La franja de padding inferior (bajo los botones) coincide con el inset de
+       abajo en standalone (la ficha fija no llega al borde físico). */
     .modal-card::after {
       content: ""; position: absolute; left: 0; right: 0; bottom: 0;
       height: clamp(16px, env(safe-area-inset-bottom), 30px);
-      background: #D2D0CB; pointer-events: none;
+      background: #fff; pointer-events: none;
     }
     .modal.open .modal-card { transform: translateY(0); }
     .modal-top { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
     .modal-emoji {
-      width: 120px; height: 120px; border-radius: 26px; background: var(--card);
+      width: 120px; height: 120px; border-radius: 26px; background: #E8E4D9;   /* beige, como la receta */
       display: flex; align-items: center; justify-content: center; font-size: 58px; flex-shrink: 0;
     }
     .modal-title { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
     .modal-title h3 { font-family: var(--disp); font-weight: 800; font-size: 22px; line-height: 1.05; text-transform: uppercase; letter-spacing: 0.01em; color: var(--ink); }
     .modal-ref { font-size: 13px; color: var(--muted); margin-top: 6px; font-weight: 500; }
 
-    /* Selector de comida dentro del modal */
-    .modal-meals { display: flex; gap: 7px; margin-bottom: 14px; overflow-x: auto; scrollbar-width: none; }
+    /* Selector de comida (debajo del cajetín negro): pastillas beige, activa negra,
+       igual que en el detalle de receta. */
+    .modal-meals { display: flex; gap: 8px; margin: 0 0 16px; overflow-x: auto; scrollbar-width: none; }
     .modal-meals::-webkit-scrollbar { display: none; }
     .modal-meals button {
-      flex: 1 0 auto; border: 1px solid var(--line); background: var(--card); color: var(--ink);
-      border-radius: 99px; padding: 9px 12px;
+      flex: 1 0 auto; border: none; background: var(--card); color: var(--ink);
+      border-radius: 99px; padding: 11px 14px;
       font-family: var(--disp); font-size: 12px; font-weight: 700;
       letter-spacing: 0.02em; text-transform: uppercase; cursor: pointer;
       transition: all 0.15s ease; white-space: nowrap;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     }
-    .modal-meals button.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .modal-meals button.active { background: var(--ink); color: #fff; box-shadow: none; }
 
     .grams-field {
       display: flex; align-items: center; gap: 14px;
-      background: var(--card); border-radius: var(--r-md);
-      padding: 10px 12px; margin-bottom: 14px;
+      background: #E8E4D9; border-radius: 22px;               /* beige, como la receta */
+      padding: 12px 14px; margin-bottom: 14px;
+      border: 1px solid rgba(255,255,255,0.5);
+      box-shadow: 0 1px 2px rgba(60,55,45,0.06), 0 10px 24px rgba(60,55,45,0.12);
     }
     .grams-field button {
       width: 42px; height: 42px; border-radius: 50%;
-      /* Cristal (como la lupa), con el signo oscuro para que se vea bien */
-      background: rgba(255,255,255,0.34);
-      -webkit-backdrop-filter: blur(16px) saturate(180%);
-      backdrop-filter: blur(16px) saturate(180%);
-      border: 1px solid rgba(255,255,255,0.65);
-      box-shadow: inset 0 1px 1px rgba(255,255,255,0.9), inset 0 -8px 12px -8px rgba(255,255,255,0.65), 0 1px 4px rgba(0,0,0,0.08);
+      /* Círculos blancos con sombra suave (estilo iOS), como en la receta */
+      background: #fff;
+      border: 1px solid rgba(0,0,0,0.04);
+      box-shadow: 0 1px 1px rgba(0,0,0,0.04), 0 4px 10px rgba(0,0,0,0.10);
       color: var(--ink); font-size: 24px; line-height: 1; cursor: pointer; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
       touch-action: none; -webkit-user-select: none; user-select: none;
     }
-    .grams-field .gminus { background: rgba(255,255,255,0.34); color: var(--ink); }
     .grams-field .gwrap { flex: 1; text-align: center; }
     .grams-field input {
       width: 100%; border: none; background: none; outline: none;
@@ -900,20 +898,7 @@
     .modal-actions .m-delete { background: var(--red); color: #fff; flex: 0 0 auto; padding: 16px 22px; }
     .modal-actions .m-save { background: var(--ink); color: #fff; }
 
-    /* Cristal: lo que antes era beige dentro de la ficha pasa a "Liquid Glass" */
-    .modal-emoji,
-    .grams-field,
-    .modal-meals button,
-    .modal-actions .m-cancel {
-      background: rgba(255,255,255,0.4);
-      border: 1px solid rgba(255,255,255,0.6);
-      box-shadow:
-        inset 0 1px 1px rgba(255,255,255,0.85),
-        inset 0 -9px 12px -8px rgba(255,255,255,0.6),
-        0 1px 4px rgba(0,0,0,0.05);
-    }
-    /* Pestaña de comida activa: sigue siendo negra */
-    .modal-meals button.active { background: var(--ink); border-color: var(--ink); color: #fff; box-shadow: none; }
+    /* La ficha usa ahora la paleta de la receta (blanco + beige), sin cristal. */
 
     /* ---------- Simulador de recetas (misma estructura que la Home) ---------- */
     /* La imagen de la sandía va en la región superior (tras hero+macros) y
@@ -1218,7 +1203,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.28</div>
+      <div class="avatar" id="version">V.1</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1296,7 +1281,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.28</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.1</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -1368,14 +1353,6 @@
         </div>
       </div>
 
-      <!-- ¿A qué comida lo asigno? (antes estaba arriba del todo) -->
-      <div class="modal-meals" id="mMeals">
-        <button data-meal="Desayuno">Desayuno</button>
-        <button data-meal="Comida">Comida</button>
-        <button data-meal="Cena">Cena</button>
-        <button data-meal="Snack">Snack</button>
-      </div>
-
       <div class="grams-field" id="mGramsField">
         <button class="gminus" id="mMinus" aria-label="Menos">−</button>
         <div class="gwrap">
@@ -1402,6 +1379,14 @@
           <div class="pv-n" id="pvF">0</div><div class="pv-l">Grasa</div>
           <div class="pv-ring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="pvr-track" cx="18" cy="18" r="15.915"></circle><circle class="pvr-sel" id="pvFRing" cx="18" cy="18" r="15.915"></circle></svg><span class="pv-pct" id="pvFPct">0%</span></div>
         </div>
+      </div>
+
+      <!-- Selector de comida DEBAJO del cajetín negro, como en el detalle de receta -->
+      <div class="modal-meals" id="mMeals">
+        <button data-meal="Desayuno">Desayuno</button>
+        <button data-meal="Comida">Comida</button>
+        <button data-meal="Cena">Cena</button>
+        <button data-meal="Snack">Snack</button>
       </div>
 
       <div class="modal-actions">
@@ -3483,7 +3468,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.28";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.1";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
