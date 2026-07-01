@@ -151,8 +151,8 @@
     /* ---------- Selector de vista (pills, debajo de los macros) ---------- */
     .view-tabs {
       display: flex; gap: 8px; overflow-x: auto;
-      /* Mismo hueco arriba (macros→filtros) que abajo (filtros→franja blanca) */
-      margin: 44px -18px 0; padding: 0 18px 2px;
+      /* Hueco macros→filtros al ritmo estándar de la app (igual que hero→macros) */
+      margin: 14px -18px 0; padding: 0 18px 2px;
       scrollbar-width: none;
     }
     .view-tabs::-webkit-scrollbar { display: none; }
@@ -1203,7 +1203,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.1</div>
+      <div class="avatar" id="version">V.2</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1281,7 +1281,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.1</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.2</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -3468,7 +3468,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.1";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.2";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
