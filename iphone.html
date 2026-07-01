@@ -461,7 +461,14 @@
        barra de categorías se mueven siempre juntas, sin desincronizarse cuando
        Safari colapsa/expande la barra de direcciones al desplazar. */
     #sheet { padding-top: 0; }
-    .sheet-head-sticky { position: sticky; top: 0; z-index: 5; }
+    .sheet-head-sticky {
+      position: sticky; top: 0; z-index: 5;
+      /* Fuerza su propia capa de composición: en iOS, un sticky que contiene un
+         scroller horizontal (la barra de categorías) puede "vibrar" al desplazar
+         si Safari lo repinta en vez de recolocarlo por compositor. */
+      -webkit-transform: translateZ(0); transform: translateZ(0);
+      will-change: transform;
+    }
     .sheet-tabs {
       position: relative;             /* para el ::before del notch */
       display: flex; align-items: flex-end; gap: 26px;
@@ -1214,7 +1221,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.23</div>
+      <div class="avatar" id="version">V.24</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1292,7 +1299,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.23</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.24</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -2507,7 +2514,11 @@
         btn.className = "rcat"; btn.dataset.rcat = c; btn.textContent = CAT_LABELS[c] || c;
         bar.insertBefore(btn, underline);
       });
-      recipeActiveCat = cats[0] || null;
+      // Los botones se recrean desde cero (ninguno lleva ya la clase "active"), así
+      // que se invalida el valor anterior: fuerza a updateSpy a pintar el estado
+      // inicial en su próxima llamada (si no, con los botones nuevos "sin actividad"
+      // pero el mismo valor de categoría que antes, su comparación se saltaría el pintado).
+      recipeActiveCat = null;
     }
     function positionRecipeCatUnderline() {
       const active = $("recipeCats").querySelector(".rcat.active"), u = $("recipeCatUnderline");
@@ -2526,16 +2537,17 @@
       // alcanza a llegar arriba del todo).
       if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4 && cards.length)
         current = cards[cards.length - 1].dataset.cat;
-      const changed = current !== recipeActiveCat;
+      // Nada que hacer: SIN esta salida temprana se tocaba el DOM (clases + lectura
+      // de offsetLeft) en cada fotograma de scroll, forzando reflow constante y
+      // dando esa sensación entrecortada. Solo se escribe cuando cambia de verdad.
+      if (current === recipeActiveCat) return;
       recipeActiveCat = current;
       bar.querySelectorAll(".rcat").forEach(b => b.classList.toggle("active", b.dataset.rcat === current));
       positionRecipeCatUnderline();
-      // Si la categoría activa cambió y su botón queda fuera de la vista horizontal
+      // La categoría activa cambió: si su botón queda fuera de la vista horizontal
       // de la barra, la desplazamos para que se vea (sin tocar el scroll vertical).
-      if (changed) {
-        const activeBtn = bar.querySelector(".rcat.active");
-        if (activeBtn) scrollCatIntoView(bar, activeBtn);
-      }
+      const activeBtn = bar.querySelector(".rcat.active");
+      if (activeBtn) scrollCatIntoView(bar, activeBtn);
     }
     // Desplaza horizontalmente la barra de categorías para que 'btn' quede visible.
     // Usa offsetLeft (coordenadas propias de la barra) en vez de getBoundingClientRect:
@@ -3433,7 +3445,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.23";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.24";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
