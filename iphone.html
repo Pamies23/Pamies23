@@ -1221,7 +1221,7 @@
     <header class="topbar">
       <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.24</div>
+      <div class="avatar" id="version">V.25</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1299,7 +1299,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.24</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.25</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -2526,28 +2526,57 @@
       u.style.left = active.offsetLeft + "px";
       u.style.width = active.offsetWidth + "px";
     }
-    function updateSpy() {
-      if (currentView !== "sheet") return;
-      const bar = $("recipeCats"), headerBottom = bar.getBoundingClientRect().bottom;
+
+    // --- Scroll-spy sin reflow por fotograma ---
+    // Precalculamos, una sola vez tras pintar la lista, la posición (en coordenadas
+    // del documento) del primer elemento de cada categoría y la línea de la cabecera.
+    // Durante el scroll solo comparamos números (cero lecturas de layout), así que
+    // ni hay reflow ni la barra "vibra".
+    let catAnchors = [];        // [{ cat, top }]
+    let headerLine = 0;         // borde inferior de la cabecera pegajosa (viewport)
+    let spyLocked = false, spyIdleTimer = null;
+
+    function buildCatAnchors() {
       const cards = $("foodList").querySelectorAll(".addf[data-cat], .rcard[data-cat]");
-      let current = null;
-      cards.forEach(card => { if (card.getBoundingClientRect().top - headerBottom <= 12) current = card.dataset.cat; });
-      if (!current && cards[0]) current = cards[0].dataset.cat;
-      // Al llegar al fondo, marca la última categoría (si su sección es corta y no
-      // alcanza a llegar arriba del todo).
-      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4 && cards.length)
-        current = cards[cards.length - 1].dataset.cat;
-      // Nada que hacer: SIN esta salida temprana se tocaba el DOM (clases + lectura
-      // de offsetLeft) en cada fotograma de scroll, forzando reflow constante y
-      // dando esa sensación entrecortada. Solo se escribe cuando cambia de verdad.
-      if (current === recipeActiveCat) return;
-      recipeActiveCat = current;
-      bar.querySelectorAll(".rcat").forEach(b => b.classList.toggle("active", b.dataset.rcat === current));
+      catAnchors = [];
+      const seen = new Set();
+      cards.forEach(card => {
+        const c = card.dataset.cat;
+        if (!seen.has(c)) { seen.add(c); catAnchors.push({ cat: c, top: card.getBoundingClientRect().top + window.scrollY }); }
+      });
+      headerLine = $("recipeCats").getBoundingClientRect().bottom;   // constante mientras está pegajosa
+    }
+
+    // Marca 'cat' como activa: subrayado (transición CSS suave) y, si procede,
+    // desliza la barra para centrar su botón. No toca el scroll vertical.
+    function applyActiveCat(cat, moveBar) {
+      recipeActiveCat = cat;
+      const bar = $("recipeCats");
+      bar.querySelectorAll(".rcat").forEach(b => b.classList.toggle("active", b.dataset.rcat === cat));
       positionRecipeCatUnderline();
-      // La categoría activa cambió: si su botón queda fuera de la vista horizontal
-      // de la barra, la desplazamos para que se vea (sin tocar el scroll vertical).
-      const activeBtn = bar.querySelector(".rcat.active");
-      if (activeBtn) scrollCatIntoView(bar, activeBtn);
+      if (moveBar) { const btn = bar.querySelector(".rcat.active"); if (btn) scrollCatIntoView(bar, btn); }
+    }
+
+    function updateSpy() {
+      if (currentView !== "sheet" || spyLocked || !catAnchors.length) return;
+      const line = window.scrollY + headerLine + 12;
+      let current = catAnchors[0].cat;
+      for (let i = 0; i < catAnchors.length; i++) {
+        if (catAnchors[i].top <= line) current = catAnchors[i].cat; else break;
+      }
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4)
+        current = catAnchors[catAnchors.length - 1].cat;
+      if (current !== recipeActiveCat) applyActiveCat(current, true);
+    }
+
+    // Bloquea el scroll-spy mientras dura una animación de salto (al tocar una
+    // categoría): así el subrayado va DIRECTO al destino sin pasar por las
+    // categorías intermedias (lo que se sentía como un tirón/parón). Se desbloquea
+    // cuando el scroll deja de moverse.
+    function lockSpy() {
+      spyLocked = true;
+      clearTimeout(spyIdleTimer);
+      spyIdleTimer = setTimeout(() => { spyLocked = false; }, 600);
     }
     // Desplaza horizontalmente la barra de categorías para que 'btn' quede visible.
     // Usa offsetLeft (coordenadas propias de la barra) en vez de getBoundingClientRect:
@@ -2586,7 +2615,7 @@
         const createCard = `<li class="rcard rcard-new" data-newrecipe="1">＋ Crear receta</li>`;
         list.classList.add("as-recipes");
         list.innerHTML = entries.map(([k, r]) => recipeCardHTML(k, r)).join("") + createCard;
-        requestAnimationFrame(updateSpy);
+        requestAnimationFrame(() => { buildCatAnchors(); updateSpy(); });
         return;
       }
 
@@ -2599,7 +2628,7 @@
       list.innerHTML = entries.length
         ? entries.map(([k, f]) => cardHTML(k, "data-add", f.emoji, f.name, f.ration, f.kcal, f.brand, f.cat)).join("")
         : `<li class="food-empty">Sin resultados</li>`;
-      requestAnimationFrame(updateSpy);
+      requestAnimationFrame(() => { buildCatAnchors(); updateSpy(); });
     }
 
     $("addBtn").addEventListener("click", openSheet);
@@ -2697,6 +2726,7 @@
       if (b.dataset.type === activeType) return;
       const forward = b.dataset.type === "recetas";
       activeType = b.dataset.type; activeCat = "todos";
+      window.scrollTo(0, 0);                 // empieza arriba en la lista nueva
       syncSheetTabs(); renderFoodList();
       const fl = $("foodList");
       fl.classList.remove("slide-fwd", "slide-back"); void fl.offsetWidth;
@@ -2707,30 +2737,41 @@
       activeCat = b.dataset.cat; syncSheetTabs(); renderFoodList();
     });
 
-    // Tocar una categoría la marca activa al momento y desplaza tanto la barra
-    // (para que el botón quede bien centrado) como el contenido (scroll suave
-    // a esa sección). Mientras solo arrastras la barra con el dedo para mirar
-    // otras categorías, nada de esto ocurre: el subrayado se queda donde está.
+    // Tocar una categoría: el subrayado va DIRECTO a ese botón (transición suave)
+    // y la barra se desliza para centrarlo, de inmediato. El contenido salta a
+    // la sección con scroll suave; da igual que llegue un pelín después. El spy
+    // queda bloqueado mientras dura el salto, así el subrayado no pasa por las
+    // categorías intermedias (era lo que se sentía como un tirón/parón).
+    // (Arrastrar la barra con el dedo sin tocar ningún botón no cambia nada.)
     $("recipeCats").addEventListener("click", (e) => {
       const btn = e.target.closest(".rcat"); if (!btn) return;
-      const bar = $("recipeCats");
-      recipeActiveCat = btn.dataset.rcat;
-      bar.querySelectorAll(".rcat").forEach(b => b.classList.toggle("active", b === btn));
-      positionRecipeCatUnderline();
-      scrollCatIntoView(bar, btn);
+      applyActiveCat(btn.dataset.rcat, true);
+      lockSpy();
       const sel = '.addf[data-cat="' + btn.dataset.rcat + '"], .rcard[data-cat="' + btn.dataset.rcat + '"]';
       const card = $("foodList").querySelector(sel);
       if (!card) return;
-      const headerH = bar.getBoundingClientRect().bottom;
-      window.scrollTo({ top: card.getBoundingClientRect().top + window.scrollY - headerH - 8, behavior: "smooth" });
+      window.scrollTo({ top: card.getBoundingClientRect().top + window.scrollY - headerLine - 8, behavior: "smooth" });
     });
-    // Scroll-spy: al desplazar la lista, marca la categoría visible
+    // Scroll-spy: al desplazar la lista, marca la categoría visible. Mientras el
+    // spy esté bloqueado (salto en curso), cada evento de scroll reinicia un
+    // temporizador de reposo; cuando el scroll se para, se desbloquea.
     let spyTick = false;
     window.addEventListener("scroll", () => {
-      if (currentView !== "sheet" || spyTick) return;
+      if (currentView !== "sheet") return;
+      if (spyLocked) {
+        // Mientras dura el salto, mantén la categoría elegida. Al parar el scroll
+        // solo desbloquea (sin reevaluar): así un pequeño "undershoot" no cambia
+        // la categoría recién tocada; el siguiente scroll real ya la reajusta.
+        clearTimeout(spyIdleTimer);
+        spyIdleTimer = setTimeout(() => { spyLocked = false; }, 140);
+        return;
+      }
+      if (spyTick) return;
       spyTick = true;
       requestAnimationFrame(() => { updateSpy(); spyTick = false; });
     }, { passive: true });
+    // Recalcula los anclajes si cambia el tamaño (giro de pantalla, etc.)
+    window.addEventListener("resize", () => { if (currentView === "sheet") { buildCatAnchors(); updateSpy(); } });
 
     $("foodList").addEventListener("click", (e) => {
       if (e.target.closest("[data-newrecipe]")) { openSim(); return; }
@@ -3445,7 +3486,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.24";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.25";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
