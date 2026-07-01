@@ -86,9 +86,6 @@
       position: relative; z-index: 3;     /* va por encima de la línea fija: tapa su relleno blanco en reposo */
       margin: calc((env(safe-area-inset-top) + 12px) * -1) -18px 8px;
       padding: calc(env(safe-area-inset-top) + 16px) 18px 22px;
-      /* El agua ocupa toda la pantalla (aunque quede vacía abajo); el resto del
-         contenido queda debajo, al hacer scroll. */
-      min-height: 100vh; min-height: 100dvh;
       background-color: #5A9F9F;                 /* color del agua (relleno y borde superior) */
       background-image: url("water.jpg");
       background-size: cover;
@@ -156,7 +153,7 @@
        pequeñas para caber en una línea, con el botón + de añadir a la derecha. */
     .view-tabs {
       display: flex; align-items: stretch; gap: 6px;
-      margin: 14px -18px 0; padding: 0 18px 2px;
+      margin: 14px 0 0; padding: 0;
     }
     .view-tabs button[data-view] {
       flex: 0 0 auto; cursor: pointer;
@@ -264,6 +261,40 @@
     /* Si te pasas del objetivo, el número se pone en rojo como aviso */
     .macro .val.over { color: var(--red); }
     .hero .now.over { color: var(--red); }
+
+    /* ---------- Bloque fijo del Home: macros + filtros ----------
+       Se quedan a la vista al desplazar (el registro pasa por debajo). El notch
+       se cubre en negro al bajar, igual que en Alimentos|Recetas. */
+    .home-head-sticky {
+      position: sticky; top: env(safe-area-inset-top); z-index: 2;
+      margin: 0 -18px; padding: 0 18px 12px;
+      background: var(--bg);
+    }
+    .home-head-sticky::before {
+      content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
+      height: calc(env(safe-area-inset-top) + 2px); background: #000;
+    }
+
+    /* ---------- Ventana Compra (pantalla propia, abierta desde Alimentos) ---------- */
+    .shop-page { min-height: 100%; background: var(--bg); }
+    .shop-head-sticky {
+      position: sticky; top: 0; z-index: 5; background: #000;
+      padding: calc(env(safe-area-inset-top) + 14px) 18px 14px;
+    }
+    .shop-head { display: flex; align-items: center; gap: 12px; }
+    .shop-head .rv-back { position: static; color: #fff; }
+    .shop-title { font-family: var(--exp); font-weight: 800; font-size: 22px; text-transform: none; letter-spacing: -0.01em; color: #fff; }
+    #shopPage .shop-days, #shopPage .shop-list { padding-left: 18px; padding-right: 18px; }
+    #shopPage .shop-days { padding-top: 14px; }
+    #shopPage .shop-list { padding-bottom: calc(env(safe-area-inset-bottom) + 40px); }
+
+    /* Botón de Compra (carrito) en la cabecera de Alimentos|Recetas */
+    .sheet-cart {
+      margin-left: auto; align-self: center; margin-bottom: 3px;
+      border: none; background: none; cursor: pointer; padding: 4px;
+      color: rgba(255,255,255,0.85); display: flex; align-items: center; justify-content: center;
+    }
+    .sheet-cart:active { transform: scale(0.9); }
 
     /* ---------- Cabecera de sección: línea fija Menú | Compra ---------- */
     /* Se queda pegada arriba al bajar la pantalla (como las pestañas de Honest Greens). */
@@ -1213,9 +1244,8 @@
 
   <div class="top-region">
     <header class="topbar">
-      <button class="avatar menu-btn" id="menuBtn" aria-label="Perfiles">J</button>
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.3</div>
+      <div class="avatar" id="version">V.4</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1246,9 +1276,13 @@
       </div>
     </section>
 
-    <section class="macros" id="macros"></section>
+  </div><!-- /.top-region -->
 
-    <!-- Filtros de comida + botón de añadir alimentos (a la derecha del todo) -->
+  <!-- Bloque fijo: macros + filtros. Se quedan a la vista al desplazar; el notch
+       se cubre en negro al bajar, como en Alimentos|Recetas. -->
+  <div class="home-head-sticky" id="homeHeadSticky">
+    <section class="macros" id="macros"></section>
+    <!-- Filtros de comida (hacen de título de sección) + botón de añadir -->
     <div class="view-tabs" id="viewTabs">
       <button data-view="Desayuno">Desayuno</button>
       <button data-view="Comida">Comida</button>
@@ -1256,32 +1290,16 @@
       <button data-view="Snack">Snack</button>
       <button class="vt-add" id="addBtn" aria-label="Añadir comida">+</button>
     </div>
-
-    <!-- Acciones de filtro (sobre la imagen del agua) -->
     <div class="hero-actions" id="heroActions">
       <button class="clear-filters norm-btn hidden" id="normBtn">/ 100 g</button>
       <button class="clear-filters hidden" id="clearFilters">Limpiar filtros</button>
       <button class="clear-filters clear-all hidden" id="clearAll">Borrar todo</button>
     </div>
-  </div><!-- /.top-region -->
-
-  <!-- Línea fija (no desaparece al bajar): Menú | Compra -->
-  <div class="section-head" id="homeTabs">
-    <button class="home-tab active" id="tabMenu" data-tab="menu">Menú</button>
-    <button class="home-tab" id="tabShop" data-tab="compra">Compra</button>
-    <span class="tab-underline" id="tabUnderline"></span>
   </div>
 
-  <!-- Vista Menú (el registro del día) -->
+  <!-- Registro del día (se desplaza bajo el bloque fijo) -->
   <div class="home-view" id="menuView">
-    <div class="log-heading" id="logTitle" hidden></div>
     <div id="foodLog"></div>
-  </div>
-
-  <!-- Vista Compra (lista de la compra de los días marcados) -->
-  <div class="home-view" id="shopView" hidden>
-    <div class="shop-days" id="shopDays"></div>
-    <div class="shop-list" id="shopList"></div>
   </div>
 
  </div><!-- /.app -->
@@ -1294,7 +1312,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.3</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.4</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -1309,10 +1327,16 @@
          solo bloque sticky, así no hay dos "top" independientes que se desincronicen
          cuando Safari colapsa/expande la barra de direcciones al desplazar. -->
     <div class="sheet-head-sticky" id="sheetHeadSticky">
-      <!-- Línea fija: Alimentos | Recetas (como MENÚ | COMPRA) -->
+      <!-- Línea fija: Alimentos | Recetas + botón de Compra (carrito) a la derecha -->
       <div class="sheet-tabs" id="typeTabs">
         <button class="sheet-tab active" data-type="alimentos">Alimentos</button>
         <button class="sheet-tab" data-type="recetas">Recetas</button>
+        <button class="sheet-cart" id="sheetCart" aria-label="Compra">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="20" r="1.4"></circle><circle cx="18" cy="20" r="1.4"></circle>
+            <path d="M2.5 3h2l2.2 11.2a1.6 1.6 0 0 0 1.6 1.3h8.4a1.6 1.6 0 0 0 1.6-1.3L21 7H6"></path>
+          </svg>
+        </button>
         <span class="tab-underline" id="typeUnderline"></span>
       </div>
 
@@ -1336,6 +1360,18 @@
     </div>
 
     <ul class="food-list" id="foodList"></ul>
+  </section>
+
+  <!-- ===================== Ventana Compra (su propia pantalla) ===================== -->
+  <section class="page shop-page" id="shopPage" aria-hidden="true" style="display:none">
+    <div class="shop-head-sticky">
+      <div class="shop-head">
+        <button class="rv-back" id="shopBack" aria-label="Volver">←</button>
+        <h2 class="shop-title">Compra</h2>
+      </div>
+    </div>
+    <div class="shop-days" id="shopDays"></div>
+    <div class="shop-list" id="shopList"></div>
   </section>
 
   <!-- Buscador flotante "Liquid Glass" (fuera de la hoja, fijo al viewport;
@@ -1900,12 +1936,13 @@
     function applyActiveGoal() {
       DATA.goal = isWeekendKey(selectedDate) ? DATA.goals.weekend : DATA.goals.week;
     }
-    // Fecha del día seleccionado en 2 líneas: día de la semana / día + mes corto
+    // Fecha del día seleccionado en UNA sola línea: día de la semana (abreviado)
+    // + día + mes corto. Ej.: "MIÉ 1 JUL".
     const todayLabel = () => {
       const d = dateFromKey(selectedDate);
-      const wd = d.toLocaleDateString("es-ES", { weekday: "long" });
+      const wd = d.toLocaleDateString("es-ES", { weekday: "short" }).replace(".", "");
       const mo = d.toLocaleDateString("es-ES", { month: "short" }).replace(".", "");
-      return `${wd}<br>${d.getDate()} ${mo}`;
+      return `${wd} ${d.getDate()} ${mo}`;
     };
 
     /* =========================================================
@@ -2150,29 +2187,22 @@
       $("clearFilters").classList.toggle("hidden", !anyFilter);
       $("clearAll").classList.toggle("hidden", anyFilter || resolved.length === 0);
 
+      // Registro sin títulos de comida: la línea de filtros ya indica la comida.
       const log = $("foodLog");
       if (activeMacro) {
         // Ordena los alimentos de la vista por cuánto aportan de ese macro
-        // (por 100 g si la normalización está activa, para que el "Top" compare igual)
         const mm = MACROS[activeMacro];
         const items = (isDay ? resolved : byMeal[activeView].items)
           .slice().sort((a, b) => dispNutri(b)[mm.prop] - dispNutri(a)[mm.prop]);
-        setLogTitle("Top " + mm.name.toLowerCase());
         log.innerHTML = items.length
           ? `<ul class="log-list">${items.map(r => rowHTML(r, activeMacro)).join("")}</ul>`
           : `<div class="meal-empty">Sin alimentos</div>`;
       } else if (isDay) {
-        setLogTitle("Menú");
-        const blocks = MEAL_ORDER.map(t => {
-          const b = byMeal[t];
-          if (!b.items.length) return "";
-          return `
-            <div class="log-sub">${t}</div>
-            <ul class="log-list">${b.items.map(r => rowHTML(r)).join("")}</ul>`;
-        }).join("");
-        log.innerHTML = blocks || "";
+        // Todos los alimentos del día, en una sola lista sin títulos por comida
+        log.innerHTML = resolved.length
+          ? `<ul class="log-list">${resolved.map(r => rowHTML(r)).join("")}</ul>`
+          : `<div class="meal-empty">Sin alimentos registrados</div>`;
       } else {
-        setLogTitle(activeView);
         const b = byMeal[activeView];
         log.innerHTML = b.items.length
           ? `<ul class="log-list">${b.items.map(r => rowHTML(r)).join("")}</ul>`
@@ -2184,21 +2214,13 @@
         document.querySelectorAll('.macro .mini .seg').forEach(s => { s.style.width = s.dataset.w + "%"; });
       });
 
-      // Si la vista Compra está abierta, mantenerla al día (cambios de comidas/día/persona)
-      if (homeTab === "compra") renderShop();
-    }
-
-    // El subtítulo del menú solo aparece cuando un filtro acota la vista (no para "Menú")
-    function setLogTitle(text) {
-      const el = $("logTitle");
-      el.textContent = text;
-      el.hidden = (text === "Menú");
+      // Si la ventana Compra está abierta, mantenerla al día
+      if (currentView === "shopPage") renderShop();
     }
 
     /* =========================================================
-       COMPRA  —  lista de la compra de los días marcados
+       COMPRA  —  lista de la compra de los días marcados (ventana propia)
        ========================================================= */
-    let homeTab = "menu";                 // "menu" | "compra"
     let shopSel = new Set([todayKey()]); // días marcados (claves de fecha); hoy por defecto
     let shopGot = new Set();              // alimentos ya cogidos en el súper
     const SHOPGOT_KEY = "verde.shopgot.v1";
@@ -2262,41 +2284,10 @@
       }).join("")}</ul>`;
     }
 
-    // Coloca el subrayado deslizante bajo la pestaña activa
-    function positionTabUnderline() {
-      const tab = homeTab === "compra" ? $("tabShop") : $("tabMenu");
-      const u = $("tabUnderline");
-      if (!tab || !u) return;
-      u.style.left = tab.offsetLeft + "px";
-      u.style.width = tab.offsetWidth + "px";
-    }
-
-    function setHomeTab(tab, animate) {
-      const changed = tab !== homeTab;
-      homeTab = tab;
-      $("tabMenu").classList.toggle("active", tab === "menu");
-      $("tabShop").classList.toggle("active", tab === "compra");
-      positionTabUnderline();
-      const showMenu = tab === "menu";
-      $("menuView").hidden = !showMenu;
-      $("shopView").hidden = showMenu;
-      if (tab === "compra") renderShop();
-      // Transición tipo iPhone: el contenido entrante se desliza (adelante a Compra, atrás a Menú)
-      if (changed && animate) {
-        const view = showMenu ? $("menuView") : $("shopView");
-        const dir = showMenu ? "slide-back" : "slide-fwd";
-        view.classList.remove("slide-fwd", "slide-back");
-        void view.offsetWidth;                 // reinicia la animación
-        view.classList.add(dir);
-      }
-    }
-
-    $("homeTabs").addEventListener("click", (e) => {
-      const b = e.target.closest(".home-tab");
-      if (b) setHomeTab(b.dataset.tab, true);
-    });
-    // Recoloca el subrayado si cambia el tamaño (rotación, fuentes cargadas…)
-    window.addEventListener("resize", positionTabUnderline);
+    // Compra tiene su propia ventana, abierta desde el carrito de Alimentos/Recetas.
+    function openShop() { renderShop(); showView("shopPage"); }
+    $("sheetCart").addEventListener("click", openShop);
+    $("shopBack").addEventListener("click", () => showView("sheet"));
 
     // Marcar/desmarcar un día para la compra
     $("shopDays").addEventListener("click", (e) => {
@@ -2383,7 +2374,7 @@
 
     // Solo una "página" visible a la vez, con transición de entrada/salida fluida.
     // "" (sin display inline) deja mandar al CSS → la Home puede ser grid en iPad.
-    const VIEWS = ["app", "sheet", "recipeView", "sim", "simPick", "profile"];
+    const VIEWS = ["app", "sheet", "shopPage", "recipeView", "sim", "simPick", "profile"];
     let currentView = "app";
     function showView(id) {
       if (id === currentView) { window.scrollTo(0, 0); return; }
@@ -3349,10 +3340,7 @@
        ========================================================= */
     const personInitial = (name) => (name || "?").trim().charAt(0).toUpperCase();
     const activePerson = () => people.list.find(p => p.id === people.active) || people.list[0];
-    function updateMenuAvatar() {
-      const a = activePerson();
-      if (a) $("menuBtn").textContent = personInitial(a.name);
-    }
+    function updateMenuAvatar() { /* el botón de usuario se retiró; el cajón se abre deslizando */ }
     function renderPeople() {
       $("peopleList").innerHTML = people.list.map(pn => `
         <li class="person${pn.id === people.active ? " active" : ""}" data-id="${pn.id}">
@@ -3386,13 +3374,32 @@
       openProfile();                         // abre "Tus datos" para que rellene sus objetivos
     }
 
-    $("menuBtn").addEventListener("click", openDrawer);
     $("drawerBackdrop").addEventListener("click", closeDrawer);
     $("addPersonBtn").addEventListener("click", addPerson);
     $("peopleList").addEventListener("click", (e) => {
       const li = e.target.closest(".person[data-id]"); if (!li) return;
       switchPerson(li.dataset.id);
     });
+
+    // El cajón de perfiles se abre deslizando desde el borde izquierdo hacia la
+    // derecha (ya no hay botón de usuario). Solo en la Home y con el cajón cerrado.
+    (function () {
+      let startX = null, startY = null, tracking = false;
+      window.addEventListener("touchstart", (e) => {
+        const t = e.touches[0];
+        tracking = currentView === "app"
+          && !document.documentElement.classList.contains("drawer-open")
+          && t.clientX <= 24;
+        startX = tracking ? t.clientX : null; startY = tracking ? t.clientY : null;
+      }, { passive: true });
+      window.addEventListener("touchmove", (e) => {
+        if (!tracking || startX === null) return;
+        const t = e.touches[0], dx = t.clientX - startX, dy = t.clientY - startY;
+        if (Math.abs(dy) > 40 && Math.abs(dy) > Math.abs(dx)) { tracking = false; return; }  // gesto vertical
+        if (dx > 45) { tracking = false; startX = null; openDrawer(); }
+      }, { passive: true });
+      window.addEventListener("touchend", () => { tracking = false; startX = null; });
+    })();
 
     /* =========================================================
        SELECTOR DE DÍA  —  seguimiento de comidas por fechas
@@ -3479,7 +3486,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.3";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.4";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
@@ -3488,10 +3495,6 @@
     updateMenuAvatar();    // inicial de la persona activa en el botón
     renderDayStrip();      // prepara la tira de días
     render();
-    // Coloca el subrayado bajo "Menú" (cuando hay layout y fuentes listas)
-    requestAnimationFrame(positionTabUnderline);
-    ((document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve())
-      .then(() => requestAnimationFrame(positionTabUnderline));
   </script>
 </body>
 </html>
