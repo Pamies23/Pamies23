@@ -152,6 +152,13 @@
       overflow-x: auto; scrollbar-width: none;
       margin: 0 -18px; padding: 13px 18px;
       background: #000;
+      transition: padding 0.22s ease;
+    }
+    /* Al FIJARSE bajo el notch, la franja lo absorbe por dentro: crece por
+       arriba y empuja también las palabras hacia abajo, que mantienen su
+       posición (simétricas bajo el notch). En reposo, franja fina normal. */
+    .home-head-sticky.pinned .home-cats {
+      padding-top: calc(env(safe-area-inset-top) + 13px);
     }
     .home-cats::-webkit-scrollbar { display: none; }
     .home-cats button {
@@ -275,14 +282,15 @@
 
     /* ---------- Bloque fijo del Home: filtros de comida ----------
        Se quedan a la vista al desplazar (el registro pasa por debajo). */
+    /* La franja se fija en el BORDE físico (top: 0): el hueco del notch lo
+       absorbe su propio padding cuando lleva la clase .pinned (ver .home-cats).
+       El ::before negro cubre la zona del notch mientras la franja viaja
+       hacia arriba, para que nunca asome contenido por esa zona. */
     .home-head-sticky {
-      position: sticky; top: env(safe-area-inset-top); z-index: 2;
+      position: sticky; top: 0; z-index: 2;
       margin: 0 -18px; padding: 0 18px;
       background: transparent;
     }
-    /* Relleno NEGRO del notch: en reposo queda tapado por la región del agua
-       (z-index 3 > 2); al fijarse la franja, la zona de la barra de estado
-       queda negra y el notch se funde con ella (como la cabecera de Alimentos). */
     .home-head-sticky::before {
       content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
       height: calc(env(safe-area-inset-top) + 2px); background: #000;
@@ -2559,6 +2567,24 @@
     window.addEventListener("scroll", updateBottomCta, { passive: true });
     window.addEventListener("resize", updateBottomCta);
 
+    /* Fijado de la franja de filtros: en cuanto el notch "llega" a la línea
+       negra (el borde superior de la franja toca el área segura), se le pone
+       la clase .pinned y la franja absorbe el notch con su padding, empujando
+       también las palabras hacia abajo. Al separarse, vuelve a la franja fina.
+       La sonda mide env(safe-area-inset-top) real en cada momento (en Safari
+       cambia dinámicamente al plegarse la barra de direcciones). */
+    const satProbe = document.createElement("div");
+    satProbe.style.cssText = "position:fixed;top:env(safe-area-inset-top);left:0;width:0;height:0;pointer-events:none;visibility:hidden;";
+    document.body.appendChild(satProbe);
+    function updateHomePin() {
+      const st = $("homeHeadSticky");
+      if (currentView !== "app") { st.classList.remove("pinned"); return; }
+      const sat = satProbe.getBoundingClientRect().top;
+      st.classList.toggle("pinned", st.getBoundingClientRect().top <= sat + 0.5);
+    }
+    window.addEventListener("scroll", updateHomePin, { passive: true });
+    window.addEventListener("resize", updateHomePin);
+
     $("viewTabs").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-view]");
       if (!b) return;
@@ -3940,7 +3966,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.14";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.15";   // súbelo en cada cambio para confirmar que tienes la última
     $("drawerVersion").textContent = APP_VERSION;   // la versión vive en el cajón lateral
     loadPeople();          // personas + migración de datos a "José"
     loadPersonData();      // carga la persona activa (día de hoy)
