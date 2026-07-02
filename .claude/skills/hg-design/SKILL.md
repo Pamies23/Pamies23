@@ -100,11 +100,11 @@ render so the CSS transition draws them. Tap card = macro filter (card
 turns ink). The home date above is display caps in INK over the water
 (coral and lime were tried and rejected).
 The meal-filter row below the water is a BLACK full-bleed sticky strip
-(thin: 9px vertical padding, equal above/below) with the ORDENAR-style
-chips (light outline, lime when active). The notch is NEVER painted black
-by it: when pinned, a WHITE wrapper ::before covers the status-bar strip
-(that strip never carries app content — user rule; a black notch fill
-made the chips read as vertically off-center on the iPhone).
+styled EXACTLY like the Alimentos|Recetas header: bold display text tabs
+(20px, no boxes/borders), muted gray `rgba(255,255,255,0.42)` at rest and
+LIME when selected; symmetric 13px vertical padding. When pinned, the
+notch fills BLACK (wrapper ::before) so it melts into the strip — the
+outline-chip version with a white notch was tried and replaced by this.
 "Limpiar filtros" chip is lime.
 
 ### Aisle cards (Compra)

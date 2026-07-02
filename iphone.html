@@ -144,27 +144,23 @@
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
 
-    /* ---------- Filtros de comida del Home: franja NEGRA con chips de contorno
-       claro que se ponen lima, calcados al panel ORDENAR de Alimentos/Recetas.
-       La franja es SIEMPRE simétrica (9px arriba y abajo de los chips); el
-       notch NO se pinta de negro: al fijarse, por encima queda el relleno
-       blanco del wrapper (esa franja nunca lleva contenido, como en todas
-       las apps), igual que hace la barra de categorías de Alimentos. */
+    /* ---------- Filtros de comida del Home: franja negra con el MISMO estilo
+       que la cabecera Alimentos|Recetas — texto grueso, gris apagado en
+       reposo y lima cuando está escogido. Simétrica arriba y abajo. */
     .home-cats {
-      display: flex; gap: 10px; align-items: center;
+      display: flex; gap: 26px; align-items: center;
       overflow-x: auto; scrollbar-width: none;
-      margin: 0 -18px; padding: 9px 18px;
+      margin: 0 -18px; padding: 13px 18px;
       background: #000;
     }
     .home-cats::-webkit-scrollbar { display: none; }
     .home-cats button {
-      flex: 0 0 auto; border: 2px solid rgba(255,255,255,0.4); background: none; color: #fff;
-      cursor: pointer; border-radius: 12px; padding: 10px 16px;
-      font-family: var(--disp); font-size: 13px; font-weight: 700; letter-spacing: 0.02em;
-      white-space: nowrap; transition: all 0.15s ease;
+      flex: 0 0 auto; border: none; background: none; cursor: pointer; padding: 0;
+      font-family: var(--exp); font-weight: 800; font-size: 20px;
+      letter-spacing: -0.01em; text-transform: none; color: rgba(255,255,255,0.42);
+      white-space: nowrap; transition: color 0.18s ease;
     }
-    .home-cats button:active { transform: scale(0.94); }
-    .home-cats button.active { background: var(--lime); border-color: var(--lime); color: var(--ink); }
+    .home-cats button.active { color: var(--lime); }
 
     /* ---------- CTA inferior compartida (Home y detalle de receta) ----------
        Píldora negra fina y baja, texto grande desde la izquierda (como el
@@ -278,19 +274,18 @@
     .hero .now.over { color: var(--red); }
 
     /* ---------- Bloque fijo del Home: filtros de comida ----------
-       Se quedan a la vista al desplazar (el registro pasa por debajo). El hueco
-       del notch se rellena en BLANCO al bajar (nada de franja negra). */
+       Se quedan a la vista al desplazar (el registro pasa por debajo). */
     .home-head-sticky {
       position: sticky; top: env(safe-area-inset-top); z-index: 2;
       margin: 0 -18px; padding: 0 18px;
       background: transparent;
     }
-    /* Relleno BLANCO del notch: en reposo queda tapado por la región del agua
-       (z-index 3 > 2); al fijarse la franja, cubre la zona de la barra de
-       estado en blanco, dejando los chips centrados en su franja negra. */
+    /* Relleno NEGRO del notch: en reposo queda tapado por la región del agua
+       (z-index 3 > 2); al fijarse la franja, la zona de la barra de estado
+       queda negra y el notch se funde con ella (como la cabecera de Alimentos). */
     .home-head-sticky::before {
       content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
-      height: calc(env(safe-area-inset-top) + 2px); background: var(--bg);
+      height: calc(env(safe-area-inset-top) + 2px); background: #000;
     }
     /* ---------- Ventana Compra (pantalla propia, abierta desde Alimentos) ---------- */
     .shop-page { min-height: 100%; background: #F8F9F4; }
@@ -3951,7 +3946,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.12";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.13";   // súbelo en cada cambio para confirmar que tienes la última
     $("drawerVersion").textContent = APP_VERSION;   // la versión vive en el cajón lateral
     loadPeople();          // personas + migración de datos a "José"
     loadPersonData();      // carga la persona activa (día de hoy)
