@@ -289,13 +289,50 @@
     #shopPage .shop-days { padding-top: 14px; }
     #shopPage .shop-list { padding-bottom: calc(env(safe-area-inset-bottom) + 40px); }
 
-    /* Botón de Compra (carrito) en la cabecera de Alimentos|Recetas */
-    .sheet-cart {
+    /* Botones de la cabecera Alimentos|Recetas: filtro (ordenar) + Compra (carrito) */
+    .sheet-filter {
       margin-left: auto; align-self: center; margin-bottom: 3px;
+      border: none; background: none; cursor: pointer; padding: 4px;
+      color: rgba(255,255,255,0.85); display: flex; align-items: center; justify-content: center;
+      transition: color 0.18s ease;
+    }
+    .sheet-filter:active { transform: scale(0.9); }
+    .sheet-filter.on { color: var(--lime); }
+    .sheet-cart {
+      margin-left: 10px; align-self: center; margin-bottom: 3px;
       border: none; background: none; cursor: pointer; padding: 4px;
       color: rgba(255,255,255,0.85); display: flex; align-items: center; justify-content: center;
     }
     .sheet-cart:active { transform: scale(0.9); }
+
+    /* ---------- Panel ORDENAR (negro, se despliega desde la cabecera, estilo HG FILTRAR) ---------- */
+    .filter-panel {
+      display: grid; grid-template-rows: 0fr; background: #000;
+      transition: grid-template-rows 0.36s cubic-bezier(.22,.61,.36,1);
+    }
+    .filter-panel.open { grid-template-rows: 1fr; }
+    .filter-panel-inner { overflow: hidden; min-height: 0; }
+    .fp-body { padding: 6px 18px 24px; }
+    .fp-title {
+      font-family: var(--exp); font-weight: 800; font-size: 20px;
+      text-transform: uppercase; letter-spacing: -0.01em; color: #fff; margin-bottom: 8px;
+    }
+    .fp-hint { font-size: 13.5px; color: rgba(255,255,255,0.55); line-height: 1.5; margin-bottom: 16px; }
+    .fp-chips { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+    .fp-chip {
+      border: 2px solid rgba(255,255,255,0.4); background: none; color: #fff; cursor: pointer;
+      border-radius: 12px; padding: 10px 16px;
+      font-family: var(--disp); font-size: 13px; font-weight: 700; letter-spacing: 0.02em;
+      transition: all 0.15s ease;
+    }
+    .fp-chip:active { transform: scale(0.94); }
+    .fp-chip.active { background: var(--lime); border-color: var(--lime); color: var(--ink); }
+    .fp-reset {
+      border: none; background: none; cursor: pointer; padding: 0;
+      display: flex; align-items: center; gap: 8px;
+      font-family: var(--disp); font-weight: 700; font-size: 13px; color: rgba(255,255,255,0.55);
+    }
+    .fp-reset:active { transform: scale(0.96); }
 
     /* ---------- Cabecera de sección: línea fija Menú | Compra ---------- */
     /* Se queda pegada arriba al bajar la pantalla (como las pestañas de Honest Greens). */
@@ -469,8 +506,8 @@
        a la vez (las demás se ocultan con display:none vía JS / markup). */
     .page { min-height: 100%; background: var(--bg); }
     .page.shown, .sim.shown { display: block; }
-    /* Paleta de la hoja: fondo gris, previsualización beige, texto sobre blanco. */
-    #sheet { background: #D7D7D5; }
+    /* Paleta de la hoja: blanco roto cálido (HG) tras las tarjetas blancas. */
+    #sheet { background: #F4F2EB; }
     /* Con la hoja abierta, el documento va en negro: el overscroll superior
        (rebote al tirar hacia abajo) se ve negro, igual que la cabecera. */
     html.sheet-open, html.sheet-open body { background: #000; }
@@ -505,12 +542,27 @@
        barra de categorías se mueven siempre juntas, sin desincronizarse cuando
        Safari colapsa/expande la barra de direcciones al desplazar. */
     #sheet { padding-top: 0; }
-    .sheet-head-sticky { position: sticky; top: 0; z-index: 5; }
+    /* La cabecera negra se esconde al bajar y reaparece al subir (HG): se desliza
+       con transform (no cambia el layout → el scroll no se realimenta) dejando la
+       barra de categorías arriba, con su relleno blanco cubriendo el notch. */
+    .sheet-head-sticky {
+      position: sticky; top: 0; z-index: 5;
+      transition: transform 0.34s cubic-bezier(.4,0,.2,1);
+    }
+    .sheet-head-sticky.bar-hidden {
+      transform: translateY(calc((var(--tabsH, 110px) - env(safe-area-inset-top)) * -1));
+    }
     .sheet-tabs {
       position: relative;             /* para el ::before del notch */
       display: flex; align-items: flex-end; gap: 26px;
       background: #000;
       padding: calc(env(safe-area-inset-top) + 16px) 18px 18px; margin: 0;
+    }
+    /* Relleno blanco sobre la barra de categorías: cubre el notch cuando la
+       cabecera negra está escondida (queda detrás de ella cuando está a la vista). */
+    .rcat-tabs::before {
+      content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
+      height: calc(env(safe-area-inset-top) + 2px); background: #fff; z-index: -1;
     }
     .sheet-tab {
       border: none; background: none; cursor: pointer; padding: 0;
@@ -649,6 +701,32 @@
       width: 100%; background: var(--card); border-radius: var(--r-md);
       padding: 26px; text-align: center; color: var(--muted); font-size: 14px; font-weight: 500;
     }
+    /* Hueco extra cuando cambia la categoría: los grupos respiran más que los
+       elementos de un mismo grupo (regla de espaciado HG). */
+    .food-list .cat-gap { width: 100%; height: 14px; list-style: none; }
+    .food-list.as-recipes .cat-gap { height: 10px; }
+    /* Cabecera del listado cuando hay un orden activo ("Top proteínas…") */
+    .sort-head {
+      width: 100%; list-style: none;
+      font-family: var(--exp); font-weight: 800; font-size: 18px;
+      text-transform: uppercase; letter-spacing: -0.01em; color: var(--ink);
+      padding: 8px 2px 2px;
+    }
+    /* Entrada escalonada de las tarjetas al abrir el listado (fluidez HG) */
+    @keyframes cardIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+    .food-list.reveal .addf, .food-list.reveal .rcard {
+      animation: cardIn 0.42s cubic-bezier(.22,.61,.36,1) both;
+    }
+    .food-list.reveal li:nth-child(2) { animation-delay: 0.04s; }
+    .food-list.reveal li:nth-child(3) { animation-delay: 0.08s; }
+    .food-list.reveal li:nth-child(4) { animation-delay: 0.12s; }
+    .food-list.reveal li:nth-child(5) { animation-delay: 0.16s; }
+    .food-list.reveal li:nth-child(6) { animation-delay: 0.20s; }
+    .food-list.reveal li:nth-child(7) { animation-delay: 0.24s; }
+    .food-list.reveal li:nth-child(n+8) { animation-delay: 0.28s; }
+    @media (prefers-reduced-motion: reduce) {
+      .food-list.reveal .addf, .food-list.reveal .rcard { animation: none; }
+    }
 
     /* ---------- Recetas (estilo Honest Greens): columna de tarjetas grandes ---------- */
     .food-list.as-recipes { flex-direction: column; flex-wrap: nowrap; gap: 16px; padding-top: 8px; }
@@ -784,6 +862,36 @@
     .rv-ing.active .rv-ing-g { color: #000; font-weight: 800; }
     .rv-ing { cursor: pointer; transition: opacity 0.12s ease; }
     .rv-ing:active { opacity: 0.55; }
+
+    /* ---------- Extras de la receta (estilo "ESCOGE TUS EXTRAS" de HG) ---------- */
+    .rv-extras-title {
+      font-family: var(--exp); font-weight: 800; font-size: 18px;
+      text-transform: uppercase; letter-spacing: -0.01em; color: var(--ink);
+      margin: 26px 0 14px;
+    }
+    .rv-extras {
+      display: flex; gap: 18px; overflow-x: auto; scrollbar-width: none;
+      margin: 0 -20px 22px; padding: 4px 20px 6px;
+    }
+    .rv-extras::-webkit-scrollbar { display: none; }
+    .rv-extra {
+      flex: 0 0 auto; width: 96px; border: none; background: none; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0;
+      transition: transform 0.12s ease;
+    }
+    .rv-extra:active { transform: scale(0.94); }
+    .rv-extra-ph {
+      width: 84px; height: 84px; border-radius: 50%; background: #E8E4D9;
+      display: flex; align-items: center; justify-content: center; font-size: 40px;
+      transition: box-shadow 0.18s ease;
+    }
+    .rv-extra.added .rv-extra-ph { box-shadow: inset 0 0 0 3px var(--ink); }
+    .rv-extra-name {
+      font-size: 12px; font-weight: 600; color: var(--ink);
+      text-align: center; line-height: 1.25; min-height: 30px;
+    }
+    .rv-extra-price { font-family: var(--disp); font-weight: 800; font-size: 13px; color: var(--ink); }
+    .rv-extra.added .rv-extra-price { color: var(--lime-dim); }
 
     .rv-meals { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 16px 0 0; }
     .rv-meals::-webkit-scrollbar { display: none; }
@@ -1325,6 +1433,12 @@
       <div class="sheet-tabs" id="typeTabs">
         <button class="sheet-tab active" data-type="alimentos">Alimentos</button>
         <button class="sheet-tab" data-type="recetas">Recetas</button>
+        <button class="sheet-filter" id="sheetFilter" aria-label="Ordenar">
+          <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="3.5" y1="7" x2="20.5" y2="7"></line><circle cx="9.5" cy="7" r="2.7" fill="#000"></circle>
+            <line x1="3.5" y1="17" x2="20.5" y2="17"></line><circle cx="14.5" cy="17" r="2.7" fill="#000"></circle>
+          </svg>
+        </button>
         <button class="sheet-cart" id="sheetCart" aria-label="Compra">
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="9" cy="20" r="1.4"></circle><circle cx="18" cy="20" r="1.4"></circle>
@@ -1332,6 +1446,23 @@
           </svg>
         </button>
         <span class="tab-underline" id="typeUnderline"></span>
+      </div>
+
+      <!-- Panel ORDENAR: se despliega en negro desde la cabecera (estilo FILTRAR de HG) -->
+      <div class="filter-panel" id="filterPanel">
+        <div class="filter-panel-inner">
+          <div class="fp-body">
+            <div class="fp-title">Ordenar</div>
+            <p class="fp-hint">Toca una etiqueta para ordenar el listado por su aporte (por 100 g en alimentos). Vuelve a tocarla para quitar el orden.</p>
+            <div class="fp-chips" id="fpChips">
+              <button class="fp-chip" data-sort="protein">Proteínas</button>
+              <button class="fp-chip" data-sort="kcal">Calorías</button>
+              <button class="fp-chip" data-sort="carbs">Carbohidratos</button>
+              <button class="fp-chip" data-sort="fat">Grasas</button>
+            </div>
+            <button class="fp-reset" id="fpReset">🗑 Resetear</button>
+          </div>
+        </div>
       </div>
 
       <!-- Categorías (filtros, en desuso desde que Alimentos usa la barra de abajo) -->
@@ -1466,6 +1597,10 @@
           </div>
         </div>
       </div>
+
+      <!-- Extras: añade más alimentos a esta receta (estilo "ESCOGE TUS EXTRAS" de HG) -->
+      <div class="rv-extras-title">Añade extras</div>
+      <div class="rv-extras" id="rvExtras"></div>
 
       <div class="modal-preview">
         <div class="pv-cell">
@@ -2363,6 +2498,9 @@
     const sheet = $("sheet");
     let activeType = "alimentos";   // alimentos | recetas
     let activeCat  = "todos";       // todos | salado | dulce
+    // Orden activo del listado (panel ORDENAR): null | protein | kcal | carbs | fat
+    let sortBy = null;
+    const SORT_LABELS = { protein: "proteínas", kcal: "calorías", carbs: "carbohidratos", fat: "grasas" };
 
     // Solo una "página" visible a la vez, con transición de entrada/salida fluida.
     // "" (sin display inline) deja mandar al CSS → la Home puede ser grid en iPad.
@@ -2422,15 +2560,69 @@
 
     function openSheet() {
       activeType = "alimentos"; activeCat = "todos";
+      sortBy = null; syncFilterUI(); setFilterOpen(false);
       $("search").value = "";
       $("glassSearch").classList.remove("open");
       syncSheetTabs();
       renderFoodList();
+      setBarHidden(false);
       showView("sheet");
       // El documento en negro: el rebote/overscroll superior se ve negro como la cabecera.
       setDocTint("sheet-open");
-      requestAnimationFrame(positionTypeUnderline);
+      // Entrada escalonada de las tarjetas (fluidez HG); la clase se retira sola.
+      const fl = $("foodList");
+      fl.classList.add("reveal");
+      setTimeout(() => fl.classList.remove("reveal"), 750);
+      requestAnimationFrame(() => { positionTypeUnderline(); measureTabsH(); });
     }
+
+    /* ---- Panel ORDENAR (negro, estilo FILTRAR de HG) ---- */
+    let filterOpen = false;
+    function setFilterOpen(open) {
+      filterOpen = open;
+      $("filterPanel").classList.toggle("open", open);
+      if (open) setBarHidden(false);   // con el panel abierto la cabecera no se esconde
+    }
+    function syncFilterUI() {
+      $("fpChips").querySelectorAll(".fp-chip").forEach(b =>
+        b.classList.toggle("active", b.dataset.sort === sortBy));
+      $("sheetFilter").classList.toggle("on", !!sortBy);
+    }
+    $("sheetFilter").addEventListener("click", () => setFilterOpen(!filterOpen));
+    $("fpChips").addEventListener("click", (e) => {
+      const b = e.target.closest(".fp-chip"); if (!b) return;
+      sortBy = (sortBy === b.dataset.sort) ? null : b.dataset.sort;
+      syncFilterUI();
+      renderFoodList();
+      window.scrollTo(0, 0);
+    });
+    $("fpReset").addEventListener("click", () => {
+      if (sortBy) { sortBy = null; syncFilterUI(); renderFoodList(); }
+      setFilterOpen(false);
+    });
+
+    /* ---- La barra negra se esconde al bajar y reaparece al subir (HG) ---- */
+    function measureTabsH() {
+      $("sheetHeadSticky").style.setProperty("--tabsH", $("typeTabs").offsetHeight + "px");
+    }
+    let lastScrollY = 0, barHidden = false;
+    function setBarHidden(h) {
+      if (h === barHidden) return;
+      barHidden = h;
+      $("sheetHeadSticky").classList.toggle("bar-hidden", h);
+    }
+    window.addEventListener("scroll", () => {
+      if (currentView !== "sheet" || filterOpen) { lastScrollY = window.scrollY; return; }
+      const y = window.scrollY;
+      // Con un orden activo no hay barra de categorías que tome el relevo:
+      // la cabecera negra se queda siempre a la vista.
+      if (sortBy) { setBarHidden(false); lastScrollY = y; return; }
+      if (y <= 24) setBarHidden(false);            // arriba del todo: siempre visible
+      else if (y - lastScrollY > 4) setBarHidden(true);
+      else if (lastScrollY - y > 4) setBarHidden(false);
+      lastScrollY = y;
+    }, { passive: true });
+    window.addEventListener("resize", () => { if (currentView === "sheet") measureTabsH(); });
     // Tinta del documento por vista (para que el overscroll superior no asome blanco)
     function setDocTint(cls) {
       const h = document.documentElement;
@@ -2577,6 +2769,18 @@
         </div>
       </li>`;
 
+    // Inserta un hueco mayor cuando cambia la categoría: los grupos respiran
+    // más que los elementos de un mismo grupo (regla de espaciado HG).
+    function withCatGaps(entries, toHTML) {
+      let prev = null;
+      return entries.map(e => {
+        const cat = e[1].cat;
+        const gap = prev && cat !== prev ? '<li class="cat-gap" aria-hidden="true"></li>' : "";
+        prev = cat;
+        return gap + toHTML(e);
+      }).join("");
+    }
+
     function renderFoodList() {
       const q = $("search").value.trim().toLowerCase();
       const list = $("foodList");
@@ -2584,25 +2788,50 @@
       if (activeType === "recetas") {
         const all = Object.assign({}, RECIPES, userRecipes);
         let entries = Object.entries(all).filter(([, r]) => !q || r.name.toLowerCase().includes(q));
-        // agrupar por categoría en el orden canónico (para el scroll-spy)
-        entries.sort((a, b) => CAT_ORDER.indexOf(a[1].cat) - CAT_ORDER.indexOf(b[1].cat));
-        const cats = CAT_ORDER.filter(c => entries.some(([, r]) => r.cat === c));
-        buildRecipeCats(cats);
+        let html;
+        if (sortBy) {
+          // Orden activo: lista plana por aporte total de la receta (sin categorías)
+          const val = ([k]) => { const n = recipeNutri(k); return sortBy === "kcal" ? n.kcal : n[sortBy]; };
+          entries.sort((a, b) => val(b) - val(a));
+          $("recipeCats").hidden = true;
+          catAnchors = [];
+          html = `<li class="sort-head">Top ${SORT_LABELS[sortBy]}</li>` + entries.map(([k, r]) => recipeCardHTML(k, r)).join("");
+        } else {
+          // agrupar por categoría en el orden canónico (para el scroll-spy)
+          entries.sort((a, b) => CAT_ORDER.indexOf(a[1].cat) - CAT_ORDER.indexOf(b[1].cat));
+          const cats = CAT_ORDER.filter(c => entries.some(([, r]) => r.cat === c));
+          buildRecipeCats(cats);
+          $("recipeCats").hidden = false;
+          html = withCatGaps(entries, ([k, r]) => recipeCardHTML(k, r));
+        }
         const createCard = `<li class="rcard rcard-new" data-newrecipe="1">＋ Crear receta</li>`;
         list.classList.add("as-recipes");
-        list.innerHTML = entries.map(([k, r]) => recipeCardHTML(k, r)).join("") + createCard;
-        requestAnimationFrame(() => { buildCatAnchors(); updateSpy(); });
+        list.innerHTML = html + createCard;
+        if (!sortBy) requestAnimationFrame(() => { buildCatAnchors(); updateSpy(); });
         return;
       }
 
       // Alimentos: cuadrícula de 2 columnas agrupada por categoría (scroll-spy)
       list.classList.remove("as-recipes");
       let entries = Object.entries(FOODS).filter(([, f]) => !q || f.name.toLowerCase().includes(q));
+      const foodCard = ([k, f]) => cardHTML(k, "data-add", f.emoji, f.name, f.ration, f.kcal, f.brand, f.cat);
+      if (sortBy) {
+        // Orden activo: lista plana por aporte POR 100 g (comparable entre alimentos)
+        const per100 = ([, f]) => (sortBy === "kcal" ? f.kcal : f[sortBy]) / f.base * 100;
+        entries.sort((a, b) => per100(b) - per100(a));
+        $("recipeCats").hidden = true;
+        catAnchors = [];
+        list.innerHTML = entries.length
+          ? `<li class="sort-head">Top ${SORT_LABELS[sortBy]} · por 100 g</li>` + entries.map(foodCard).join("")
+          : `<li class="food-empty">Sin resultados</li>`;
+        return;
+      }
       entries.sort((a, b) => CAT_ORDER.indexOf(a[1].cat) - CAT_ORDER.indexOf(b[1].cat));
       const cats = CAT_ORDER.filter(c => entries.some(([, f]) => f.cat === c));
       buildRecipeCats(cats);
+      $("recipeCats").hidden = false;
       list.innerHTML = entries.length
-        ? entries.map(([k, f]) => cardHTML(k, "data-add", f.emoji, f.name, f.ration, f.kcal, f.brand, f.cat)).join("")
+        ? withCatGaps(entries, foodCard)
         : `<li class="food-empty">Sin resultados</li>`;
       requestAnimationFrame(() => { buildCatAnchors(); updateSpy(); });
     }
@@ -2648,7 +2877,7 @@
       el.addEventListener("touchstart", (e) => {
         // No armar el cierre si el dedo empieza sobre los filtros, las pestañas o la
         // barra de búsqueda: ahí el usuario sólo está desplazando en horizontal.
-        const onScroller = e.target.closest(".cat-tabs, .rcat-tabs, .sheet-tabs, .glass-search, .rv-meals, .grams-field");
+        const onScroller = e.target.closest(".cat-tabs, .rcat-tabs, .sheet-tabs, .filter-panel, .glass-search, .rv-meals, .rv-extras, .grams-field");
         tracking = !onScroller && window.scrollY <= 0;
         startY = tracking ? e.touches[0].clientY : null;
       }, { passive: true });
@@ -2818,12 +3047,19 @@
     // items: copia local de los ingredientes; las cantidades se pueden ajustar
     // ad hoc (sólo para esta vez, no se guardan en la receta). editing: índice del
     // ingrediente cuyo panel de gramos está desplegado (o null).
-    let recipeView = null;   // { key, time, items:[{food,grams}], editing }
+    let recipeView = null;   // { key, time, items:[{food,grams}], editing, extraKeys }
     function openRecipe(recipeKey) {
       const r = getRecipe(recipeKey);
       if (!r) return;
       const items = r.items.filter(it => FOODS[it.food]).map(it => ({ food: it.food, grams: it.grams }));
-      recipeView = { key: recipeKey, time: defaultMeal(), items, editing: null, user: !!r.user };
+      // Candidatos a extra: alimentos que no están ya en la receta, los más
+      // proteicos (por 100 g) primero — es lo que más suele apetecer sumar.
+      const inRec = new Set(items.map(it => it.food));
+      const extraKeys = Object.entries(FOODS)
+        .filter(([k]) => !inRec.has(k))
+        .sort((a, b) => (b[1].protein / b[1].base) - (a[1].protein / a[1].base))
+        .slice(0, 14).map(([k]) => k);
+      recipeView = { key: recipeKey, time: defaultMeal(), items, editing: null, user: !!r.user, extraKeys };
       if (r.photo) {
         $("rvImg").src = r.photo; $("rvImg").style.display = "";
         $("rvEmoji").style.display = "none"; $("rvEmoji").textContent = "";
@@ -2835,11 +3071,36 @@
       $("rvDelete").hidden = !r.user;            // sólo recetas propias se pueden borrar
       $("rvGramPanel").classList.remove("open");
       renderRecipeIngredients();
+      renderRecipeExtras();
       syncRecipeMeals();
       updateRecipePreview();
       setDocTint("recipe-open");
       showView("recipeView");
     }
+    // Extras: fila horizontal de alimentos sugeridos (estilo "ESCOGE TUS EXTRAS").
+    // Tocar uno lo añade a la receta con su ración base; volver a tocarlo lo quita.
+    function renderRecipeExtras() {
+      $("rvExtras").innerHTML = recipeView.extraKeys.map(k => {
+        const f = FOODS[k];
+        const added = recipeView.items.some(it => it.extra && it.food === k);
+        return `<button class="rv-extra${added ? " added" : ""}" data-extra="${k}">
+          <span class="rv-extra-ph">${f.emoji}</span>
+          <span class="rv-extra-name">${f.name}</span>
+          <span class="rv-extra-price">${added ? "✓ Añadido" : "+ " + f.kcal + " kcal"}</span>
+        </button>`;
+      }).join("");
+    }
+    $("rvExtras").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-extra]"); if (!b || !recipeView) return;
+      const k = b.dataset.extra;
+      const i = recipeView.items.findIndex(it => it.extra && it.food === k);
+      recipeView.editing = null; $("rvGramPanel").classList.remove("open");
+      if (i >= 0) recipeView.items.splice(i, 1);
+      else recipeView.items.push({ food: k, grams: FOODS[k].base, extra: true });
+      renderRecipeIngredients();
+      updateRecipePreview();
+      renderRecipeExtras();
+    });
     function renderRecipeIngredients() {
       $("rvIngredients").innerHTML = recipeView.items.map((it, i) => {
         const f = FOODS[it.food];
@@ -3478,7 +3739,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.5";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.6";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
