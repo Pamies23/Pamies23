@@ -1,0 +1,3503 @@
+<!DOCTYPE html>
+<html lang="es" class="splashing">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Real Food">
+  <meta name="theme-color" content="#FFFFFF">
+  <link rel="apple-touch-icon" href="icon.png">
+  <title>Real Food</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Precarga de las imágenes de los paneles para que los colores estén listos al
+       entrar (sin "pop-in"): el splash y la cabecera del agua se pintan a la primera. -->
+  <link rel="preload" as="image" href="palms.jpg">
+  <link rel="preload" as="image" href="water.jpg">
+
+  <style>
+    :root {
+      --bg:    #FFFFFF;
+      --card:  #ECE8DD;   /* beige avena (tarjetas) */
+      --card2: #E2DDCF;   /* beige un punto más oscuro */
+      --ink:   #131311;   /* casi negro */
+      --lime:  #C7F23E;   /* verde lima eléctrico (consumido en la comida) */
+      --lime-dim: #7FA22E; /* lima apagado (total del día / resto) */
+      --green: #2FA84F;   /* verde check */
+      --red:   #EF4136;   /* rojo luminoso (avisos y eliminar) */
+      --muted: #908C81;
+      --line:  #E3DFD4;
+
+      --r-lg: 24px;
+      --r-md: 18px;
+      --r-sm: 12px;
+
+      --disp: 'Archivo', -apple-system, sans-serif;   /* titulares / números */
+      --exp:  'Archivo', -apple-system, sans-serif;   /* display bestia (peso 900) */
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      color: var(--ink);
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      /* Tacto de app nativa: sin selección de texto accidental al tocar/mantener */
+      -webkit-user-select: none; user-select: none;
+      -webkit-touch-callout: none;
+    }
+    /* Pero los campos de texto sí deben permitir selección/edición */
+    input, textarea { -webkit-user-select: text; user-select: text; }
+    /* El color de fondo va en <html> (es el que se ve en el overscroll y en la
+       franja inferior del área segura en standalone). Blanco en la app; durante
+       el splash, html+body pasan a color palmera para que esa franja nunca sea blanca. */
+    html, body { height: 100%; }
+    html { background: var(--bg); }
+    body { background: var(--bg); min-height: 100%; overflow-x: hidden; overscroll-behavior-y: none; }
+    html.splashing, html.splashing body { background: #79908B; }
+    /* Con un panel abierto (sheet/simulador/modal) se bloquea el scroll del fondo
+       para que no aparezca la barra ni se mueva la Home por detrás. */
+    html.locked, html.locked body { overflow: hidden; height: 100%; }
+
+    /* Scroll NATURAL del documento (sin contenedor de posición fija). Es lo que
+       de verdad llega hasta los bordes en standalone iOS y evita que falte
+       contenido abajo. */
+    .app {
+      min-height: 100%;
+      scroll-behavior: smooth;
+      padding:
+        calc(env(safe-area-inset-top) + 12px)
+        18px
+        calc(env(safe-area-inset-bottom) + 120px);
+      padding-left: max(18px, env(safe-area-inset-left));
+      padding-right: max(18px, env(safe-area-inset-right));
+    }
+    .standalone .app { padding-top: calc(env(safe-area-inset-top) + 20px); }
+
+    /* ---------- Región superior con fondo de agua (corte limpio) ---------- */
+    .top-region {
+      position: relative; z-index: 3;     /* va por encima de la línea fija: tapa su relleno blanco en reposo */
+      margin: calc((env(safe-area-inset-top) + 12px) * -1) -18px 8px;
+      padding: calc(env(safe-area-inset-top) + 16px) 18px 22px;
+      background-color: #5A9F9F;                 /* color del agua (relleno y borde superior) */
+      background-image: url("water.jpg");
+      background-size: cover;
+      background-position: center;
+    }
+    /* Prolonga el color del agua hacia arriba: al tirar/rebotar nunca se ve blanco
+       ni parece que la foto se corta en el borde superior. */
+    .top-region::before {
+      content: ""; position: absolute; left: 0; right: 0; top: -100vh;
+      height: 100vh; background: #5A9F9F;
+    }
+    .standalone .top-region {
+      margin-top: calc((env(safe-area-inset-top) + 20px) * -1);
+      padding-top: calc(env(safe-area-inset-top) + 24px);
+    }
+
+    /* ---------- Splash de entrada (palmeras) ---------- */
+    .splash {
+      position: fixed; inset: 0; z-index: 200;
+      background-color: #79908B;                 /* color de las palmeras (relleno) */
+      background-image: url("palms.jpg");
+      background-size: cover; background-position: center;
+      display: flex; flex-direction: column; justify-content: flex-end;
+      padding: 0 30px calc(env(safe-area-inset-bottom) + 60px);
+      opacity: 1; transition: opacity 0.65s ease;
+    }
+    .splash::before {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0) 45%, rgba(0,0,0,0.5));
+    }
+    .splash.hide { opacity: 0; pointer-events: none; }
+    .splash-title {
+      position: relative; font-family: var(--exp); font-weight: 900;
+      font-size: 58px; line-height: 0.9; letter-spacing: -0.02em;
+      text-transform: uppercase; color: #fff;
+    }
+    .splash-sub { position: relative; margin-top: 12px; font-size: 16px; font-weight: 500; color: rgba(255,255,255,0.9); }
+
+    /* ---------- Cabecera (todo en una línea: fecha + círculo de versión) ---------- */
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; margin-bottom: 20px;
+    }
+    .topbar h1 {
+      flex: 1; min-width: 0;
+      font-family: var(--exp);
+      font-weight: 900; font-size: 30px; line-height: 0.95;
+      letter-spacing: -0.015em; text-transform: uppercase; color: var(--ink);
+    }
+    /* El círculo del perfil ahora muestra la versión (mismo estilo de antes) */
+    .avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--ink); color: var(--lime);
+      font-family: var(--disp); font-weight: 800; font-size: 14px; letter-spacing: 0.02em;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    /* La versión es un cajetín pequeño (no un círculo), un poco más grande para verlo bien */
+    #version {
+      width: auto; height: auto; border-radius: 9px;
+      padding: 7px 12px; font-size: 15px; letter-spacing: 0.04em; white-space: nowrap;
+    }
+
+    /* ---------- Selector de vista (pills, debajo de los macros) ---------- */
+    /* Filtros de comida: pastillas rectangulares (esquinas redondeadas) que
+       llenan la línea entera (el botón + va en la segunda línea). */
+    .view-tabs {
+      display: flex; align-items: stretch; gap: 8px;
+      margin: 0; padding: 0;
+    }
+    .view-tabs button[data-view] {
+      flex: 1 1 0; cursor: pointer;
+      border: none; background: var(--bg); color: var(--ink);
+      border-radius: 12px; padding: 12px 0;
+      font-family: var(--disp); font-size: 13px; font-weight: 800;
+      letter-spacing: 0.01em; text-transform: uppercase; white-space: nowrap;
+      text-align: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      transition: all 0.15s ease;
+    }
+    .view-tabs button[data-view].active { background: var(--ink); color: #fff; }
+    /* Botón + de añadir alimentos: en la segunda línea, pegado a la derecha */
+    .vt-add {
+      flex: 0 0 auto; width: 48px; height: 40px; border: none; cursor: pointer;
+      border-radius: 12px; background: var(--lime); color: var(--ink);
+      font-size: 24px; font-weight: 400; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 8px rgba(19,19,17,0.18); transition: transform 0.15s ease;
+    }
+    .vt-add:active { transform: scale(0.92); }
+    .vt-add.hidden { display: none; }
+
+    /* ---------- Hero: contador de calorías (tarjeta negra) ---------- */
+    /* Dos columnas: izquierda datos, derecha anillo de progreso */
+    .hero {
+      background: var(--ink); color: #fff;
+      border-radius: var(--r-lg);
+      padding: 20px 22px;
+      margin-bottom: 14px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .hero-left {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column; align-items: flex-start;
+    }
+    .hero .now {
+      font-family: var(--exp);
+      font-weight: 900; font-size: 60px; line-height: 0.9;
+      letter-spacing: -0.02em; color: #fff;
+    }
+    /* "/ 1176 KCAL" debajo del número; su ancho se ajusta por JS al del número */
+    .hero .goal {
+      font-family: var(--disp); font-weight: 800; font-size: 20px;
+      letter-spacing: 0.01em; line-height: 1; color: rgba(255,255,255,0.45);
+      margin-top: 5px; white-space: nowrap;
+    }
+    .hero .remaining { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 11px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hero .remaining b { color: var(--lime); font-weight: 700; }
+
+    /* Anillo de progreso (mismos colores que la barra anterior) */
+    .ring-wrap {
+      flex-shrink: 0; position: relative;
+      width: 104px; height: 104px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .ring {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      transform: rotate(-90deg);             /* el progreso arranca arriba */
+    }
+    .ring circle { fill: none; stroke-width: 3.4; }
+    .ring-track { stroke: transparent; }   /* la vía no se sombrea: solo se ve el arco lima */
+    /* Se animan con stroke-dasharray, igual que las barras */
+    .ring-rest {
+      stroke: var(--lime-dim); stroke-dasharray: 0 100;
+      transition: stroke-dasharray 0.72s cubic-bezier(.22,.61,.36,1);
+    }
+    .ring-sel {
+      stroke: var(--lime); stroke-linecap: round; stroke-dasharray: 0 100;
+      transition: stroke-dasharray 0.72s cubic-bezier(.22,.61,.36,1);
+    }
+    .ring-pct {
+      position: relative;
+      font-family: var(--disp); font-weight: 800; font-size: 21px; color: #fff;
+    }
+
+    /* ---------- Macros (cajetines blancos sobre el agua) ---------- */
+    .macros { display: flex; flex-direction: column; gap: 10px; margin-bottom: 0; }
+    .macro {
+      background: var(--bg); border-radius: var(--r-md); padding: 15px 17px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      cursor: pointer; transition: background 0.18s ease;
+    }
+    .macro:active { transform: scale(0.995); }
+    .macro .top { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 11px; }
+    .macro .name {
+      font-family: var(--disp); font-size: 12px; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink);
+    }
+    .macro .val {
+      font-family: var(--disp); font-size: 21px; font-weight: 800; color: var(--ink); letter-spacing: -0.01em;
+    }
+    .macro .val span { font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+    .macro .val .pct { color: var(--ink); font-weight: 700; }
+    /* Macro seleccionado: se resalta en negro como el cajetín de calorías */
+    .macro.sel { background: var(--ink); }
+    .macro.sel .name { color: rgba(255,255,255,0.55); }
+    .macro.sel .val { color: #fff; }
+    .macro.sel .val span, .macro.sel .val .pct { color: rgba(255,255,255,0.5); }
+    .macro.sel .val.over { color: var(--red); }
+    .macro.sel .mini { background: rgba(255,255,255,0.16); }
+    /* Vía sombreada clara (como antes) */
+    .macro .mini { height: 12px; border-radius: 99px; background: rgba(19,19,17,0.14); overflow: hidden; display: flex; }
+    .macro .mini .seg { height: 100%; background: var(--lime); width: 0; transition: width 0.58s cubic-bezier(.22,.61,.36,1); }
+    .macro .mini .seg.rest { background: var(--lime-dim); }
+    /* Si te pasas del objetivo, el número se pone en rojo como aviso */
+    .macro .val.over { color: var(--red); }
+    .hero .now.over { color: var(--red); }
+
+    /* ---------- Bloque fijo del Home: filtros de comida ----------
+       Se quedan a la vista al desplazar (el registro pasa por debajo). El hueco
+       del notch se rellena en BLANCO al bajar (nada de franja negra). */
+    .home-head-sticky {
+      position: sticky; top: env(safe-area-inset-top); z-index: 2;
+      margin: 0 -18px; padding: 6px 18px 12px;
+      background: var(--bg);
+    }
+    .home-head-sticky::before {
+      content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
+      height: calc(env(safe-area-inset-top) + 2px); background: var(--bg);
+    }
+
+    /* ---------- Ventana Compra (pantalla propia, abierta desde Alimentos) ---------- */
+    .shop-page { min-height: 100%; background: var(--bg); }
+    .shop-head-sticky {
+      position: sticky; top: 0; z-index: 5; background: #000;
+      padding: calc(env(safe-area-inset-top) + 14px) 18px 14px;
+    }
+    .shop-head { display: flex; align-items: center; gap: 12px; }
+    .shop-head .rv-back { position: static; color: #fff; }
+    .shop-title { font-family: var(--exp); font-weight: 800; font-size: 22px; text-transform: none; letter-spacing: -0.01em; color: #fff; }
+    #shopPage .shop-days, #shopPage .shop-list { padding-left: 18px; padding-right: 18px; }
+    #shopPage .shop-days { padding-top: 14px; }
+    #shopPage .shop-list { padding-bottom: calc(env(safe-area-inset-bottom) + 40px); }
+
+    /* Botón de Compra (carrito) en la cabecera de Alimentos|Recetas */
+    .sheet-cart {
+      margin-left: auto; align-self: center; margin-bottom: 3px;
+      border: none; background: none; cursor: pointer; padding: 4px;
+      color: rgba(255,255,255,0.85); display: flex; align-items: center; justify-content: center;
+    }
+    .sheet-cart:active { transform: scale(0.9); }
+
+    /* ---------- Cabecera de sección: línea fija Menú | Compra ---------- */
+    /* Se queda pegada arriba al bajar la pantalla (como las pestañas de Honest Greens). */
+    .section-head {
+      position: sticky; top: env(safe-area-inset-top); z-index: 2;
+      display: flex; align-items: flex-end; gap: 24px;
+      background: var(--bg);
+      /* Mismo hueco arriba (hasta el notch) que abajo (hasta la línea negra);
+         abajo sin relleno: el borde de la barra coincide con la línea negra.
+         El margen inferior iguala la distancia letras→línea (12px). */
+      margin: 0 -18px 12px; padding: 7px 18px 0;
+    }
+    /* Relleno blanco SOBRE la barra (franja del notch). Siempre presente, pero en
+       reposo queda tapado por la franja de agua (que va por encima en el apilado);
+       al bajar, el agua desaparece y este blanco cubre todo lo de arriba de la línea.
+       Así no depende de JS y nunca parpadea contenido por encima al hacer scroll. */
+    .section-head::before {
+      content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
+      height: calc(env(safe-area-inset-top) + 2px); background: var(--bg);
+    }
+    .home-tab {
+      border: none; background: none; cursor: pointer; padding: 0 0 12px;
+      font-family: var(--exp); font-weight: 800; font-size: 19px;
+      letter-spacing: -0.01em; text-transform: uppercase; color: var(--muted);
+      position: relative; transition: color 0.18s ease;
+    }
+    .home-tab.active { color: var(--ink); }
+    /* Subrayado único que se desliza entre pestañas (transición tipo iPhone) */
+    .tab-underline {
+      position: absolute; bottom: 0; left: 0; width: 0; height: 3px;
+      border-radius: 2px; background: var(--ink);
+      transition: left 0.30s cubic-bezier(.4,0,.2,1), width 0.30s cubic-bezier(.4,0,.2,1);
+    }
+    .section-head .sh-meta { font-family: var(--disp); font-size: 13px; font-weight: 700; color: var(--muted); }
+
+    /* Subtítulo del menú (solo aparece cuando un filtro acota la vista: "Top proteínas", "Cena"…) */
+    .log-heading {
+      font-family: var(--exp); font-weight: 800; font-size: 20px;
+      letter-spacing: -0.01em; text-transform: uppercase; color: var(--ink);
+      margin: 0 0 12px;
+    }
+    .log-heading[hidden] { display: none; }
+
+    /* Transición tipo iPhone al cambiar de pestaña: el contenido entra deslizándose */
+    .home-view[hidden] { display: none; }
+    @keyframes homeSlideFwd  { from { transform: translateX(26px);  opacity: 0; } to { transform: none; opacity: 1; } }
+    @keyframes homeSlideBack { from { transform: translateX(-26px); opacity: 0; } to { transform: none; opacity: 1; } }
+    .slide-fwd  { animation: homeSlideFwd  0.30s cubic-bezier(.33,1,.68,1); }
+    .slide-back { animation: homeSlideBack 0.30s cubic-bezier(.33,1,.68,1); }
+
+    /* ---------- Compra (lista de la compra de los días marcados) ---------- */
+    .shop-days {
+      display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+      margin: 0 -18px 18px; padding: 0 18px 2px;
+    }
+    .shop-days::-webkit-scrollbar { display: none; }
+    .shop-day {
+      flex: 0 0 auto; cursor: pointer; border: none; background: var(--bg);
+      border-radius: 16px; padding: 9px 0 9px; width: 52px;
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+      transition: background 0.15s ease, transform 0.12s ease;
+    }
+    .shop-day:active { transform: scale(0.96); }
+    .sd-wd { font-family: var(--disp); font-weight: 800; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+    .sd-num { font-family: var(--disp); font-weight: 800; font-size: 18px; line-height: 1; color: var(--ink); }
+    .shop-day.today { box-shadow: inset 0 0 0 2px var(--lime), 0 2px 10px rgba(0,0,0,0.06); }
+    .shop-day.sel { background: var(--ink); box-shadow: none; }
+    .shop-day.sel .sd-wd { color: rgba(255,255,255,0.55); }
+    .shop-day.sel .sd-num { color: #fff; }
+    /* Hoy, cuando está seleccionado: letras y número en lima para distinguirlo */
+    .shop-day.today.sel .sd-wd,
+    .shop-day.today.sel .sd-num { color: var(--lime); }
+
+    .shop-items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+    .shop-item {
+      display: flex; align-items: center; gap: 13px;
+      background: var(--bg); border-radius: var(--r-md); padding: 14px 17px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07); cursor: pointer;
+      transition: background 0.16s ease, transform 0.12s ease;
+    }
+    .shop-item:active { transform: scale(0.995); }
+    .shop-emoji { font-size: 22px; flex-shrink: 0; line-height: 1; }
+    .shop-name { flex: 1; min-width: 0; font-family: var(--sans); font-weight: 600; font-size: 15px; color: var(--ink); }
+    .shop-grams { font-family: var(--disp); font-weight: 800; font-size: 17px; color: var(--ink); white-space: nowrap; }
+    /* Marcado como cogido en el súper: se pone en negro (no afecta a los filtros del menú) */
+    .shop-item.got { background: var(--ink); box-shadow: none; }
+    .shop-item.got .shop-name { color: #fff; }
+    .shop-item.got .shop-grams { color: #fff; }
+    .shop-empty { font-size: 14px; color: var(--muted); padding: 6px 2px; }
+    /* Botones de acción: rectangulares con esquinas redondeadas, como los filtros */
+    .clear-filters {
+      border: none; background: var(--lime); color: var(--ink);
+      border-radius: 12px; padding: 12px 15px;
+      font-family: var(--disp); font-size: 13px; font-weight: 800;
+      letter-spacing: 0.02em; text-transform: uppercase; cursor: pointer; white-space: nowrap;
+    }
+    .clear-filters.hidden { display: none; }
+    /* Segunda línea de la cabecera fija: acciones + botón + pegados a la derecha */
+    .hero-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+    /* Botón rojo para borrar todos los alimentos del día (sin filtros) */
+    .clear-all { background: var(--red); color: #fff; }
+    /* Botón normalizar a 100 g: blanco y, al activarlo, negro (como el resto de filtros) */
+    .norm-btn { background: var(--bg); color: var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .norm-btn.on { background: var(--ink); color: #fff; box-shadow: none; }
+
+    /* Etiquetas de cada comida (tan grandes como "Comidas de hoy") */
+    .log-sub {
+      display: flex; align-items: baseline; gap: 9px;
+      font-family: var(--exp); font-size: 22px; font-weight: 800;
+      letter-spacing: -0.01em; text-transform: uppercase; color: var(--ink);
+      margin: 22px 2px 12px;
+    }
+    .log-sub .ls-kcal { margin-left: auto; font-family: var(--disp); font-size: 13px; font-weight: 700; color: var(--muted); }
+    .log-list { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* Tarjeta de alimento (cuadrícula, estilo producto) */
+    .logf {
+      display: flex; flex-direction: column;
+      border-radius: var(--r-md); overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+      cursor: pointer;
+    }
+    .logf:active { transform: scale(0.98); }
+    .logf-main {
+      display: flex; flex-direction: column; flex: 1;
+      background: var(--bg); border-radius: var(--r-md); overflow: hidden;
+    }
+    .logf-top {
+      background: var(--card); aspect-ratio: 1 / 0.82;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.18s ease;
+    }
+    /* Alimento seleccionado como filtro: su parte de arriba se pone en negro */
+    .logf.sel .logf-top { background: var(--ink); }
+    .logf-emoji { font-size: 52px; line-height: 1; }
+    .logf-info { padding: 12px 14px 14px; flex: 1; display: flex; flex-direction: column; }
+    .logf-name {
+      font-family: var(--disp); font-size: 15px; font-weight: 800;
+      letter-spacing: 0.01em; text-transform: uppercase; color: var(--ink); line-height: 1.05;
+    }
+    /* Pie de la tarjeta: pegado abajo (margin-top:auto) · gramos izq · kcal der */
+    .logf-foot { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 8px; }
+    .logf-grams { font-family: var(--disp); font-size: 18px; font-weight: 800; color: var(--ink); }
+    .logf-kcal { font-family: var(--disp); font-size: 12px; font-weight: 500; color: var(--muted); }
+    .logf-kcal span { font-family: var(--sans); font-size: 11px; font-weight: 500; color: var(--muted); }
+
+    .meal-empty {
+      background: var(--card); border-radius: var(--r-md);
+      padding: 26px; text-align: center; color: var(--muted); font-size: 14px; font-weight: 500;
+    }
+
+    /* ---------- Botón flotante añadir ---------- */
+    .add {
+      position: fixed;
+      right: max(18px, env(safe-area-inset-right));
+      bottom: calc(env(safe-area-inset-bottom) + 20px);
+      width: 60px; height: 60px; border-radius: 50%;
+      background: var(--lime); color: var(--ink); border: none;
+      font-size: 32px; font-weight: 400; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 10px 26px rgba(19,19,17,0.22);
+      cursor: pointer; transition: transform 0.15s ease;
+    }
+    .add:active { transform: scale(0.92); }
+    .add.hidden { opacity: 0; pointer-events: none; transform: scale(0.6); }
+
+    /* ---------- Páginas (Añadir comida / simulador / selector) ----------
+       Scroll NATURAL del documento, igual que la Home: así llegan hasta el
+       borde inferior en standalone (un panel fijo no lo hacía). Solo se ve una
+       a la vez (las demás se ocultan con display:none vía JS / markup). */
+    .page { min-height: 100%; background: var(--bg); }
+    .page.shown, .sim.shown { display: block; }
+    /* Paleta de la hoja: fondo gris, previsualización beige, texto sobre blanco. */
+    #sheet { background: #D7D7D5; }
+    /* Con la hoja abierta, el documento va en negro: el overscroll superior
+       (rebote al tirar hacia abajo) se ve negro, igual que la cabecera. */
+    html.sheet-open, html.sheet-open body { background: #000; }
+    /* Bajo el detalle, el documento va en blanco: el rebote INFERIOR cuadra con la
+       tarjeta. El rebote SUPERIOR lo cubre el beige de la foto (ver .rv-photo::before). */
+    html.recipe-open, html.recipe-open body { background: #fff; }
+    /* Transiciones de vista: la entrante entra suave; la saliente se desvanece como
+       una capa por encima (overlay fijo) para que el cambio sea fluido en ambos sentidos. */
+    .v-in  { animation: viewIn 0.34s cubic-bezier(.22,.61,.36,1) both; }
+    .v-out {
+      position: fixed; inset: 0; z-index: 70; overflow: hidden;
+      animation: viewOut 0.26s cubic-bezier(.4,0,1,1) both;
+      will-change: opacity, transform;
+    }
+    @keyframes viewIn  { from { opacity: 0; transform: translateY(12px) scale(0.992); } to { opacity: 1; transform: none; } }
+    @keyframes viewOut { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(8px) scale(0.99); } }
+    @media (prefers-reduced-motion: reduce) {
+      .v-in, .v-out { animation-duration: 0.01ms; }
+    }
+
+    .sheet-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: calc(env(safe-area-inset-top) + 14px) 18px 6px;
+    }
+    .sheet-head h2 { font-family: var(--exp); font-weight: 800; font-size: 19px; text-transform: uppercase; letter-spacing: -0.01em; }
+    .sheet-close { background: none; border: none; color: var(--ink); font-family: var(--disp); font-size: 14px; font-weight: 700; cursor: pointer; padding: 4px 0; }
+    .sheet-spacer { width: 48px; }
+
+    /* Cabecera fija Alimentos | Recetas. Negro puro, alta y cubriendo el notch:
+       la franja superior (incluida la barra de estado) queda negra al desplazar.
+       Sticky en el WRAPPER (una sola fuente de verdad): así la cabecera negra y la
+       barra de categorías se mueven siempre juntas, sin desincronizarse cuando
+       Safari colapsa/expande la barra de direcciones al desplazar. */
+    #sheet { padding-top: 0; }
+    .sheet-head-sticky { position: sticky; top: 0; z-index: 5; }
+    .sheet-tabs {
+      position: relative;             /* para el ::before del notch */
+      display: flex; align-items: flex-end; gap: 26px;
+      background: #000;
+      padding: calc(env(safe-area-inset-top) + 16px) 18px 18px; margin: 0;
+    }
+    .sheet-tab {
+      border: none; background: none; cursor: pointer; padding: 0;
+      font-family: var(--exp); font-weight: 800; font-size: 22px;
+      letter-spacing: -0.01em; text-transform: none; color: rgba(255,255,255,0.42);
+      position: relative; transition: color 0.18s ease;
+    }
+    /* La pestaña activa se marca con el verde lima de la app (sin subrayado) */
+    .sheet-tab.active { color: var(--lime); }
+    .sheet-tabs .tab-underline { display: none; }
+    /* Filtros a la misma distancia de la línea negra que los títulos (12px),
+       y a esa misma distancia de los alimentos por debajo */
+    #catTabs { padding-top: 12px; padding-bottom: 0; }
+    #foodList { padding-top: 12px; }
+
+    /* Buscador flotante tipo "Liquid Glass" (Apple). Siempre visible, abajo a la
+       derecha (zona del pulgar). Al tocar se expande en barra de búsqueda. */
+    .glass-search {
+      position: fixed; left: 16px; right: 16px; z-index: 60;
+      bottom: calc(env(safe-area-inset-bottom) + 18px);
+      display: none; pointer-events: none;
+    }
+    .glass-search.active { display: flex; }
+    .gs-inner {
+      pointer-events: auto; margin-left: auto;
+      width: 56px; height: 56px; border-radius: 28px; overflow: hidden;
+      display: flex; align-items: center;
+      /* Cristal: muy translúcido + desenfoque del contenido de detrás */
+      background: rgba(255,255,255,0.22);
+      -webkit-backdrop-filter: blur(16px) saturate(190%) brightness(1.08);
+      backdrop-filter: blur(16px) saturate(190%) brightness(1.08);
+      border: 1px solid rgba(255,255,255,0.55);
+      box-shadow:
+        0 8px 26px rgba(0,0,0,0.18),
+        inset 0 1.5px 1px rgba(255,255,255,0.85),
+        inset 0 -10px 14px -6px rgba(255,255,255,0.55);
+      transition: width 0.34s cubic-bezier(.4,0,.2,1);
+    }
+    .glass-search.open .gs-inner { width: 100%; background: rgba(255,255,255,0.42); }
+    .gs-ico {
+      flex: 0 0 56px; width: 56px; height: 56px; border: none; background: none;
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(19,19,17,0.82); cursor: pointer;
+    }
+    .gs-input {
+      flex: 1; min-width: 0; border: none; background: none; outline: none;
+      font-family: var(--sans); font-size: 16px; color: var(--ink); padding: 0 16px 0 0;
+      -webkit-appearance: none;
+    }
+
+    /* Segmentado Alimentos / Recetas */
+    .type-tabs { display: flex; gap: 8px; padding: 10px 18px 4px; flex-shrink: 0; }
+    .type-tabs button {
+      flex: 1 0 auto; border: 1px solid var(--line); background: var(--card);
+      color: var(--ink); border-radius: 99px; padding: 10px 16px;
+      font-family: var(--disp); font-size: 13px; font-weight: 700;
+      letter-spacing: 0.02em; text-transform: uppercase; cursor: pointer;
+      transition: all 0.15s ease; white-space: nowrap;
+    }
+    .type-tabs button.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+    /* Categorías (Salado / Dulce…) */
+    .cat-tabs { display: flex; gap: 8px; padding: 8px 18px 2px; flex-shrink: 0; overflow-x: auto; scrollbar-width: none; }
+    .cat-tabs::-webkit-scrollbar { display: none; }
+    .cat-tabs.hidden { display: none; }
+    /* Iguales a las pestañas de comida del modal: tamaño + textura "glassy" */
+    .cat-tabs button {
+      flex: 0 0 auto; color: var(--ink);
+      border-radius: 99px; padding: 9px 16px;
+      font-family: var(--disp); font-size: 12px; font-weight: 700;
+      letter-spacing: 0.02em; text-transform: uppercase; cursor: pointer;
+      transition: all 0.15s ease; white-space: nowrap;
+      background: rgba(255,255,255,0.4);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      backdrop-filter: blur(16px) saturate(180%);
+      border: 1px solid rgba(255,255,255,0.6);
+      box-shadow:
+        inset 0 1px 1px rgba(255,255,255,0.85),
+        inset 0 -9px 12px -8px rgba(255,255,255,0.6),
+        0 1px 4px rgba(0,0,0,0.05);
+    }
+    .cat-tabs button.active { background: var(--ink); color: #fff; border-color: var(--ink); box-shadow: none; }
+
+    .search-wrap { position: relative; padding: 12px 18px 8px; flex-shrink: 0; }
+    .search-ico { position: absolute; left: 32px; top: 50%; transform: translateY(-30%); font-size: 15px; opacity: 0.55; pointer-events: none; }
+    .search-wrap input {
+      width: 100%; border: none; background: var(--card); border-radius: var(--r-md);
+      padding: 14px 14px 14px 40px; font-family: var(--sans); font-size: 16px; color: var(--ink);
+      outline: none; -webkit-appearance: none;
+    }
+    .search-wrap input:focus { box-shadow: inset 0 0 0 2px var(--ink); }
+
+    /* Lista de alimentos en formato cuadro, igual que la Home */
+    .food-list {
+      list-style: none;
+      padding: 6px 18px calc(env(safe-area-inset-bottom) + 96px);
+      display: flex; flex-wrap: wrap; align-content: flex-start; gap: 12px;
+    }
+    /* Tarjetas estilo Honest Greens en cuadrícula de 2 columnas: imagen beige
+       arriba y nombre/info sobre blanco abajo. */
+    .addf {
+      width: calc(50% - 6px);
+      position: relative; cursor: pointer;
+      display: flex; flex-direction: column;
+      background: #fff; border-radius: 20px; overflow: hidden;
+      box-shadow: 0 6px 20px rgba(40,46,54,0.08);
+      transition: transform 0.12s ease;
+    }
+    .addf:active { transform: scale(0.97); }
+    .addf-top {
+      position: relative; background: #E8E4D9;     /* beige, igual que las recetas */
+      aspect-ratio: 1 / 0.92; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .addf-emoji { font-size: 58px; line-height: 1; }
+    /* Sello "Ⓗ" de Hacendado (estilo ®, sombreado) abajo a la derecha de la miniatura */
+    .addf-brand {
+      position: absolute; right: 8px; bottom: 8px;
+      width: 27px; height: 27px; border-radius: 50%; box-sizing: border-box;
+      border: 2.5px solid var(--ink); color: var(--ink);    /* círculo en negrita, igual que la H */
+      background: #E8E4D9;                          /* mismo color que el fondo (la miniatura) */
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--disp); font-weight: 800; font-size: 15px; line-height: 1;
+      padding-top: 1.5px;                          /* centra ópticamente la H */
+    }
+    /* Zona de texto en blanco: nombre grande + ración + kcal (estilo Honest Greens) */
+    .addf-info { background: #fff; padding: 13px 15px 15px; flex: 1; display: flex; flex-direction: column; }
+    .addf-name {
+      font-family: var(--exp); font-size: 16px; font-weight: 800;
+      letter-spacing: -0.01em; text-transform: uppercase; color: var(--ink); line-height: 1.06;
+    }
+    .addf-sub { font-size: 12px; color: var(--muted); margin-top: 6px; font-weight: 500; }
+    .addf-kcal { font-family: var(--disp); font-size: 16px; font-weight: 800; color: var(--ink); margin-top: auto; padding-top: 12px; }
+    .addf-kcal span { font-family: var(--sans); font-size: 11px; font-weight: 500; color: var(--muted); }
+    .food-empty {
+      width: 100%; background: var(--card); border-radius: var(--r-md);
+      padding: 26px; text-align: center; color: var(--muted); font-size: 14px; font-weight: 500;
+    }
+
+    /* ---------- Recetas (estilo Honest Greens): columna de tarjetas grandes ---------- */
+    .food-list.as-recipes { flex-direction: column; flex-wrap: nowrap; gap: 16px; padding-top: 8px; }
+
+    /* Barra de categorías con subrayado deslizante (scroll-spy): al bajar indica
+       en qué categoría de receta estás. Va en el flujo normal, justo debajo de
+       Alimentos|Recetas, dentro del mismo wrapper sticky (ver .sheet-head-sticky).
+       "position: relative" es IMPRESCINDIBLE: es lo que ancla el subrayado
+       (position: absolute) a las coordenadas de ESTA barra (que además desplaza
+       en horizontal); sin esto el subrayado se ancla al wrapper exterior y se
+       queda "flotando" en un sitio fijo mientras las categorías se desplazan
+       por debajo (el bug de "tierra de nadie"). */
+    .rcat-tabs {
+      position: relative;
+      display: flex; gap: 24px; align-items: flex-end;
+      background: #fff; margin: 0; padding: 15px 18px 0;
+      /* overflow-y: hidden es IMPRESCINDIBLE: "overflow-x: auto" hace que el
+         navegador calcule también "overflow-y: auto", así que cualquier píxel
+         que sobresalga por abajo (el subrayado) volvía la barra desplazable en
+         vertical y "temblaba" (las palabras subían y bajaban al hacer scroll). */
+      overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
+      border-bottom: 1px solid rgba(0,0,0,0.14);   /* línea fina = separación con el contenido */
+    }
+    .rcat-tabs::-webkit-scrollbar { display: none; }
+    .rcat-tabs[hidden] { display: none; }
+    .rcat {
+      flex: 0 0 auto; border: none; background: none; cursor: pointer; padding: 0 0 13px;
+      font-family: var(--exp); font-weight: 800; font-size: 18px;
+      text-transform: none; letter-spacing: -0.01em;
+      color: var(--muted); white-space: nowrap; transition: color 0.18s ease;
+    }
+    .rcat.active { color: var(--ink); }
+    /* Subrayado grueso pegado a la línea de separación (estilo Honest Greens).
+       "bottom: 0" (no -1px) para no desbordar la barra por abajo. */
+    .rcat-tabs .tab-underline { bottom: 0; height: 4px; background: var(--ink); }
+
+    .rcard {
+      width: 100%; list-style: none; cursor: pointer;
+      background: #fff; border-radius: 22px; overflow: hidden;
+      box-shadow: 0 6px 22px rgba(40,46,54,0.10);
+      transition: transform 0.12s ease;
+    }
+    .rcard:active { transform: scale(0.99); }
+    .rcard-img {
+      height: 244px; background: #E8E4D9;         /* beige suave tipo Honest Greens */
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
+      padding: 28px;                              /* margen para que el plato no toque los bordes */
+    }
+    .rcard-emoji { font-size: 84px; line-height: 1; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.12)); }
+    .rcard-photo {
+      width: 186px; height: 186px; max-width: 100%; max-height: 100%; object-fit: contain;
+      filter: drop-shadow(0 10px 16px rgba(0,0,0,0.28));
+    }
+    .rcard-body { padding: 16px 18px 18px; }
+    .rcard-name {
+      font-family: var(--exp); font-weight: 800; font-size: 22px;
+      text-transform: uppercase; letter-spacing: -0.01em; color: var(--ink); line-height: 1.02;
+    }
+    .rcard-desc { font-size: 14px; color: var(--muted); margin-top: 8px; line-height: 1.45; }
+    .rcard-foot { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 15px; }
+    .rcard-kcal { font-family: var(--disp); font-weight: 800; font-size: 19px; color: var(--ink); }
+    .rcard-kcal span { font-family: var(--sans); font-size: 12px; font-weight: 500; color: var(--muted); }
+    .rcard-macros { font-family: var(--disp); font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: 0.02em; white-space: nowrap; }
+    /* Tarjeta de crear receta al final */
+    .rcard-new {
+      background: none; box-shadow: none; border: 2px dashed rgba(19,19,17,0.22);
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      padding: 22px; color: var(--ink);
+      font-family: var(--disp); font-weight: 800; font-size: 15px;
+      text-transform: uppercase; letter-spacing: 0.02em;
+    }
+
+    /* ---------- Detalle de receta a pantalla completa (estilo Honest Greens) ---------- */
+    .recipe-view { min-height: 100%; background: #fff; }
+    .rv-photo {
+      position: relative; background: #E8E4D9;     /* beige a sangre, de pared a pared */
+      padding: calc(env(safe-area-inset-top) + 8px) 0 0;
+      min-height: 44vh; display: flex; align-items: center; justify-content: center;
+    }
+    /* Prolonga el beige hacia arriba para que el rebote SUPERIOR cuadre con la foto */
+    .rv-photo::before {
+      content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
+      height: 100vh; background: #E8E4D9;
+    }
+    .rv-back {
+      position: absolute; top: calc(env(safe-area-inset-top) + 12px); left: 18px; z-index: 2;
+      border: none; background: none; cursor: pointer; line-height: 1;
+      font-size: 27px; color: var(--ink); padding: 4px;
+    }
+    .rv-img {
+      width: min(72vw, 350px); height: auto; object-fit: contain;
+      filter: drop-shadow(0 14px 22px rgba(0,0,0,0.30));
+      padding: 18px 0 34px;                        /* margen del plato */
+    }
+    .rv-emoji { font-size: 128px; line-height: 1; padding: 18px 0 34px; }
+    .rv-body { background: #fff; padding: 24px 20px calc(env(safe-area-inset-bottom) + 26px); }
+    .rv-name {
+      font-family: var(--exp); font-weight: 800; font-size: 26px;
+      text-transform: uppercase; letter-spacing: -0.01em; color: var(--ink); line-height: 1.04;
+    }
+    .rv-ingredients { margin: 18px 0 22px; }
+    .rv-ing {
+      display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+      padding: 10px 0;
+      font-size: 15px; color: var(--ink); font-weight: 500;
+    }
+    .rv-ing-g { color: var(--muted); font-weight: 600; white-space: nowrap; }
+    .rv-label {
+      font-family: var(--disp); font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--muted); margin-bottom: 11px;
+    }
+    /* Panel de gramos ad-hoc: se despliega con el mismo efecto que el calendario */
+    .rv-grampanel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.34s cubic-bezier(.22,.61,.36,1); }
+    .rv-grampanel.open { grid-template-rows: 1fr; }
+    .rv-grampanel-inner { overflow: hidden; min-height: 0; }
+    /* Fondo beige, a juego con la paleta de la ventana de receta (la foto). */
+    .rv-grampanel .grams-field {
+      margin: 6px 0 18px; border-radius: 22px; padding: 12px 14px;
+      background: #E8E4D9;
+      -webkit-backdrop-filter: none; backdrop-filter: none;
+      border: 1px solid rgba(255,255,255,0.5);
+      box-shadow: 0 1px 2px rgba(60,55,45,0.06), 0 12px 28px rgba(60,55,45,0.14);
+    }
+    /* Botones +/− como círculos blancos limpios con sombra suave (estilo iOS) */
+    .rv-grampanel .grams-field button {
+      background: #fff;
+      -webkit-backdrop-filter: none; backdrop-filter: none;
+      border: 1px solid rgba(0,0,0,0.04);
+      box-shadow: 0 1px 1px rgba(0,0,0,0.04), 0 4px 10px rgba(0,0,0,0.10);
+    }
+    /* Fila de ingrediente seleccionada: letras y gramos en negro intenso y en negrita */
+    .rv-ing.active { color: #000; font-weight: 800; }
+    .rv-ing.active .rv-ing-g { color: #000; font-weight: 800; }
+    .rv-ing { cursor: pointer; transition: opacity 0.12s ease; }
+    .rv-ing:active { opacity: 0.55; }
+
+    .rv-meals { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 16px 0 0; }
+    .rv-meals::-webkit-scrollbar { display: none; }
+    .rv-meals button {
+      flex: 1 0 auto; border: none; border-radius: 99px; padding: 11px 14px;
+      font-family: var(--disp); font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
+      text-transform: uppercase; white-space: nowrap; cursor: pointer; transition: all 0.15s ease;
+      background: var(--card); color: var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .rv-meals button.active { background: var(--ink); color: #fff; box-shadow: none; }
+    .rv-actions { display: flex; align-items: center; gap: 10px; margin-top: 22px; }
+    .rv-delete {
+      border: none; border-radius: 99px; padding: 15px 22px; cursor: pointer;
+      font-family: var(--disp); font-size: 14px; font-weight: 700;
+      letter-spacing: 0.04em; text-transform: uppercase; background: var(--red); color: #fff;
+    }
+    /* Cabecera del detalle: título a la izquierda y botón "+" a su derecha */
+    .rv-head { display: flex; align-items: center; gap: 14px; }
+    .rv-head .rv-name { flex: 1; min-width: 0; }
+    /* Botón circular glass para añadir la receta (junto al título). Glass grisáceo
+       (como el cajetín de gramos) para que se aprecie sobre el blanco. El "+" en plata. */
+    .rv-add {
+      flex-shrink: 0; width: 58px; height: 58px; border-radius: 50%; cursor: pointer;
+      /* Mismo material claro tipo Apple que el cajetín */
+      background: rgba(245,245,247,0.78);
+      -webkit-backdrop-filter: blur(30px) saturate(180%);
+              backdrop-filter: blur(30px) saturate(180%);
+      border: 1px solid rgba(255,255,255,0.55);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 12px 28px rgba(0,0,0,0.14);
+      display: flex; align-items: center; justify-content: center;
+      /* Sube el botón hacia la primera línea del título (se veía bajo centrado en
+         el bloque de 2 líneas). transform no altera el layout. */
+      transform: translateY(-11px);
+      transition: transform 0.12s ease;
+    }
+    .rv-add:active { transform: translateY(-11px) scale(0.93); }
+    .rv-add-plus {
+      font-family: var(--exp); font-weight: 300; font-size: 38px; line-height: 1;
+      color: var(--ink); -webkit-text-fill-color: var(--ink);   /* símbolo oscuro */
+    }
+
+    .sheet-foot { flex-shrink: 0; padding: 12px 18px max(12px, calc(env(safe-area-inset-bottom) - 8px)); border-top: 1px solid var(--line); background: var(--bg); }
+    .confirm {
+      width: 100%; border: none; background: var(--ink); color: #fff;
+      border-radius: 99px; padding: 17px;
+      font-family: var(--disp); font-size: 15px; font-weight: 700;
+      letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer;
+      transition: transform 0.12s ease;
+    }
+    .confirm:active { transform: scale(0.98); }
+
+    /* ---------- Modal de gramos (añadir / editar) ---------- */
+    .modal {
+      position: fixed; inset: 0; z-index: 80;
+      display: flex; align-items: flex-end; justify-content: center;
+      background: rgba(19,19,17,0); visibility: hidden;
+      transition: background 0.25s ease, visibility 0.25s ease;
+    }
+    .modal.open { visibility: visible; background: rgba(19,19,17,0.34); }
+    /* La página/body se tiñe al tono APARENTE del cristal (cristal sobre el fondo
+       oscuro del modal) para que la franja del inset por debajo de la ficha fija
+       se confunda con la ficha y no se vea una banda. */
+    html.gram-open, html.gram-open body,
+    html.gram-open .app, html.gram-open .page.shown { background: #fff; }
+    .modal-card {
+      position: relative;
+      width: 100%; max-width: 460px;
+      /* Ficha blanca (misma paleta que el detalle de receta) */
+      background: #fff;
+      border-top: 1px solid var(--line);
+      border-radius: 24px 24px 0 0;
+      padding: 20px 20px clamp(16px, env(safe-area-inset-bottom), 30px);
+      transform: translateY(100%); transition: transform 0.3s cubic-bezier(.22,.61,.36,1);
+    }
+    /* La franja de padding inferior (bajo los botones) coincide con el inset de
+       abajo en standalone (la ficha fija no llega al borde físico). */
+    .modal-card::after {
+      content: ""; position: absolute; left: 0; right: 0; bottom: 0;
+      height: clamp(16px, env(safe-area-inset-bottom), 30px);
+      background: #fff; pointer-events: none;
+    }
+    .modal.open .modal-card { transform: translateY(0); }
+    .modal-top { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+    .modal-emoji {
+      width: 120px; height: 120px; border-radius: 26px; background: #E8E4D9;   /* beige, como la receta */
+      display: flex; align-items: center; justify-content: center; font-size: 58px; flex-shrink: 0;
+    }
+    .modal-title { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+    .modal-title h3 { font-family: var(--disp); font-weight: 800; font-size: 22px; line-height: 1.05; text-transform: uppercase; letter-spacing: 0.01em; color: var(--ink); }
+    .modal-ref { font-size: 13px; color: var(--muted); margin-top: 6px; font-weight: 500; }
+
+    /* Selector de comida (debajo del cajetín negro): pastillas beige, activa negra,
+       igual que en el detalle de receta. */
+    .modal-meals { display: flex; gap: 8px; margin: 0 0 16px; overflow-x: auto; scrollbar-width: none; }
+    .modal-meals::-webkit-scrollbar { display: none; }
+    .modal-meals button {
+      flex: 1 0 auto; border: none; background: var(--card); color: var(--ink);
+      border-radius: 99px; padding: 11px 14px;
+      font-family: var(--disp); font-size: 12px; font-weight: 700;
+      letter-spacing: 0.02em; text-transform: uppercase; cursor: pointer;
+      transition: all 0.15s ease; white-space: nowrap;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .modal-meals button.active { background: var(--ink); color: #fff; box-shadow: none; }
+
+    .grams-field {
+      display: flex; align-items: center; gap: 14px;
+      background: #E8E4D9; border-radius: 22px;               /* beige, como la receta */
+      padding: 12px 14px; margin-bottom: 14px;
+      border: 1px solid rgba(255,255,255,0.5);
+      box-shadow: 0 1px 2px rgba(60,55,45,0.06), 0 10px 24px rgba(60,55,45,0.12);
+    }
+    .grams-field button {
+      width: 42px; height: 42px; border-radius: 50%;
+      /* Círculos blancos con sombra suave (estilo iOS), como en la receta */
+      background: #fff;
+      border: 1px solid rgba(0,0,0,0.04);
+      box-shadow: 0 1px 1px rgba(0,0,0,0.04), 0 4px 10px rgba(0,0,0,0.10);
+      color: var(--ink); font-size: 24px; line-height: 1; cursor: pointer; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      touch-action: none; -webkit-user-select: none; user-select: none;
+    }
+    .grams-field .gwrap { flex: 1; text-align: center; }
+    .grams-field input {
+      width: 100%; border: none; background: none; outline: none;
+      font-family: var(--exp); font-weight: 900; font-size: 36px; color: var(--ink);
+      text-align: center; -webkit-appearance: none; -moz-appearance: textfield; letter-spacing: -0.02em;
+    }
+    .grams-field input::-webkit-outer-spin-button,
+    .grams-field input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .grams-field .gunit { font-family: var(--disp); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); display: block; margin-top: -2px; }
+
+    .modal-preview {
+      display: flex; justify-content: space-around; text-align: center;
+      background: var(--ink); border-radius: var(--r-md); padding: 14px; margin-bottom: 16px;
+    }
+    .pv-cell { display: flex; flex-direction: column; align-items: center; }
+    .modal-preview .pv-n { font-family: var(--disp); font-size: 20px; font-weight: 800; color: #fff; }
+    .modal-preview .pv-n.kcal { color: var(--lime); }
+    .modal-preview .pv-l { font-family: var(--disp); font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 3px; }
+    /* Anillo bajo cada cifra: proporción respecto al objetivo diario */
+    .pv-ring { position: relative; width: 40px; height: 40px; margin-top: 9px; display: flex; align-items: center; justify-content: center; }
+    .pv-ring svg { width: 40px; height: 40px; transform: rotate(-90deg); }
+    .pv-ring circle { fill: none; stroke-width: 4; }
+    .pvr-track { stroke: transparent; }   /* vía invisible: solo el arco lima */
+    .pvr-sel { stroke: var(--lime); stroke-linecap: round; stroke-dasharray: 0 100; transition: stroke-dasharray 0.5s cubic-bezier(.22,.61,.36,1); }
+    .pv-pct { display: none; }   /* solo el anillo, sin número */
+
+    .modal-actions { display: flex; gap: 10px; }
+    .modal-actions button {
+      flex: 1; border: none; border-radius: 99px; padding: 16px;
+      font-family: var(--disp); font-size: 14px; font-weight: 700;
+      letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer;
+    }
+    .modal-actions .m-cancel { background: var(--card); color: var(--ink); }
+    .modal-actions .m-delete { background: var(--red); color: #fff; flex: 0 0 auto; padding: 16px 22px; }
+    .modal-actions .m-save { background: var(--ink); color: #fff; }
+
+    /* La ficha usa ahora la paleta de la receta (blanco + beige), sin cristal. */
+
+    /* ---------- Simulador de recetas (misma estructura que la Home) ---------- */
+    /* La imagen de la sandía va en la región superior (tras hero+macros) y
+       corta a blanco debajo, igual que el agua en la Home. */
+    .sim-top {
+      background-color: #BFE3DE;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.28), rgba(255,255,255,0.28)),
+        url("recipe-bg.jpg");
+    }
+    .sim-top::before { background: #BFE3DE; }
+    .sim { padding-bottom: calc(env(safe-area-inset-bottom) + 28px); }
+
+    /* Botón ✕ de cerrar (en el sitio del círculo de versión de la Home) */
+    .page-x {
+      border: none; cursor: pointer; padding: 0; line-height: 1;
+      font-family: var(--sans); font-size: 20px; font-weight: 400; text-align: center;
+    }
+
+    .confirm:disabled { opacity: 0.4; }
+    .sim-cat { padding: 0 0 14px; overflow: visible; }
+    .sim-cat button { flex: 1 0 auto; }
+    .sim-save { width: 100%; margin-top: 4px; }
+
+    /* La lista de alimentos de la receta reutiliza las tarjetas de Home (.logf) */
+    .sim-items { margin-bottom: 12px; }
+    .sim-empty { background: var(--card); border-radius: var(--r-md); padding: 20px; text-align: center; color: var(--muted); font-size: 14px; font-weight: 500; }
+    .sim-add {
+      width: 100%; border: 1.5px dashed var(--line); background: var(--bg); color: var(--ink);
+      border-radius: var(--r-md); padding: 14px; font-family: var(--disp); font-weight: 700;
+      font-size: 14px; text-transform: uppercase; letter-spacing: 0.02em; cursor: pointer;
+    }
+    /* Tarjeta "Crear receta" en la lista de Recetas */
+    .addf-new .addf-top { background: var(--ink); }
+    .addf-new .addf-emoji { color: var(--lime); }
+
+    /* ---------- Botón de ajustes (engranaje) en la cabecera ---------- */
+    .gear-btn { border: none; cursor: pointer; font-size: 20px; line-height: 1; }
+    /* Botón del menú lateral: muestra la inicial de la persona activa */
+    .menu-btn { border: none; cursor: pointer; font-size: 17px; }
+
+    /* ---------- Selector de día (se despliega al tocar la fecha) ---------- */
+    .topbar h1 { cursor: pointer; }
+    .day-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.34s cubic-bezier(.22,.61,.36,1); }
+    .day-panel.open { grid-template-rows: 1fr; }
+    .day-panel-inner { overflow: hidden; min-height: 0; }   /* colapsa a 0 limpio, sin pestaña */
+    .day-card {
+      background: var(--bg); border-radius: var(--r-md);
+      margin: 0 0 14px;                                       /* hueco a calorías = hero↔macros */
+      padding: 14px 0 13px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);                /* mismo aire que los demás cajetines */
+    }
+    .day-dial { position: relative; }
+    /* Fila de días: se desliza para cambiar de día. El padding inferior amplía
+       el área táctil hasta cubrir la regla, para poder deslizar también sobre ella. */
+    .day-strip {
+      display: flex; gap: 8px; align-items: flex-start;
+      overflow-x: auto; scrollbar-width: none;
+      scroll-snap-type: x mandatory;
+      padding: 2px calc(50% - 22px) 40px;
+      -webkit-mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);
+              mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);
+    }
+    .day-strip::-webkit-scrollbar { display: none; }
+    .day-chip { flex: 0 0 auto; scroll-snap-align: center; border: none; background: none; cursor: pointer; padding: 0; }
+    .day-dot {
+      display: flex; align-items: center; justify-content: center;
+      width: 44px; height: 44px; border-radius: 50%;
+      font-family: var(--disp); font-weight: 800; font-size: 17px; color: var(--ink);
+      transition: background 0.16s ease, color 0.16s ease, transform 0.12s ease;
+    }
+    .day-chip.today .day-dot { background: var(--lime); color: var(--ink); }
+    .day-chip.sel   .day-dot { background: var(--ink); color: #fff; }
+    /* Regla de rayitas: capa decorativa que NO recibe toques (deslizar sobre ella
+       mueve los días). Lima más intenso en el centro justo (día seleccionado). */
+    .day-ticks {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 22px;
+      pointer-events: none;
+      background-image: repeating-linear-gradient(90deg, var(--lime) 0 2px, transparent 2px 11px);
+      /* Caída brusca: el centro queda a tope y los lados se apagan rápido,
+         así la diferencia de intensidad se nota mucho más. */
+      -webkit-mask-image: linear-gradient(90deg, transparent 8%, rgba(0,0,0,0.12) 28%, #000 48%, #000 52%, rgba(0,0,0,0.12) 72%, transparent 92%);
+              mask-image: linear-gradient(90deg, transparent 8%, rgba(0,0,0,0.12) 28%, #000 48%, #000 52%, rgba(0,0,0,0.12) 72%, transparent 92%);
+    }
+
+    /* ---------- Menú lateral de perfiles (cajón que entra por la izquierda) ---------- */
+    .drawer-backdrop {
+      position: fixed; inset: 0; z-index: 90; background: rgba(19,19,17,0);
+      visibility: hidden; transition: background 0.3s ease, visibility 0.3s ease;
+    }
+    html.drawer-open .drawer-backdrop { visibility: visible; background: rgba(19,19,17,0.45); }
+    html.drawer-open { overflow: hidden; }
+    .drawer {
+      position: fixed; top: 0; left: 0; bottom: 0; z-index: 91;
+      width: min(82vw, 330px);
+      background: var(--bg);
+      padding: calc(env(safe-area-inset-top) + 26px) 20px calc(env(safe-area-inset-bottom) + 22px);
+      padding-left: max(20px, env(safe-area-inset-left));
+      display: flex; flex-direction: column; overflow-y: auto;
+      transform: translateX(-102%);
+      transition: transform 0.34s cubic-bezier(.22,.61,.36,1);
+      box-shadow: 0 0 50px rgba(0,0,0,0.16);
+    }
+    html.drawer-open .drawer { transform: translateX(0); }
+    .drawer-brand {
+      font-family: var(--exp); font-weight: 900; font-size: 26px;
+      text-transform: uppercase; letter-spacing: -0.01em; color: var(--ink); margin-bottom: 24px;
+    }
+    .drawer-label {
+      font-family: var(--disp); font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--muted); margin-bottom: 10px;
+    }
+    .people-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+    .person {
+      display: flex; align-items: center; gap: 12px; padding: 11px 12px;
+      border-radius: 14px; cursor: pointer; transition: background 0.15s ease, transform 0.12s ease;
+    }
+    .person:active { transform: scale(0.98); }
+    .person.active { background: var(--card); }
+    .person-av {
+      width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+      background: var(--ink); color: var(--lime);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--disp); font-weight: 800; font-size: 16px;
+    }
+    .person.active .person-av { background: var(--lime); color: var(--ink); }
+    .person-name { flex: 1; min-width: 0; font-family: var(--disp); font-weight: 700; font-size: 16px; color: var(--ink); }
+    .person-check { color: var(--lime-dim); font-weight: 800; font-size: 15px; }
+    .drawer-add {
+      margin-top: 16px; border: 1.5px dashed var(--line); background: var(--bg); color: var(--ink);
+      border-radius: 14px; padding: 13px; cursor: pointer;
+      font-family: var(--disp); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.02em;
+      transition: transform 0.12s ease;
+    }
+    .drawer-add:active { transform: scale(0.98); }
+    .drawer-settings {
+      margin-top: 8px; border: none; background: var(--ink); color: #fff;
+      border-radius: 14px; padding: 14px; cursor: pointer;
+      font-family: var(--disp); font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 0.02em;
+      transition: transform 0.12s ease;
+    }
+    .drawer-settings:active { transform: scale(0.98); }
+    .drawer-foot {
+      margin-top: auto; padding-top: 20px;
+      font-family: var(--disp); font-size: 12px; font-weight: 700; color: var(--muted);
+    }
+
+    /* ---------- Pantalla "Tus datos" (estilo Home: imagen de fondo + cajetines blancos) ---------- */
+    .profile-page {
+      min-height: 100%;
+      background-color: #9BDBDD;
+      background-image: url("profile-bg.jpg");
+      background-size: cover; background-position: center top;
+    }
+    .prof-head {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+      padding: calc(env(safe-area-inset-top) + 22px) 20px 4px;
+    }
+    .prof-title {
+      font-family: var(--exp); font-weight: 900; font-size: 44px; line-height: 0.92;
+      letter-spacing: -0.02em; text-transform: uppercase; color: var(--ink);
+    }
+    .prof-close {
+      background: rgba(255,255,255,0.85); border: none; color: var(--ink); cursor: pointer;
+      border-radius: 99px; padding: 9px 15px; font-family: var(--disp); font-size: 13px;
+      font-weight: 800; text-transform: uppercase; letter-spacing: 0.02em; flex-shrink: 0;
+    }
+    .prof-body { padding: 18px 16px max(22px, calc(env(safe-area-inset-bottom) + 16px)); display: flex; flex-direction: column; gap: 14px; }
+    /* Cajetines blancos sobre la imagen (como las tarjetas de Home) */
+    .prof-card { background: var(--bg); border-radius: var(--r-md); padding: 14px 16px 6px; box-shadow: 0 4px 20px rgba(0,0,0,0.10); }
+    .prof-card-h {
+      font-family: var(--disp); font-weight: 800; font-size: 13px; text-transform: uppercase;
+      letter-spacing: 0.04em; color: var(--ink); margin-bottom: 4px;
+    }
+    .prof-card-h span { color: var(--muted); font-weight: 600; letter-spacing: 0.02em; margin-left: 6px; }
+    /* Fila genérica: nombre (izq) · g/kg · valor (alineado a la derecha del todo) */
+    .prof-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid rgba(19,19,17,0.07); }
+    .prof-row:first-child { border-top: none; }
+    .pr-name { flex: 1; min-width: 0; font-family: var(--disp); font-weight: 700; font-size: 14px; color: var(--ink); }
+    .pr-gkg { width: 56px; flex-shrink: 0; text-align: right; font-family: var(--disp); font-weight: 700; font-size: 12px; color: var(--lime-dim); }
+    .pr-gkg.empty { color: transparent; }
+    .pr-val { width: 126px; flex-shrink: 0; display: flex; }
+    /* El número vive en la propia fila (sin recuadro) y es grande.
+       Los números terminan TODOS en la misma línea: el número ocupa el espacio
+       flexible (alineado a la derecha) y la unidad va en una columna fija a su
+       derecha (así "g"/"kcal" quedan más o menos lejos, pero el número no se mueve). */
+    .prof-inp, .pr-calc { display: flex; align-items: baseline; width: 100%; }
+    .prof-inp input, .pr-calc b {
+      flex: 1; min-width: 0; text-align: right;
+      font-family: var(--disp); font-weight: 800; font-size: 23px; color: var(--ink); letter-spacing: -0.01em;
+    }
+    .prof-inp input { border: none; background: none; outline: none; -webkit-appearance: none; -moz-appearance: textfield; }
+    .prof-inp input::-webkit-outer-spin-button, .prof-inp input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .prof-inp .unit, .pr-calc .unit {
+      width: 36px; flex-shrink: 0; text-align: right; padding-left: 4px;
+      font-family: var(--disp); font-size: 12px; font-weight: 600; color: var(--muted);
+    }
+    .prof-row.calc .pr-name { color: var(--muted); text-transform: uppercase; font-size: 12px; letter-spacing: 0.03em; }
+    /* Déficit: nombre (izq) + dos columnas (kcal, gramos) con números grandes como el resto */
+    .def-row { display: flex; align-items: center; gap: 6px; padding: 10px 0; border-top: 1px solid rgba(19,19,17,0.07); }
+    .def-row:first-of-type { border-top: none; }
+    .def-row.def-total { border-top: 1.5px solid rgba(19,19,17,0.18); }
+    .def-name { flex: 1; min-width: 0; font-family: var(--disp); font-weight: 700; font-size: 14px; color: var(--ink); line-height: 1.1; }
+    .def-name i { display: block; font-style: normal; font-weight: 600; font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .def-v { display: flex; align-items: baseline; gap: 3px; flex-shrink: 0; justify-content: flex-end; }
+    .def-v.kcal { width: 104px; }
+    .def-v.g { width: 64px; }
+    .def-v b { font-family: var(--disp); font-weight: 800; font-size: 23px; color: var(--ink); letter-spacing: -0.01em; }
+    .def-v .u { font-family: var(--disp); font-size: 12px; font-weight: 600; color: var(--muted); }
+    .def-v.surplus b { color: var(--red); }
+    /* Toggle Hombre / Mujer */
+    .sex-toggle { display: flex; gap: 6px; }
+    .sex-toggle button {
+      border: none; background: var(--card); color: var(--ink); cursor: pointer;
+      border-radius: 99px; padding: 8px 14px; font-family: var(--disp);
+      font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.02em;
+    }
+    .sex-toggle button.active { background: var(--ink); color: #fff; }
+    .prof-body .confirm { margin-top: 4px; }
+
+    /* Micro-interacción: respuesta táctil al pulsar (sensación reactiva, nativa) */
+    .view-tabs button, .clear-filters, .type-tabs button, .cat-tabs button,
+    .sex-toggle button, .modal-meals button, .sheet-close, .prof-close, .gear-btn,
+    .m-cancel, .m-save, .m-delete, .si-grams button {
+      -webkit-user-select: none; user-select: none;
+    }
+    .view-tabs button:active, .clear-filters:active, .type-tabs button:active,
+    .cat-tabs button:active, .sex-toggle button:active, .modal-meals button:active,
+    .sheet-close:active, .prof-close:active, .gear-btn:active,
+    .m-cancel:active, .m-save:active, .m-delete:active {
+      transform: scale(0.94);
+    }
+    .view-tabs button, .clear-filters, .sheet-close, .prof-close, .gear-btn,
+    .m-cancel, .m-save, .m-delete { transition: transform 0.12s ease, background 0.15s ease, color 0.15s ease; }
+
+    /* =========================================================
+       iPad / pantallas grandes — layout propio (no un móvil estirado)
+       ========================================================= */
+    @media (min-width: 768px) {
+      /* Tipos un poco mayores en cabeceras para que respiren en pantalla grande */
+      .topbar h1 { font-size: 34px; }
+      /* Listas de alimentos del selector: 3 columnas y contenido centrado */
+      .food-list { max-width: 940px; margin: 0 auto; }
+      .food-list .addf { width: calc(33.333% - 8px); }
+      /* El menú de Home: 3 columnas (en lugar de 2) para no estirar las tarjetas */
+      #foodLog .log-list { grid-template-columns: repeat(3, 1fr); }
+      /* Cabeceras/controles de las hojas, centrados y más anchos */
+      .sheet-head, .sheet-tabs, .type-tabs, .cat-tabs, .search-wrap { max-width: 940px; margin-left: auto; margin-right: auto; }
+      /* "Tus datos": dos columnas de tarjetas */
+      .prof-body { max-width: 860px; margin: 0 auto;
+        display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+      .prof-body .prof-card:first-child { grid-column: 1 / -1; }   /* datos personales a lo ancho */
+      .prof-body .prof-card:last-of-type { grid-column: 1 / -1; }  /* déficit a lo ancho */
+      .prof-body .confirm { grid-column: 1 / -1; }
+      .prof-title { font-size: 56px; }
+    }
+
+    /* iPad en horizontal: dos paneles (panel de stats fijo a la izquierda + contenido).
+       Vale tanto para la Home como para el creador de recetas (ambos son .app). */
+    @media (min-width: 900px) and (orientation: landscape) {
+      .app, .sim.shown {
+        display: grid;
+        grid-template-columns: 384px minmax(0, 1fr);
+        align-items: start;
+        padding: 0;
+      }
+      /* Panel izquierdo a sangre y a toda altura: la imagen rellena todo el lateral.
+         Abarca todas las filas (span) para no inflar la fila del contenido derecho,
+         y queda fijo (sticky) ocupando el alto de pantalla. */
+      .app > .top-region {
+        grid-column: 1; grid-row: 1 / span 99; align-self: start;
+        position: sticky; top: 0; height: 100vh;
+        margin: 0; border-radius: 0; overflow: hidden;
+        display: flex; flex-direction: column;
+        padding: calc(env(safe-area-inset-top) + 30px) 26px 26px;
+      }
+      .app > .top-region::before { display: none; }     /* ya es panel completo */
+      .app > .top-region .macros { margin-top: 2px; }
+      /* Columna derecha: todo lo que no es el panel */
+      .app > :not(.top-region) { grid-column: 2; }
+      /* Home */
+      .section-head { top: 0; padding: 18px 40px 12px; margin: 0 0 14px; }
+      #menuView, #shopView { padding: 0 40px 130px; }
+      #foodLog { padding: 0; }
+      .log-list { grid-template-columns: repeat(3, 1fr); }
+      /* Creador de recetas */
+      .sim-items { padding: calc(env(safe-area-inset-top) + 32px) 40px 0; margin-bottom: 14px; }
+      .sim-add { width: auto; margin: 0 40px; }
+      .sim-save { width: auto; margin: 12px 40px 130px; }
+      /* Selector de alimentos (hoja): 4 columnas y un poco más ancho */
+      .food-list { max-width: 1060px; }
+      .food-list .addf { width: calc(25% - 9px); }
+    }
+  </style>
+</head>
+<body>
+
+ <div class="app" id="app">
+
+  <div class="top-region">
+    <header class="topbar">
+      <h1 id="greeting">Hola</h1>
+      <div class="avatar" id="version">V.5</div>
+    </header>
+
+    <!-- Desplegable de días (se abre al tocar la fecha) -->
+    <div class="day-panel" id="dayPanel">
+      <div class="day-panel-inner">
+        <div class="day-card">
+          <div class="day-dial">
+            <div class="day-strip" id="dayStrip"></div>
+            <div class="day-ticks"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section class="hero">
+      <div class="hero-left">
+        <div class="now" id="kcalNow">0</div>
+        <div class="goal" id="kcalGoal">/ 0 KCAL</div>
+        <div class="remaining" id="kcalSub">0 kcal para objetivo</div>
+      </div>
+      <div class="ring-wrap">
+        <svg class="ring" viewBox="0 0 36 36" aria-hidden="true">
+          <circle class="ring-track" cx="18" cy="18" r="15.915"></circle>
+          <circle class="ring-rest" id="kcalRingRest" cx="18" cy="18" r="15.915"></circle>
+          <circle class="ring-sel"  id="kcalRingSel"  cx="18" cy="18" r="15.915"></circle>
+        </svg>
+        <span class="ring-pct" id="kcalRingPct">0%</span>
+      </div>
+    </section>
+
+    <!-- Los cajetines de macros van sobre la imagen del agua -->
+    <section class="macros" id="macros"></section>
+
+  </div><!-- /.top-region -->
+
+  <!-- Bloque fijo: filtros de comida. Se quedan a la vista al desplazar; el
+       hueco del notch se rellena en blanco al bajar. -->
+  <div class="home-head-sticky" id="homeHeadSticky">
+    <!-- Filtros de comida (hacen de título de sección) -->
+    <div class="view-tabs" id="viewTabs">
+      <button data-view="Desayuno">Desayuno</button>
+      <button data-view="Comida">Comida</button>
+      <button data-view="Cena">Cena</button>
+      <button data-view="Snack">Snack</button>
+    </div>
+    <!-- Segunda línea: acciones + botón de añadir pegado a la derecha -->
+    <div class="hero-actions" id="heroActions">
+      <button class="clear-filters norm-btn hidden" id="normBtn">/ 100 g</button>
+      <button class="clear-filters hidden" id="clearFilters">Limpiar filtros</button>
+      <button class="clear-filters clear-all hidden" id="clearAll">Borrar todo</button>
+      <button class="vt-add" id="addBtn" aria-label="Añadir comida">+</button>
+    </div>
+  </div>
+
+  <!-- Registro del día (se desplaza bajo el bloque fijo) -->
+  <div class="home-view" id="menuView">
+    <div id="foodLog"></div>
+  </div>
+
+ </div><!-- /.app -->
+
+  <!-- ===================== Menú lateral (perfiles) ===================== -->
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+  <aside class="drawer" id="drawer" aria-label="Perfiles">
+    <div class="drawer-brand">Real Food</div>
+    <div class="drawer-label">Perfiles</div>
+    <ul class="people-list" id="peopleList"></ul>
+    <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
+    <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
+    <div class="drawer-foot"><span id="drawerVersion">V.5</span></div>
+  </aside>
+
+  <!-- ===================== Splash de entrada ===================== -->
+  <div class="splash" id="splash">
+    <div class="splash-title">Real Food</div>
+    <div class="splash-sub">Para cumplir tus objetivos</div>
+  </div>
+
+  <!-- ===================== Pantalla Añadir comida ===================== -->
+  <section class="page sheet" id="sheet" aria-hidden="true" style="display:none">
+    <!-- Cabecera pegajosa única: Alimentos|Recetas + categorías van juntas en un
+         solo bloque sticky, así no hay dos "top" independientes que se desincronicen
+         cuando Safari colapsa/expande la barra de direcciones al desplazar. -->
+    <div class="sheet-head-sticky" id="sheetHeadSticky">
+      <!-- Línea fija: Alimentos | Recetas + botón de Compra (carrito) a la derecha -->
+      <div class="sheet-tabs" id="typeTabs">
+        <button class="sheet-tab active" data-type="alimentos">Alimentos</button>
+        <button class="sheet-tab" data-type="recetas">Recetas</button>
+        <button class="sheet-cart" id="sheetCart" aria-label="Compra">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="20" r="1.4"></circle><circle cx="18" cy="20" r="1.4"></circle>
+            <path d="M2.5 3h2l2.2 11.2a1.6 1.6 0 0 0 1.6 1.3h8.4a1.6 1.6 0 0 0 1.6-1.3L21 7H6"></path>
+          </svg>
+        </button>
+        <span class="tab-underline" id="typeUnderline"></span>
+      </div>
+
+      <!-- Categorías (filtros, en desuso desde que Alimentos usa la barra de abajo) -->
+      <div class="cat-tabs hidden" id="catTabs">
+        <button data-cat="todos" class="active">Todos</button>
+        <button data-cat="huevos">Huevos</button>
+        <button data-cat="carne">Carne</button>
+        <button data-cat="pescado">Pescado</button>
+        <button data-cat="lacteos">Lácteos</button>
+        <button data-cat="cereales">Cereales</button>
+        <button data-cat="verduras">Verduras</button>
+        <button data-cat="fruta">Fruta</button>
+        <button data-cat="grasas">Grasas</button>
+      </div>
+
+      <!-- Categorías con subrayado (scroll-spy). Se rellenan por JS. -->
+      <div class="rcat-tabs" id="recipeCats" hidden>
+        <span class="tab-underline" id="recipeCatUnderline"></span>
+      </div>
+    </div>
+
+    <ul class="food-list" id="foodList"></ul>
+  </section>
+
+  <!-- ===================== Ventana Compra (su propia pantalla) ===================== -->
+  <section class="page shop-page" id="shopPage" aria-hidden="true" style="display:none">
+    <div class="shop-head-sticky">
+      <div class="shop-head">
+        <button class="rv-back" id="shopBack" aria-label="Volver">←</button>
+        <h2 class="shop-title">Compra</h2>
+      </div>
+    </div>
+    <div class="shop-days" id="shopDays"></div>
+    <div class="shop-list" id="shopList"></div>
+  </section>
+
+  <!-- Buscador flotante "Liquid Glass" (fuera de la hoja, fijo al viewport;
+       solo se muestra en la pantalla de Añadir comida). -->
+  <div class="glass-search" id="glassSearch">
+    <div class="gs-inner">
+      <button class="gs-ico" id="gsIco" aria-label="Buscar">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
+          <circle cx="10.5" cy="10.5" r="6.7"></circle>
+          <line x1="15.4" y1="15.4" x2="20.5" y2="20.5"></line>
+        </svg>
+      </button>
+      <input id="search" class="gs-input" type="search" placeholder="Buscar…"
+             autocomplete="off" autocorrect="off" autocapitalize="none">
+    </div>
+  </div>
+
+  <!-- ===================== Modal de gramos (añadir / editar) ===================== -->
+  <div class="modal" id="modal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-top">
+        <div class="modal-emoji" id="mEmoji">🍽️</div>
+        <div class="modal-title">
+          <h3 id="mTitle">Alimento</h3>
+          <div class="modal-ref" id="mRef">—</div>
+        </div>
+      </div>
+
+      <div class="grams-field" id="mGramsField">
+        <button class="gminus" id="mMinus" aria-label="Menos">−</button>
+        <div class="gwrap">
+          <input id="mGrams" type="number" inputmode="numeric" min="0" step="1" value="100">
+          <span class="gunit">gramos</span>
+        </div>
+        <button class="gplus" id="mPlus" aria-label="Más">+</button>
+      </div>
+
+      <div class="modal-preview">
+        <div class="pv-cell">
+          <div class="pv-n kcal" id="pvKcal">0</div><div class="pv-l">kcal</div>
+          <div class="pv-ring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="pvr-track" cx="18" cy="18" r="15.915"></circle><circle class="pvr-sel" id="pvKcalRing" cx="18" cy="18" r="15.915"></circle></svg><span class="pv-pct" id="pvKcalPct">0%</span></div>
+        </div>
+        <div class="pv-cell">
+          <div class="pv-n" id="pvP">0</div><div class="pv-l">Prot</div>
+          <div class="pv-ring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="pvr-track" cx="18" cy="18" r="15.915"></circle><circle class="pvr-sel" id="pvPRing" cx="18" cy="18" r="15.915"></circle></svg><span class="pv-pct" id="pvPPct">0%</span></div>
+        </div>
+        <div class="pv-cell">
+          <div class="pv-n" id="pvC">0</div><div class="pv-l">Carb</div>
+          <div class="pv-ring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="pvr-track" cx="18" cy="18" r="15.915"></circle><circle class="pvr-sel" id="pvCRing" cx="18" cy="18" r="15.915"></circle></svg><span class="pv-pct" id="pvCPct">0%</span></div>
+        </div>
+        <div class="pv-cell">
+          <div class="pv-n" id="pvF">0</div><div class="pv-l">Grasa</div>
+          <div class="pv-ring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="pvr-track" cx="18" cy="18" r="15.915"></circle><circle class="pvr-sel" id="pvFRing" cx="18" cy="18" r="15.915"></circle></svg><span class="pv-pct" id="pvFPct">0%</span></div>
+        </div>
+      </div>
+
+      <!-- Selector de comida DEBAJO del cajetín negro, como en el detalle de receta -->
+      <div class="modal-meals" id="mMeals">
+        <button data-meal="Desayuno">Desayuno</button>
+        <button data-meal="Comida">Comida</button>
+        <button data-meal="Cena">Cena</button>
+        <button data-meal="Snack">Snack</button>
+      </div>
+
+      <div class="modal-actions">
+        <button class="m-delete" id="mDelete" hidden>Eliminar</button>
+        <button class="m-cancel" id="mCancel">Cancelar</button>
+        <button class="m-save" id="mSave">Añadir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== Detalle de receta (pantalla completa) ===================== -->
+  <section class="page recipe-view" id="recipeView" aria-hidden="true" style="display:none">
+    <div class="rv-photo">
+      <button class="rv-back" id="rvBack" aria-label="Volver">←</button>
+      <img class="rv-img" id="rvImg" alt="">
+      <span class="rv-emoji" id="rvEmoji"></span>
+    </div>
+    <div class="rv-body">
+      <div class="rv-head">
+        <h2 class="rv-name" id="rvName">Receta</h2>
+        <button class="rv-add" id="rvSave" aria-label="Añadir receta">
+          <span class="rv-add-plus">+</span>
+        </button>
+      </div>
+      <div class="rv-ingredients" id="rvIngredients"></div>
+
+      <!-- Panel de gramos ad-hoc: se despliega (efecto calendario) encima del
+           cajetín negro al tocar un alimento, sólo para esta vez. -->
+      <div class="rv-grampanel" id="rvGramPanel">
+        <div class="rv-grampanel-inner">
+          <div class="grams-field">
+            <button class="gminus" id="rvgMinus" aria-label="Menos">−</button>
+            <div class="gwrap">
+              <input id="rvgInput" type="number" inputmode="numeric" min="0" step="1" value="100">
+              <span class="gunit">gramos</span>
+            </div>
+            <button class="gplus" id="rvgPlus" aria-label="Más">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-preview">
+        <div class="pv-cell">
+          <div class="pv-n kcal" id="rvKcal">0</div><div class="pv-l">kcal</div>
+          <div class="pv-ring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="pvr-track" cx="18" cy="18" r="15.915"></circle><circle class="pvr-sel" id="rvKcalRing" cx="18" cy="18" r="15.915"></circle></svg><span class="pv-pct" id="rvKcalPct">0%</span></div>
+        </div>
+        <div class="pv-cell">
+          <div class="pv-n" id="rvP">0</div><div class="pv-l">Prot</div>
+          <div class="pv-ring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="pvr-track" cx="18" cy="18" r="15.915"></circle><circle class="pvr-sel" id="rvPRing" cx="18" cy="18" r="15.915"></circle></svg><span class="pv-pct" id="rvPPct">0%</span></div>
+        </div>
+        <div class="pv-cell">
+          <div class="pv-n" id="rvC">0</div><div class="pv-l">Carb</div>
+          <div class="pv-ring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="pvr-track" cx="18" cy="18" r="15.915"></circle><circle class="pvr-sel" id="rvCRing" cx="18" cy="18" r="15.915"></circle></svg><span class="pv-pct" id="rvCPct">0%</span></div>
+        </div>
+        <div class="pv-cell">
+          <div class="pv-n" id="rvF">0</div><div class="pv-l">Grasa</div>
+          <div class="pv-ring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="pvr-track" cx="18" cy="18" r="15.915"></circle><circle class="pvr-sel" id="rvFRing" cx="18" cy="18" r="15.915"></circle></svg><span class="pv-pct" id="rvFPct">0%</span></div>
+        </div>
+      </div>
+
+      <!-- El momento del día va debajo del cajetín negro -->
+      <div class="rv-meals" id="rvMeals">
+        <button data-meal="Desayuno">Desayuno</button>
+        <button data-meal="Comida">Comida</button>
+        <button data-meal="Cena">Cena</button>
+        <button data-meal="Snack">Snack</button>
+      </div>
+
+      <div class="rv-actions">
+        <button class="rv-delete" id="rvDelete" hidden>Eliminar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== Simulador de recetas (estructura tipo Home) ===================== -->
+  <section class="app sim" id="sim" aria-hidden="true" style="display:none">
+    <div class="top-region sim-top">
+      <header class="topbar">
+        <h1>Creador de recetas</h1>
+        <button class="avatar page-x" id="simClose" aria-label="Cerrar">✕</button>
+      </header>
+
+      <section class="hero">
+        <div class="hero-left">
+          <div class="now" id="simNow">0</div>
+          <div class="goal" id="simGoal">/ 0 KCAL</div>
+          <div class="remaining" id="simSub">Añade alimentos para empezar</div>
+        </div>
+        <div class="ring-wrap">
+          <svg class="ring" viewBox="0 0 36 36" aria-hidden="true">
+            <circle class="ring-track" cx="18" cy="18" r="15.915"></circle>
+            <circle class="ring-sel" id="simRingSel" cx="18" cy="18" r="15.915"></circle>
+          </svg>
+          <span class="ring-pct" id="simRingPct">0%</span>
+        </div>
+      </section>
+      <section class="macros" id="simMacros"></section>
+    </div><!-- /.top-region -->
+
+    <!-- Contenido sobre blanco (debajo del corte) -->
+    <div class="sim-items" id="simItems"></div>
+    <button class="sim-add" id="simAddFood">＋ Añadir alimento</button>
+    <button class="confirm sim-save" id="simSave" disabled>Guardar receta</button>
+  </section>
+
+  <!-- Selector de alimentos del simulador -->
+  <section class="page sheet sim-pick" id="simPick" aria-hidden="true" style="display:none">
+    <header class="sheet-head">
+      <span class="sheet-spacer"></span>
+      <h2>Elegir alimento</h2>
+      <button class="sheet-close" id="simPickClose">Cerrar</button>
+    </header>
+    <div class="cat-tabs" id="simPickCat">
+      <button data-cat="todos" class="active">Todos</button>
+      <button data-cat="huevos">Huevos</button>
+      <button data-cat="carne">Carne</button>
+      <button data-cat="pescado">Pescado</button>
+      <button data-cat="lacteos">Lácteos</button>
+      <button data-cat="cereales">Cereales</button>
+      <button data-cat="verduras">Verduras</button>
+      <button data-cat="fruta">Fruta</button>
+      <button data-cat="grasas">Grasas</button>
+    </div>
+    <div class="search-wrap">
+      <span class="search-ico">🔍</span>
+      <input id="simSearch" type="search" placeholder="Buscar alimento…"
+             autocomplete="off" autocorrect="off" autocapitalize="none">
+    </div>
+    <ul class="food-list" id="simPickList"></ul>
+  </section>
+
+  <!-- ===================== Tus datos / objetivos ===================== -->
+  <section class="page profile-page" id="profile" aria-hidden="true" style="display:none">
+    <div class="prof-head">
+      <h1 class="prof-title">Tus<br>datos</h1>
+      <button class="prof-close" id="profileClose">Cerrar</button>
+    </div>
+
+    <div class="prof-body">
+      <!-- Datos personales -->
+      <div class="prof-card">
+        <div class="prof-card-h">Datos personales</div>
+        <div class="prof-row">
+          <span class="pr-name">Peso</span>
+          <span class="pr-gkg empty">—</span>
+          <div class="pr-val"><div class="prof-inp"><input id="pWeight" type="number" inputmode="decimal" min="20" step="0.1"><span class="unit">kg</span></div></div>
+        </div>
+        <div class="prof-row">
+          <span class="pr-name">Altura</span>
+          <span class="pr-gkg empty">—</span>
+          <div class="pr-val"><div class="prof-inp"><input id="pHeight" type="number" inputmode="numeric" min="100" step="1"><span class="unit">cm</span></div></div>
+        </div>
+        <div class="prof-row">
+          <span class="pr-name">Sexo</span>
+          <div class="sex-toggle" id="pSex">
+            <button type="button" data-sex="hombre">Hombre</button>
+            <button type="button" data-sex="mujer">Mujer</button>
+          </div>
+        </div>
+        <!-- Gasto energético (global: vale para entre semana y fin de semana) -->
+        <div class="prof-row">
+          <span class="pr-name">Consumo pasivo</span>
+          <span class="pr-gkg empty">—</span>
+          <div class="pr-val"><div class="prof-inp"><input id="pPasivo" type="number" inputmode="numeric" min="0" step="1"><span class="unit">kcal</span></div></div>
+        </div>
+        <div class="prof-row">
+          <span class="pr-name">Activo (deporte)</span>
+          <span class="pr-gkg empty">—</span>
+          <div class="pr-val"><div class="prof-inp"><input id="pActivo" type="number" inputmode="numeric" min="0" step="1"><span class="unit">kcal</span></div></div>
+        </div>
+        <div class="prof-row calc">
+          <span class="pr-name">Total quemado</span>
+          <span class="pr-gkg empty">—</span>
+          <div class="pr-val"><div class="pr-calc"><b id="calcTotal">0</b><span class="unit">kcal</span></div></div>
+        </div>
+      </div>
+
+      <!-- Objetivo entre semana -->
+      <div class="prof-card">
+        <div class="prof-card-h">Entre semana <span>Lunes a viernes</span></div>
+        <div class="goal-set" data-set="week"></div>
+      </div>
+
+      <!-- Objetivo fin de semana -->
+      <div class="prof-card">
+        <div class="prof-card-h">Fin de semana <span>Sábado y domingo</span></div>
+        <div class="goal-set" data-set="weekend"></div>
+      </div>
+
+      <!-- Déficit estimado (gasto - ingesta) y peso resultante -->
+      <div class="prof-card">
+        <div class="prof-card-h">Déficit estimado <span>1 kg ≈ 7.700 kcal</span></div>
+        <div class="def-row">
+          <span class="def-name">Entre semana <i>5 días</i></span>
+          <span class="def-v kcal"><b id="defK_week">0</b><span class="u">kcal</span></span>
+          <span class="def-v g"><b id="defG_week">0</b><span class="u">g</span></span>
+        </div>
+        <div class="def-row">
+          <span class="def-name">Fin de semana <i>2 días</i></span>
+          <span class="def-v kcal"><b id="defK_weekend">0</b><span class="u">kcal</span></span>
+          <span class="def-v g"><b id="defG_weekend">0</b><span class="u">g</span></span>
+        </div>
+        <div class="def-row def-total">
+          <span class="def-name">Total semana <i>7 días</i></span>
+          <span class="def-v kcal"><b id="defK_total">0</b><span class="u">kcal</span></span>
+          <span class="def-v g"><b id="defG_total">0</b><span class="u">g</span></span>
+        </div>
+      </div>
+
+      <button class="confirm" id="profileSave">Guardar</button>
+    </div>
+  </section>
+
+  <script>
+    /* Detección modo app vs Safari */
+    if (navigator.standalone === true ||
+        matchMedia('(display-mode: standalone)').matches) {
+      document.documentElement.classList.add('standalone');
+    }
+
+    /* Precarga el resto de imágenes de fondo en segundo plano (selector / recetas /
+       perfil) para que al abrir esas vistas el fondo ya esté listo, sin parpadeo. */
+    ["recipe-bg.jpg", "profile-bg.jpg", "recipe-pollo-roquefort.png"].forEach(src => { const im = new Image(); im.src = src; });
+
+    /* Splash de entrada: se oculta sola tras un momento (o al tocar) */
+    (function () {
+      const splash = document.getElementById('splash');
+      if (!splash) return;
+      let gone = false;
+      const dismiss = () => {
+        if (gone) return; gone = true;
+        splash.classList.add('hide');
+        setTimeout(() => {
+          splash.remove();
+          document.documentElement.classList.remove('splashing'); // fondo blanco tras el splash
+          replayStatsAnimation();                                 // anima barras y anillo al entrar
+        }, 650);
+      };
+      // Se va cuando ha pasado un mínimo Y las fuentes están listas (así la Home
+      // aparece ya con su tipografía, sin reflujo). Tope máximo por si algo tarda.
+      const minTime = new Promise(r => setTimeout(r, 1000));
+      const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+      Promise.all([minTime, fontsReady]).then(dismiss);
+      setTimeout(dismiss, 2600);                 // tope de seguridad
+      splash.addEventListener('click', dismiss); // o al tocar
+    })();
+
+    /* =========================================================
+       DATOS  —  estructura lista para rellenar con Vitrubio.
+       Solo hay que sustituir estos valores; la vista se pinta sola.
+       ========================================================= */
+    const DATA = {
+      user: { name: "Verde", initial: "V" },
+      // Datos personales (pasivo/activo son globales: valen para toda la semana)
+      profile: { weight: 70, height: 175, sex: "hombre", pasivo: 1500, activo: 500 },
+      // Objetivos diarios: entre semana (L-V) y fin de semana (S-D)
+      // kcal (ingesta objetivo) se calcula a partir de los macros.
+      goals: {
+        week:    { protein: 140, carbs: 37, fat: 52, kcal: 1176 },
+        weekend: { protein: 140, carbs: 37, fat: 52, kcal: 1176 }
+      },
+      // Objetivo activo (se rellena según el día con applyActiveGoal())
+      goal: { kcal: 1176, protein: 140, carbs: 37, fat: 52 },
+      meals: [
+        // Comidas registradas hoy: { food, time, grams }
+        { food: "claras_huevo",    time: "Desayuno", grams: 150 },
+        { food: "arandanos",       time: "Desayuno", grams: 100 },
+        { food: "pollo_solomillo", time: "Comida",   grams: 200 },
+        { food: "rucula",          time: "Comida",   grams: 100 },
+        { food: "queso_cottage",   time: "Snack",    grams: 100 }
+      ]
+    };
+
+    /* =========================================================
+       CATÁLOGO DE ALIMENTOS  —  datos nutricionales (de Vitruvio).
+       Los valores kcal/protein/carbs/fat son POR la ración 'base' (en gramos).
+       'ration' es solo la etiqueta de referencia que se muestra.
+       Añade aquí nuevos alimentos y úsalos en DATA.meals por su clave.
+       ========================================================= */
+    const FOODS = {
+      // ---- Huevos ----
+      huevos:          { name: "Huevos",              emoji: "🥚", cat: "huevos",   base: 60,   ration: "60 g (1 ud)", kcal: 90,  protein: 7.5,  carbs: 0.3,  fat: 6.7 },
+      claras_huevo:    { name: "Claras de huevo",     emoji: "🥚", cat: "huevos",   base: 150,  ration: "150 ml", kcal: 63,  protein: 16.5, carbs: 0.5,  fat: 0.2 },
+      // ---- Carne ----
+      pavo_lonchas:    { name: "Pechuga de pavo",     emoji: "🦃", cat: "carne",    base: 30,   ration: "30 g",   kcal: 23,  protein: 5.0,  carbs: 0.4,  fat: 0.2, brand: "Hacendado" },
+      jamon_serrano:   { name: "Jamón serrano",       emoji: "🍖", cat: "carne",    base: 55,   ration: "55 g",   kcal: 137, protein: 18.5, carbs: 0.6,  fat: 6.7 },
+      pollo_solomillo: { name: "Solomillo de pollo",  emoji: "🍗", cat: "carne",    base: 100,  ration: "100 g",  kcal: 108, protein: 22,   carbs: 0.5,  fat: 1.8 },
+      fajitas:         { name: "Fajitas (sin pan)",   emoji: "🌮", cat: "carne",    base: 300,  ration: "300 g",  kcal: 219, protein: 26.7, carbs: 21.9, fat: 1.8 },
+      hamburguesa_pollo:{ name: "Hamburguesa de pollo", emoji: "🍔", cat: "carne",  base: 90,   ration: "90 g (1 ud)", kcal: 111, protein: 14, carbs: 1.4, fat: 5.2 },
+      carne_picada:    { name: "Carne picada (vacuno y cerdo)", emoji: "🥩", cat: "carne", base: 100, ration: "100 g", kcal: 184, protein: 17, carbs: 2.0, fat: 12 },
+      lomo_embuchado:  { name: "Lomo embuchado",      emoji: "🥓", cat: "carne",    base: 37.5, ration: "37,5 g", kcal: 75,  protein: 14,   carbs: 0.5,  fat: 1.1 },
+      // ---- Pescado ----
+      salmon:          { name: "Salmón",              emoji: "🐟", cat: "pescado",  base: 100,  ration: "100 g",  kcal: 208, protein: 20,   carbs: 0,    fat: 13 },
+      merluza:         { name: "Merluza",             emoji: "🐟", cat: "pescado",  base: 150,  ration: "150 g",  kcal: 198, protein: 32.1, carbs: 0.6,  fat: 6.6 },
+      gambas:          { name: "Gambas",              emoji: "🦐", cat: "pescado",  base: 100,  ration: "100 g",  kcal: 105, protein: 20.1, carbs: 0.9,  fat: 1.7 },
+      atun_natural:    { name: "Atún al natural",     emoji: "🐟", cat: "pescado",  base: 56,   ration: "56 g (1 lata)", kcal: 55, protein: 11.8, carbs: 0.5, fat: 0.7, brand: "Hacendado" },
+      sardinas:        { name: "Sardinas en aceite",  emoji: "🐟", cat: "pescado",  base: 60,   ration: "60 g",   kcal: 124, protein: 11.9, carbs: 0.2,  fat: 7.4, brand: "Hacendado" },
+      mejillones:      { name: "Mejillones al natural", emoji: "🦪", cat: "pescado", base: 55,  ration: "55 g",   kcal: 40,  protein: 6.1,  carbs: 0.6,  fat: 1.1, brand: "Hacendado" },
+      // ---- Lácteos ----
+      queso_cottage:   { name: "Queso Cottage",       emoji: "🧀", cat: "lacteos",  base: 100,  ration: "100 g",  kcal: 99,  protein: 14,   carbs: 1.7,  fat: 4.0 },
+      queso_viejo:     { name: "Queso viejo tostado", emoji: "🧀", cat: "lacteos",  base: 100,  ration: "100 g",  kcal: 474, protein: 27,   carbs: 1.5,  fat: 40 },
+      roquefort:       { name: "Queso Roquefort",     emoji: "🧀", cat: "lacteos",  base: 100,  ration: "100 g",  kcal: 364, protein: 19,   carbs: 0.5,  fat: 32 },
+      kefir:           { name: "Kéfir natural",       emoji: "🥛", cat: "lacteos",  base: 125,  ration: "125 g",  kcal: 93,  protein: 4.9,  carbs: 6.4,  fat: 5.3, brand: "Hacendado" },
+      // ---- Cereales ----
+      arroz:           { name: "Arroz blanco",        emoji: "🍚", cat: "cereales", base: 100,  ration: "100 g",  kcal: 130, protein: 2.7,  carbs: 28,   fat: 0.3 },
+      arroz_integral:  { name: "Arroz integral",      emoji: "🍚", cat: "cereales", base: 80,   ration: "80 g",   kcal: 280, protein: 6.1,  carbs: 57.6, fat: 2.2, brand: "Hacendado" },
+      arroz_basmati:   { name: "Arroz basmati",       emoji: "🍚", cat: "cereales", base: 80,   ration: "80 g",   kcal: 284, protein: 7.2,  carbs: 62.4, fat: 0.5, brand: "Hacendado" },
+      quinoa:          { name: "Quinoa",              emoji: "🌾", cat: "cereales", base: 60,   ration: "60 g",   kcal: 221, protein: 8.5,  carbs: 38.5, fat: 3.6 },
+      avena:           { name: "Copos de avena",      emoji: "🥣", cat: "cereales", base: 30,   ration: "30 g",   kcal: 113, protein: 4.2,  carbs: 17.7, fat: 2.1, brand: "Brüggen" },
+      // ---- Verduras ----
+      champinones:     { name: "Champiñones",         emoji: "🍄", cat: "verduras", base: 100,  ration: "100 g",  kcal: 20,  protein: 2.6,  carbs: 0.8,  fat: 0.6 },
+      rucula:          { name: "Rúcula",              emoji: "🥬", cat: "verduras", base: 100,  ration: "100 g",  kcal: 26,  protein: 3.4,  carbs: 1.0,  fat: 0.4 },
+      espinacas:       { name: "Espinacas",           emoji: "🥬", cat: "verduras", base: 100,  ration: "100 g",  kcal: 31,  protein: 2.6,  carbs: 1.2,  fat: 0.3 },
+      patata:          { name: "Patata",              emoji: "🥔", cat: "verduras", base: 200,  ration: "200 g",  kcal: 176, protein: 5.0,  carbs: 36,   fat: 0.4 },
+      boniato:         { name: "Boniato",             emoji: "🍠", cat: "verduras", base: 200,  ration: "200 g",  kcal: 214, protein: 3.2,  carbs: 48.4, fat: 1.2 },
+      calabacin:       { name: "Calabacín",           emoji: "🥒", cat: "verduras", base: 200,  ration: "200 g",  kcal: 32,  protein: 2.4,  carbs: 6.7,  fat: 0.4 },
+      pimiento_rojo:   { name: "Pimiento rojo",       emoji: "🫑", cat: "verduras", base: 150,  ration: "150 g",  kcal: 60,  protein: 1.7,  carbs: 10.5, fat: 0.6 },
+      cebolla:         { name: "Cebolla",             emoji: "🧅", cat: "verduras", base: 150,  ration: "150 g",  kcal: 57,  protein: 1.7,  carbs: 12.9, fat: 0.3 },
+      zanahoria:       { name: "Zanahoria",           emoji: "🥕", cat: "verduras", base: 100,  ration: "100 g",  kcal: 41,  protein: 0.7,  carbs: 9.6,  fat: 0.2 },
+      tomate:          { name: "Tomate",              emoji: "🍅", cat: "verduras", base: 150,  ration: "150 g",  kcal: 27,  protein: 1.4,  carbs: 5.9,  fat: 0.3 },
+      // ---- Fruta ----
+      arandanos:       { name: "Arándanos",           emoji: "🫐", cat: "fruta",    base: 100,  ration: "100 g",  kcal: 57,  protein: 0.7,  carbs: 14,   fat: 0.3 },
+      frutos_rojos:    { name: "Frutos rojos congelados", emoji: "🍓", cat: "fruta", base: 30,  ration: "30 g",   kcal: 12,  protein: 0.3,  carbs: 1.9,  fat: 0, brand: "Hacendado" },
+      platano:         { name: "Plátano",             emoji: "🍌", cat: "fruta",    base: 120,  ration: "120 g",  kcal: 107, protein: 1.3,  carbs: 27,   fat: 0.3 },
+      naranja:         { name: "Naranja",             emoji: "🍊", cat: "fruta",    base: 150,  ration: "150 g",  kcal: 70,  protein: 1.4,  carbs: 17,   fat: 0.2 },
+      manzana:         { name: "Manzana",             emoji: "🍎", cat: "fruta",    base: 180,  ration: "180 g",  kcal: 94,  protein: 0.5,  carbs: 24.8, fat: 0.4 },
+      kiwi:            { name: "Kiwi",                emoji: "🥝", cat: "fruta",    base: 100,  ration: "100 g",  kcal: 61,  protein: 1.1,  carbs: 14.7, fat: 0.5 },
+      sandia:          { name: "Sandía",              emoji: "🍉", cat: "fruta",    base: 300,  ration: "300 g",  kcal: 90,  protein: 1.8,  carbs: 21,   fat: 0.3 },
+      mermelada0:      { name: "Mermelada 0%",        emoji: "🍓", cat: "fruta",    base: 25,   ration: "25 g",   kcal: 10,  protein: 0.2,  carbs: 2.9,  fat: 0 },
+      // ---- Grasas ----
+      aove:            { name: "AOVE",                emoji: "🫒", cat: "grasas",   base: 10,   ration: "10 g",   kcal: 90,  protein: 0,    carbs: 0,    fat: 10, brand: "Hacendado" },
+      aguacate:        { name: "Aguacate",            emoji: "🥑", cat: "grasas",   base: 200,  ration: "200 g",  kcal: 320, protein: 4.0,  carbs: 17,   fat: 30 },
+      guacamole:       { name: "Guacamole",           emoji: "🥣", cat: "grasas",   base: 50,   ration: "50 g",   kcal: 75,  protein: 1.0,  carbs: 1.0,  fat: 7.0, brand: "Hacendado" },
+      almendras:       { name: "Almendras",           emoji: "🌰", cat: "grasas",   base: 30,   ration: "30 g",   kcal: 193, protein: 7.6,  carbs: 1.8,  fat: 16.4, brand: "Hacendado" },
+      nueces:          { name: "Nueces",              emoji: "🌰", cat: "grasas",   base: 30,   ration: "30 g",   kcal: 215, protein: 5.1,  carbs: 0.7,  fat: 20.9, brand: "Hacendado" },
+      crema_cacahuete: { name: "Crema de cacahuete",  emoji: "🥜", cat: "grasas",   base: 15,   ration: "15 g",   kcal: 93,  protein: 4.5,  carbs: 1.1,  fat: 7.5, brand: "Hacendado" }
+    };
+
+    /* =========================================================
+       RECETAS  —  combinaciones de alimentos del catálogo.
+       Al añadir una receta se registran sus ingredientes en la comida elegida.
+       ========================================================= */
+    const RECIPES = {
+      bowl_salmon: {
+        name: "Bowl de salmón y arroz", emoji: "🐟", cat: "pescado",
+        items: [ { food: "salmon", grams: 180 }, { food: "arroz", grams: 150 }, { food: "rucula", grams: 40 } ]
+      },
+      pollo_roquefort: {
+        name: "Pollo, roquefort y rúcula", emoji: "🍗", cat: "carne",
+        photo: "recipe-pollo-roquefort.png",
+        items: [ { food: "pollo_solomillo", grams: 300 }, { food: "roquefort", grams: 30 }, { food: "rucula", grams: 50 } ]
+      }
+    };
+
+    // Recetas creadas por el usuario (persisten en localStorage)
+    const RECIPES_KEY = "verde.recipes.v1";
+    function loadRecipes() { try { return JSON.parse(localStorage.getItem(RECIPES_KEY)) || {}; } catch (e) { return {}; } }
+    function saveRecipes() { try { localStorage.setItem(RECIPES_KEY, JSON.stringify(userRecipes)); } catch (e) {} }
+    let userRecipes = loadRecipes();
+    const getRecipe = (key) => RECIPES[key] || userRecipes[key];
+
+    // Nutrición total de una receta (suma de sus ingredientes)
+    function recipeNutri(recipeKey) {
+      const sum = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+      getRecipe(recipeKey).items.forEach(it => {
+        if (!FOODS[it.food]) return;
+        const n = nutri(it.food, it.grams);
+        sum.kcal += n.kcal; sum.protein += n.protein; sum.carbs += n.carbs; sum.fat += n.fat;
+      });
+      sum.protein = round1(sum.protein); sum.carbs = round1(sum.carbs); sum.fat = round1(sum.fat);
+      return sum;
+    }
+
+    // Momentos del día (orden e icono para la Home)
+    const MEAL_ORDER = ["Desayuno", "Comida", "Cena", "Snack"];
+    const MEAL_ICON  = { Desayuno: "🌅", Comida: "🍽️", Cena: "🌙", Snack: "🍎" };
+
+    // Nutrición de un alimento para una cantidad en gramos
+    const round1 = (n) => Math.round(n * 10) / 10;
+    function nutri(foodKey, grams) {
+      const f = FOODS[foodKey];
+      const r = grams / f.base;
+      return {
+        kcal: Math.round(f.kcal * r),
+        protein: round1(f.protein * r),
+        carbs: round1(f.carbs * r),
+        fat: round1(f.fat * r)
+      };
+    }
+
+    /* =========================================================
+       PERSISTENCIA  —  el registro del día aguanta recargas (localStorage)
+       ========================================================= */
+    const STORE_KEY = "verde.log.v2";
+    const PROFILE_KEY = "verde.profile.v1";
+    const PEOPLE_KEY = "verde.people.v1";
+    const dateKeyOf = (d) => d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+    const todayKey = () => dateKeyOf(new Date());
+    const dateFromKey = (key) => { const [y, m, d] = key.split("-").map(Number); return new Date(y, m - 1, d); };
+    const dateKeyOffset = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return dateKeyOf(d); };
+    // Ventana de días editables: 3 antes de hoy … 6 después de hoy
+    const DAYS_BACK = 3, DAYS_FWD = 6;
+    function windowKeys() { const a = []; for (let n = -DAYS_BACK; n <= DAYS_FWD; n++) a.push(dateKeyOffset(n)); return a; }
+    const isWeekendKey = (key) => { const wd = dateFromKey(key).getDay(); return wd === 0 || wd === 6; };
+    const dateLabelOf = (key) => dateFromKey(key).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+    function monthYearLabel(key) {
+      const s = dateFromKey(key).toLocaleDateString("es-ES", { month: "long", year: "numeric" }); // "junio de 2025"
+      const m = s.replace(" de ", " ");                 // "junio 2025"
+      return m.charAt(0).toUpperCase() + m.slice(1);     // "Junio 2025"
+    }
+    // Día que se está viendo (por defecto hoy). No se conserva entre recargas.
+    let selectedDate = todayKey();
+
+    /* ---- Personas / perfiles: cada persona guarda sus propios datos ---- */
+    const DEFAULT_PROFILE = { weight: 70, height: 175, sex: "hombre", pasivo: 1500, activo: 500 };
+    const DEFAULT_GOALS = () => ({
+      week:    { protein: 140, carbs: 37, fat: 52, kcal: 1176 },
+      weekend: { protein: 140, carbs: 37, fat: 52, kcal: 1176 }
+    });
+    let people = { active: "jose", list: [] };
+    function savePeople() { try { localStorage.setItem(PEOPLE_KEY, JSON.stringify(people)); } catch (e) {} }
+    function loadPeople() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(PEOPLE_KEY));
+        if (raw && Array.isArray(raw.list) && raw.list.length) { people = raw; return; }
+      } catch (e) {}
+      // Primer arranque: José (hereda los datos existentes) + Mai + Mónica.
+      people = { active: "jose", list: [
+        { id: "jose", name: "José" }, { id: "mai", name: "Mai" }, { id: "monica", name: "Mónica" }
+      ] };
+      const oldP = localStorage.getItem(PROFILE_KEY); if (oldP) localStorage.setItem(PROFILE_KEY + ".jose", oldP);
+      const oldL = localStorage.getItem(STORE_KEY);   if (oldL) localStorage.setItem(STORE_KEY + ".jose", oldL);
+      savePeople();
+    }
+    const profileKey = () => PROFILE_KEY + "." + people.active;
+    const logKey = () => STORE_KEY + "." + people.active;
+
+    // Registro de la persona activa: { days: { "2025-6-15": [...comidas...], ... } }
+    function loadDays() {
+      let days = {};
+      try {
+        const raw = JSON.parse(localStorage.getItem(logKey()));
+        if (raw) {
+          if (raw.days && typeof raw.days === "object") days = raw.days;
+          else if (raw.date && Array.isArray(raw.meals)) days = { [raw.date]: raw.meals };  // formato antiguo
+        }
+      } catch (e) {}
+      return days;
+    }
+    // Solo se conservan los días dentro de la ventana (los más viejos se pierden)
+    function pruneDays(days) {
+      const allowed = new Set(windowKeys());
+      const out = {};
+      Object.keys(days).forEach(k => { if (allowed.has(k) && Array.isArray(days[k]) && days[k].length) out[k] = days[k]; });
+      return out;
+    }
+    function persistDays(days) {
+      try { localStorage.setItem(logKey(), JSON.stringify({ days: pruneDays(days) })); } catch (e) {}
+    }
+    function loadLog() {
+      const days = pruneDays(loadDays());
+      persistDays(days);                       // limpia de paso los días caducados
+      DATA.meals = Array.isArray(days[selectedDate]) ? days[selectedDate].slice() : [];
+    }
+    function saveLog() {
+      const days = loadDays();
+      days[selectedDate] = DATA.meals;
+      persistDays(days);
+    }
+    function loadProfile() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(profileKey()));
+        if (raw) {
+          if (raw.profile) Object.assign(DATA.profile, raw.profile);
+          if (raw.goals && raw.goals.week)    Object.assign(DATA.goals.week, raw.goals.week);
+          if (raw.goals && raw.goals.weekend) Object.assign(DATA.goals.weekend, raw.goals.weekend);
+        }
+      } catch (e) {}
+    }
+    function saveProfile() {
+      try { localStorage.setItem(profileKey(), JSON.stringify({ profile: DATA.profile, goals: DATA.goals })); } catch (e) {}
+    }
+    // Restablece DATA a valores por defecto (antes de cargar otra persona)
+    function resetData() {
+      DATA.profile = Object.assign({}, DEFAULT_PROFILE);
+      DATA.goals = DEFAULT_GOALS();
+      DATA.goal = Object.assign({}, DATA.goals.week);
+      DATA.meals = [];
+    }
+    // Carga toda la información de la persona activa
+    function loadPersonData() {
+      resetData();
+      loadProfile();
+      recomputeGoalKcal();
+      applyActiveGoal();
+      loadLog();
+      loadShopGot();
+    }
+    // El objetivo activo depende del DÍA SELECCIONADO: finde (sáb/dom) vs entre semana.
+    function applyActiveGoal() {
+      DATA.goal = isWeekendKey(selectedDate) ? DATA.goals.weekend : DATA.goals.week;
+    }
+    // Fecha del día seleccionado en UNA sola línea: día de la semana (abreviado)
+    // + día + mes corto. Ej.: "MIÉ 1 JUL".
+    const todayLabel = () => {
+      const d = dateFromKey(selectedDate);
+      const wd = d.toLocaleDateString("es-ES", { weekday: "short" }).replace(".", "");
+      const mo = d.toLocaleDateString("es-ES", { month: "short" }).replace(".", "");
+      return `${wd} ${d.getDate()} ${mo}`;
+    };
+
+    /* =========================================================
+       RENDER
+       ========================================================= */
+    const $ = (id) => document.getElementById(id);
+
+    // Bloquea el scroll del documento mientras el modal está abierto
+    function updateScrollLock() {
+      document.documentElement.classList.toggle("locked", $("modal").classList.contains("open"));
+    }
+
+    // Vista activa para el filtro de estadísticas: "dia" o un momento del día
+    let activeView = "dia";
+    // Macro seleccionado como filtro: null | "p" | "c" | "f"
+    let activeMacro = null;
+    // Alimento concreto seleccionado como filtro: su idx | null
+    let activeFood = null;
+    // Normalizar los alimentos del listado a 100 g (para comparar entre ellos)
+    let normalize100 = false;
+    const MACROS = {
+      p: { prop: "protein", f: 4, name: "Proteínas",     short: "prot" },
+      c: { prop: "carbs",   f: 4, name: "Carbohidratos", short: "carb" },
+      f: { prop: "fat",     f: 9, name: "Grasas",        short: "grasa" }
+    };
+
+    // Relanza la animación de llenado de barras y anillo (p.ej. al cerrar el splash,
+    // para que el "dibujado" se vea al entrar y no quede oculto detrás del splash)
+    function replayStatsAnimation() {
+      const segs = [...document.querySelectorAll('.macro .mini .seg')];
+      const rings = [$("kcalRingSel"), $("kcalRingRest")].filter(Boolean);
+      const segW = segs.map(s => s.style.width);
+      const ringD = rings.map(r => r.style.strokeDasharray);
+      [...segs, ...rings].forEach(el => el.style.transition = 'none');
+      segs.forEach(s => s.style.width = '0%');
+      rings.forEach(r => r.style.strokeDasharray = '0 100');
+      void document.body.offsetHeight;                 // forzar reflow con el estado a 0
+      requestAnimationFrame(() => {
+        [...segs, ...rings].forEach(el => el.style.transition = '');
+        segs.forEach((s, i) => s.style.width = segW[i]);
+        rings.forEach((r, i) => r.style.strokeDasharray = ringD[i]);
+      });
+    }
+
+    // Ajusta el ancho del "/ 1176 KCAL" para que coincida con el del número grande
+    function fitGoalWidth() {
+      const now = $("kcalNow"), g = $("kcalGoal");
+      if (!g.textContent) return;
+      const target = now.getBoundingClientRect().width;
+      if (!target) return;
+      g.style.fontSize = "20px";
+      const w = g.getBoundingClientRect().width;
+      if (!w) return;
+      let size = 20 * target / w;
+      size = Math.max(12, Math.min(size, 30));   // ni minúsculo ni que se pase
+      g.style.fontSize = size + "px";
+    }
+
+    function render() {
+      // Cabecera — la fecha de hoy
+      $("greeting").innerHTML = todayLabel();
+
+      // Resolver cada comida (con su índice original) y totales del día
+      const sum = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+      const resolved = DATA.meals.map((m, idx) => {
+        if (!FOODS[m.food]) return null;
+        const n = nutri(m.food, m.grams);
+        sum.kcal += n.kcal; sum.protein += n.protein; sum.carbs += n.carbs; sum.fat += n.fat;
+        return { idx, food: m.food, time: m.time, grams: m.grams, n };
+      }).filter(Boolean);
+      sum.protein = Math.round(sum.protein);
+      sum.carbs = Math.round(sum.carbs);
+      sum.fat = Math.round(sum.fat);
+
+      // Totales por momento del día
+      const byMeal = {};
+      MEAL_ORDER.forEach(t => byMeal[t] = { kcal: 0, protein: 0, carbs: 0, fat: 0, items: [] });
+      resolved.forEach(r => {
+        const b = byMeal[r.time];
+        if (!b) return;
+        b.kcal += r.n.kcal; b.protein += r.n.protein; b.carbs += r.n.carbs; b.fat += r.n.fat;
+        b.items.push(r);
+      });
+      MEAL_ORDER.forEach(t => {
+        const b = byMeal[t];
+        b.protein = Math.round(b.protein); b.carbs = Math.round(b.carbs); b.fat = Math.round(b.fat);
+      });
+
+      const isDay = activeView === "dia";
+      const view = isDay ? sum : byMeal[activeView];
+      const dayKcal = sum.kcal;
+      const goal = DATA.goal.kcal;
+
+      // Alimento concreto seleccionado como filtro (su idx) — exclusivo con el macro
+      const foodSel = (activeFood != null) ? resolved.find(r => r.idx === activeFood) : null;
+      if (activeFood != null && !foodSel) activeFood = null;
+      // Con "/ 100 g" activo, el hero y los macros tratan el alimento elegido como
+      // si tomaras 100 g de él (para comparar alimentos en igualdad de condiciones).
+      const foodSelN = foodSel ? (normalize100 ? nutri(foodSel.food, 100) : foodSel.n) : null;
+      const foodSelG = foodSel ? (normalize100 ? 100 : foodSel.grams) : 0;
+
+      // Chips de vista activos
+      $("viewTabs").querySelectorAll("button").forEach(b =>
+        b.classList.toggle("active", b.dataset.view === activeView));
+
+      // ---- Contador de calorías (hero) ----
+      // La 2ª línea es SIEMPRE "/ XXXX KCAL" (objetivo diario) con tamaño fijo,
+      // para que el cajetín no cambie de tamaño al filtrar y no se mueva la vista.
+      $("kcalGoal").style.display = "";
+      $("kcalGoal").style.fontSize = "";
+      $("kcalGoal").textContent = "/ " + goal.toLocaleString("es-ES") + " KCAL";
+
+      let kSel, kRest = 0;
+      if (foodSel && activeMacro) {
+        // alimento + macro: el aporte de ese macro de ese alimento
+        const mm = MACROS[activeMacro];
+        const mGrams = foodSelN[mm.prop];
+        const mKcal = Math.round(mGrams * mm.f);
+        $("kcalNow").textContent = mKcal.toLocaleString("es-ES");
+        $("kcalNow").classList.remove("over");
+        $("kcalSub").innerHTML = "<b>" + mGrams + " g</b> de " + mm.name + " · " + FOODS[foodSel.food].name + (normalize100 ? " (100 g)" : "");
+        var pctG = goal > 0 ? Math.round(mKcal / goal * 100) : 0;
+        kSel = Math.min(100, pctG); $("kcalRingPct").textContent = pctG + "%";
+      } else if (foodSel) {
+        const fn = foodSelN;
+        $("kcalNow").textContent = fn.kcal.toLocaleString("es-ES");
+        $("kcalNow").classList.remove("over");
+        $("kcalSub").innerHTML = "<b>" + FOODS[foodSel.food].name + "</b> · " + foodSelG + " g";
+        var pctG = goal > 0 ? Math.round(fn.kcal / goal * 100) : 0;
+        kSel = Math.min(100, pctG); $("kcalRingPct").textContent = pctG + "%";
+      } else if (activeMacro) {
+        const mm = MACROS[activeMacro];
+        const mGrams = view[mm.prop];
+        const mKcal = Math.round(mGrams * mm.f);
+        $("kcalNow").textContent = mKcal.toLocaleString("es-ES");
+        $("kcalNow").classList.remove("over");
+        $("kcalSub").innerHTML = "<b>" + mGrams + " g</b> de " + mm.name;
+        var pctG = goal > 0 ? Math.round(mKcal / goal * 100) : 0;
+        kSel = Math.min(100, pctG); $("kcalRingPct").textContent = pctG + "%";
+      } else {
+        $("kcalNow").textContent = view.kcal.toLocaleString("es-ES");
+        $("kcalNow").classList.toggle("over", view.kcal > goal);   // rojo si te pasas
+        if (isDay) {
+          const leftK = Math.max(0, goal - sum.kcal);
+          $("kcalSub").innerHTML = "<b>" + leftK.toLocaleString("es-ES") + " kcal</b> para objetivo";
+        } else {
+          const pctDay = dayKcal > 0 ? Math.round(view.kcal / dayKcal * 100) : 0;
+          $("kcalSub").innerHTML = "<b>" + pctDay + "%</b> de las " + dayKcal.toLocaleString("es-ES") + " kcal de hoy";
+        }
+        const realPct = goal > 0 ? Math.round(view.kcal / goal * 100) : 0;
+        kSel = Math.min(100, realPct);
+        kRest = isDay ? 0 : Math.min(100 - kSel, Math.round(Math.max(0, dayKcal - view.kcal) / goal * 100));
+        $("kcalRingPct").textContent = realPct + "%";   // el anillo topa en 100, pero el % es real
+      }
+      requestAnimationFrame(() => {
+        // animación de "dibujado" del anillo (como el llenado de las barras)
+        $("kcalRingRest").style.strokeDashoffset = -kSel;
+        $("kcalRingRest").style.strokeDasharray = kRest + " 100";
+        $("kcalRingSel").style.strokeDasharray = kSel + " 100";
+      });
+
+      // ---- Macros (clic = filtrar; el seleccionado se resalta en negro) ----
+      // Segmento lima = parte "enfocada" (el alimento elegido, o la vista entera);
+      // segmento apagado = el resto de esa misma vista (lo que aportan los demás
+      // alimentos, o el resto del día cuando filtras por comida sin alimento).
+      const macros = [
+        { key: "p", name: "Proteínas",     prop: "protein", goal: DATA.goal.protein },
+        { key: "c", name: "Carbohidratos", prop: "carbs",   goal: DATA.goal.carbs },
+        { key: "f", name: "Grasas",        prop: "fat",     goal: DATA.goal.fat }
+      ];
+      const viewLabel = isDay ? "del día" : "de " + activeView.toLowerCase();
+      $("macros").innerHTML = macros.map(m => {
+        const goalV = m.goal;
+        const viewVal = view[m.prop];                              // total de la vista (día o comida)
+        const focusVal = foodSel ? round1(foodSelN[m.prop]) : viewVal;  // parte resaltada (lima)
+        let restVal;
+        // Al normalizar a 100 g comparamos el alimento solo: sin "resto".
+        if (foodSel) restVal = normalize100 ? 0 : Math.max(0, viewVal - focusVal);
+        else if (!isDay) restVal = Math.max(0, sum[m.prop] - viewVal);  // resto del día
+        else restVal = 0;
+        const sPct = Math.min(100, Math.round(focusVal / goalV * 100));
+        const rPct = Math.min(100 - sPct, Math.round(restVal / goalV * 100));
+        const over = focusVal > goalV;   // rojo si te pasas
+        let valText;
+        if (foodSel) {
+          if (normalize100) {
+            valText = `${focusVal}<span> g <span class="pct">/ 100 g</span></span>`;
+          } else {
+            const pctCtx = viewVal > 0 ? Math.round(focusVal / viewVal * 100) : 0;
+            valText = `${focusVal}<span> g · <span class="pct">${pctCtx}%</span> ${viewLabel}</span>`;
+          }
+        } else if (isDay) {
+          valText = `${focusVal}<span> / ${goalV} g</span>`;
+        } else {
+          const pctDay = sum[m.prop] > 0 ? Math.round(viewVal / sum[m.prop] * 100) : 0;
+          valText = `${focusVal}<span> g · <span class="pct">${pctDay}%</span> del día</span>`;
+        }
+        return `
+          <div class="macro ${m.key}${activeMacro === m.key ? " sel" : ""}" data-macro="${m.key}">
+            <div class="top">
+              <div class="name">${m.name}</div>
+              <div class="val${over ? " over" : ""}">${valText}</div>
+            </div>
+            <div class="mini">
+              <span class="seg" data-w="${sPct}"></span>
+              <span class="seg rest" data-w="${rPct}"></span>
+            </div>
+          </div>`;
+      }).join("");
+
+      // ---- Log de alimentos ----
+      // Con "/ 100 g" activo se muestran los valores por 100 g (para comparar).
+      const dispNutri = (r) => normalize100 ? nutri(r.food, 100) : r.n;
+      const dispGrams = (r) => normalize100 ? 100 : r.grams;
+      const rowHTML = (r, macro) => {
+        const n = dispNutri(r);
+        const mainVal = macro
+          ? `${n[MACROS[macro].prop]} <span>g ${MACROS[macro].short}</span>`
+          : `${n.kcal} <span>kcal</span>`;
+        return `
+          <li class="logf${r.idx === activeFood ? " sel" : ""}" data-idx="${r.idx}">
+            <div class="logf-main">
+              <div class="logf-top"><span class="logf-emoji">${FOODS[r.food].emoji}</span></div>
+              <div class="logf-info">
+                <div class="logf-name">${FOODS[r.food].name}</div>
+                <div class="logf-foot">
+                  <span class="logf-grams">${dispGrams(r)} g</span>
+                  <span class="logf-kcal">${mainVal}</span>
+                </div>
+              </div>
+            </div>
+          </li>`;
+      };
+
+      // Botones de la cabecera:
+      //  · "/ 100 g" (normalizar): disponible siempre que haya alimentos; es un filtro.
+      //  · "Limpiar filtros": si hay cualquier filtro activo (incluida la normalización).
+      //  · "Borrar todo": solo cuando no hay filtros y sí hay alimentos.
+      const anyFilter = activeView !== "dia" || activeMacro || activeFood != null || normalize100;
+      $("normBtn").classList.toggle("hidden", resolved.length === 0);
+      $("normBtn").classList.toggle("on", normalize100);
+      $("clearFilters").classList.toggle("hidden", !anyFilter);
+      $("clearAll").classList.toggle("hidden", anyFilter || resolved.length === 0);
+
+      // Registro sin títulos de comida: la línea de filtros ya indica la comida.
+      const log = $("foodLog");
+      if (activeMacro) {
+        // Ordena los alimentos de la vista por cuánto aportan de ese macro
+        const mm = MACROS[activeMacro];
+        const items = (isDay ? resolved : byMeal[activeView].items)
+          .slice().sort((a, b) => dispNutri(b)[mm.prop] - dispNutri(a)[mm.prop]);
+        log.innerHTML = items.length
+          ? `<ul class="log-list">${items.map(r => rowHTML(r, activeMacro)).join("")}</ul>`
+          : `<div class="meal-empty">Sin alimentos</div>`;
+      } else if (isDay) {
+        // Todos los alimentos del día, en una sola lista sin títulos por comida
+        log.innerHTML = resolved.length
+          ? `<ul class="log-list">${resolved.map(r => rowHTML(r)).join("")}</ul>`
+          : `<div class="meal-empty">Sin alimentos registrados</div>`;
+      } else {
+        const b = byMeal[activeView];
+        log.innerHTML = b.items.length
+          ? `<ul class="log-list">${b.items.map(r => rowHTML(r)).join("")}</ul>`
+          : `<div class="meal-empty">No has registrado nada en ${activeView}</div>`;
+      }
+
+      // Animar barras (segmento seleccionado + resto)
+      requestAnimationFrame(() => {
+        document.querySelectorAll('.macro .mini .seg').forEach(s => { s.style.width = s.dataset.w + "%"; });
+      });
+
+      // Si la ventana Compra está abierta, mantenerla al día
+      if (currentView === "shopPage") renderShop();
+    }
+
+    /* =========================================================
+       COMPRA  —  lista de la compra de los días marcados (ventana propia)
+       ========================================================= */
+    let shopSel = new Set([todayKey()]); // días marcados (claves de fecha); hoy por defecto
+    let shopGot = new Set();              // alimentos ya cogidos en el súper
+    const SHOPGOT_KEY = "verde.shopgot.v1";
+    const shopGotKey = () => SHOPGOT_KEY + "." + people.active;
+    function loadShopGot() {
+      shopGot = new Set();
+      try { const a = JSON.parse(localStorage.getItem(shopGotKey())); if (Array.isArray(a)) shopGot = new Set(a); } catch (e) {}
+    }
+    function saveShopGot() { try { localStorage.setItem(shopGotKey(), JSON.stringify([...shopGot])); } catch (e) {} }
+
+    // Gramos en formato bonito: 400 g · 1,2 kg
+    function fmtGrams(g) {
+      g = Math.round(g);
+      if (g >= 1000) { const kg = g / 1000; return (Math.round(kg * 10) / 10).toString().replace(".", ",") + " kg"; }
+      return g + " g";
+    }
+
+    // Suma los gramos de cada alimento en los días marcados (incluye el día actual sin guardar)
+    function shopAggregate() {
+      const days = loadDays();
+      days[selectedDate] = DATA.meals;     // refleja el día que estás editando ahora mismo
+      const totals = {};
+      shopSel.forEach(key => {
+        const meals = days[key];
+        if (!Array.isArray(meals)) return;
+        meals.forEach(m => { if (FOODS[m.food]) totals[m.food] = (totals[m.food] || 0) + (m.grams || 0); });
+      });
+      return Object.keys(totals)
+        .map(food => ({ food, grams: totals[food] }))
+        .sort((a, b) => b.grams - a.grams);
+    }
+
+    function renderShop() {
+      const tKey = todayKey();
+      // Fila de días marcables (misma ventana que el selector de fecha)
+      $("shopDays").innerHTML = windowKeys().map(key => {
+        const d = dateFromKey(key);
+        const wd = d.toLocaleDateString("es-ES", { weekday: "short" }).replace(".", "");
+        const sel = shopSel.has(key), today = key === tKey;
+        return `<button class="shop-day${sel ? " sel" : ""}${today ? " today" : ""}" data-key="${key}">
+          <span class="sd-wd">${wd}</span><span class="sd-num">${d.getDate()}</span></button>`;
+      }).join("");
+      // Lista de la compra
+      const list = $("shopList");
+      if (!shopSel.size) {
+        list.innerHTML = `<div class="shop-empty">Marca uno o más días para ver qué comprar.</div>`;
+        return;
+      }
+      const items = shopAggregate();
+      if (!items.length) {
+        list.innerHTML = `<div class="shop-empty">No hay nada apuntado en los días elegidos.</div>`;
+        return;
+      }
+      list.innerHTML = `<ul class="shop-items">${items.map(it => {
+        const got = shopGot.has(it.food);
+        return `<li class="shop-item${got ? " got" : ""}" data-food="${it.food}">
+          <span class="shop-emoji">${FOODS[it.food].emoji}</span>
+          <span class="shop-name">${FOODS[it.food].name}</span>
+          <span class="shop-grams">${fmtGrams(it.grams)}</span>
+        </li>`;
+      }).join("")}</ul>`;
+    }
+
+    // Compra tiene su propia ventana, abierta desde el carrito de Alimentos/Recetas.
+    function openShop() { renderShop(); showView("shopPage"); }
+    $("sheetCart").addEventListener("click", openShop);
+    $("shopBack").addEventListener("click", () => showView("sheet"));
+
+    // Marcar/desmarcar un día para la compra
+    $("shopDays").addEventListener("click", (e) => {
+      const b = e.target.closest(".shop-day[data-key]");
+      if (!b) return;
+      const k = b.dataset.key;
+      if (shopSel.has(k)) shopSel.delete(k); else shopSel.add(k);
+      renderShop();
+    });
+    // Tachar/destachar un alimento ya cogido (no afecta a los filtros del menú)
+    $("shopList").addEventListener("click", (e) => {
+      const li = e.target.closest(".shop-item[data-food]");
+      if (!li) return;
+      const f = li.dataset.food;
+      if (shopGot.has(f)) shopGot.delete(f); else shopGot.add(f);
+      saveShopGot();
+      renderShop();
+    });
+
+    /* =========================================================
+       SELECTOR DE VISTA (filtro de estadísticas)
+       ========================================================= */
+    $("viewTabs").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-view]");
+      if (!b) return;
+      // Tocar el chip activo lo deselecciona → vuelve a "día completo" (sin filtro)
+      activeView = (activeView === b.dataset.view) ? "dia" : b.dataset.view;
+      render();
+    });
+
+    // Tocar un cajetín de macro lo selecciona como filtro (otra vez = quitar)
+    $("macros").addEventListener("click", (e) => {
+      const m = e.target.closest("[data-macro]");
+      if (!m) return;
+      activeMacro = (activeMacro === m.dataset.macro) ? null : m.dataset.macro;
+      render();
+    });
+
+    // Limpiar todos los filtros (vista, macro, alimento, normalización)
+    $("clearFilters").addEventListener("click", () => {
+      activeView = "dia"; activeMacro = null; activeFood = null; normalize100 = false;
+      render();
+    });
+
+    // "/ 100 g": normaliza los alimentos del listado a 100 g para compararlos
+    $("normBtn").addEventListener("click", () => {
+      normalize100 = !normalize100;
+      render();
+    });
+
+    // Borrar todos los alimentos registrados hoy (pide confirmación)
+    $("clearAll").addEventListener("click", () => {
+      if (!DATA.meals.length) return;
+      if (!confirm("¿Borrar todos los alimentos de hoy?")) return;
+      DATA.meals = [];
+      saveLog();
+      activeView = "dia"; activeMacro = null; activeFood = null; normalize100 = false;
+      render();
+    });
+
+    /* =========================================================
+       LOG: parte de arriba (beige) = filtra por ese alimento;
+            parte de abajo (números) = abre su menú para editar/eliminar.
+       ========================================================= */
+    const foodLog = $("foodLog");
+    foodLog.addEventListener("click", (e) => {
+      const card = e.target.closest(".logf");
+      if (!card) return;
+      const idx = parseInt(card.dataset.idx, 10);
+      if (e.target.closest(".logf-top")) {
+        activeFood = (activeFood === idx) ? null : idx;   // otro alimento sustituye al anterior
+        render();
+      } else {
+        openEdit(idx);
+      }
+    });
+
+    /* =========================================================
+       PANTALLA AÑADIR COMIDA (sheet)
+       ========================================================= */
+    const sheet = $("sheet");
+    let activeType = "alimentos";   // alimentos | recetas
+    let activeCat  = "todos";       // todos | salado | dulce
+
+    // Solo una "página" visible a la vez, con transición de entrada/salida fluida.
+    // "" (sin display inline) deja mandar al CSS → la Home puede ser grid en iPad.
+    const VIEWS = ["app", "sheet", "shopPage", "recipeView", "sim", "simPick", "profile"];
+    let currentView = "app";
+    function showView(id) {
+      if (id === currentView) { window.scrollTo(0, 0); return; }
+      const outId = currentView, inEl = $(id), outEl = $(outId);
+
+      // Deja limpias las vistas que no intervienen (por si hubo navegación rápida)
+      VIEWS.forEach(v => {
+        if (v === id || v === outId) return;
+        const e = $(v);
+        e.classList.remove("v-in", "v-out");
+        if (v !== "app") e.classList.remove("shown");
+        e.style.display = "none";
+        e.setAttribute("aria-hidden", "true");
+      });
+
+      // Entrante: visible + animación de entrada
+      inEl.classList.remove("v-out");
+      inEl.style.display = "";
+      if (id !== "app") inEl.classList.add("shown");
+      inEl.setAttribute("aria-hidden", "false");
+      inEl.classList.remove("v-in"); void inEl.offsetWidth; inEl.classList.add("v-in");
+
+      // Saliente: capa por encima que se desvanece y luego se oculta
+      outEl.classList.remove("v-in");
+      outEl.setAttribute("aria-hidden", "true");
+      outEl.classList.add("v-out");
+      const finalize = () => {
+        outEl.removeEventListener("animationend", finalize);
+        clearTimeout(outTimer);
+        if (currentView === outId) return;     // se volvió a esta vista: no ocultar
+        outEl.classList.remove("v-out");
+        if (outId !== "app") outEl.classList.remove("shown");
+        outEl.style.display = "none";
+      };
+      outEl.addEventListener("animationend", finalize);
+      const outTimer = setTimeout(finalize, 420);   // respaldo si no llega animationend
+
+      $("addBtn").classList.toggle("hidden", id !== "app");
+      // La lupa de búsqueda solo en la pantalla de Añadir comida
+      $("glassSearch").classList.toggle("active", id === "sheet");
+      if (id !== "sheet") $("glassSearch").classList.remove("open");
+      window.scrollTo(0, 0);
+      currentView = id;
+    }
+
+    function defaultMeal() {
+      const h = new Date().getHours();
+      if (h < 11) return "Desayuno";
+      if (h < 16) return "Comida";
+      if (h < 19) return "Snack";
+      return "Cena";
+    }
+
+    function openSheet() {
+      activeType = "alimentos"; activeCat = "todos";
+      $("search").value = "";
+      $("glassSearch").classList.remove("open");
+      syncSheetTabs();
+      renderFoodList();
+      showView("sheet");
+      // El documento en negro: el rebote/overscroll superior se ve negro como la cabecera.
+      setDocTint("sheet-open");
+      requestAnimationFrame(positionTypeUnderline);
+    }
+    // Tinta del documento por vista (para que el overscroll superior no asome blanco)
+    function setDocTint(cls) {
+      const h = document.documentElement;
+      h.classList.remove("sheet-open", "recipe-open");
+      if (cls) h.classList.add(cls);
+    }
+    function closeSheet() { setDocTint(null); showView("app"); }
+    function positionTypeUnderline() {
+      const tab = $("typeTabs").querySelector('[data-type="' + activeType + '"]');
+      const u = $("typeUnderline");
+      if (!tab || !u) return;
+      u.style.left = tab.offsetLeft + "px";
+      u.style.width = tab.offsetWidth + "px";
+    }
+    function syncSheetTabs() {
+      const isRec = activeType === "recetas";
+      $("typeTabs").querySelectorAll("button[data-type]").forEach(b =>
+        b.classList.toggle("active", b.dataset.type === activeType));
+      // Ambas pestañas usan la barra de categorías con subrayado (scroll-spy);
+      // las pastillas de filtro quedan retiradas.
+      $("catTabs").classList.add("hidden");
+      $("recipeCats").hidden = false;
+      positionTypeUnderline();
+      $("search").placeholder = isRec ? "Buscar receta…" : "Buscar alimento…";
+    }
+
+    // Etiquetas/orden de categoría (compartido con los filtros de alimentos)
+    const CAT_LABELS = { huevos:"Huevos", carne:"Carne", pescado:"Pescado", lacteos:"Lácteos", cereales:"Cereales", verduras:"Verduras", fruta:"Fruta", grasas:"Grasas" };
+    const CAT_ORDER = ["huevos","carne","pescado","lacteos","cereales","verduras","fruta","grasas"];
+    const recipeDesc = (r) => r.desc || r.items.filter(it => FOODS[it.food]).map(it => FOODS[it.food].name).join(", ");
+
+    function recipeCardHTML(key, r) {
+      const n = recipeNutri(key);
+      const media = r.photo
+        ? `<img class="rcard-photo" src="${r.photo}" alt="" loading="lazy">`
+        : `<span class="rcard-emoji">${r.emoji}</span>`;
+      return `
+        <li class="rcard" data-recipe="${key}" data-cat="${r.cat}">
+          <div class="rcard-img">${media}</div>
+          <div class="rcard-body">
+            <div class="rcard-name">${r.name}</div>
+            <div class="rcard-desc">${recipeDesc(r)}</div>
+            <div class="rcard-foot">
+              <span class="rcard-kcal">${Math.round(n.kcal)} <span>kcal</span></span>
+              <span class="rcard-macros">P ${n.protein} · C ${n.carbs} · G ${n.fat}</span>
+            </div>
+          </div>
+        </li>`;
+    }
+
+    let recipeActiveCat = null;
+    function buildRecipeCats(cats) {
+      const bar = $("recipeCats"), underline = $("recipeCatUnderline");
+      bar.querySelectorAll(".rcat").forEach(b => b.remove());
+      cats.forEach(c => {
+        const btn = document.createElement("button");
+        btn.className = "rcat"; btn.dataset.rcat = c; btn.textContent = CAT_LABELS[c] || c;
+        bar.insertBefore(btn, underline);
+      });
+      // Los botones se recrean desde cero (ninguno lleva ya la clase "active"), así
+      // que se invalida el valor anterior: fuerza a updateSpy a pintar el estado
+      // inicial en su próxima llamada (si no, con los botones nuevos "sin actividad"
+      // pero el mismo valor de categoría que antes, su comparación se saltaría el pintado).
+      recipeActiveCat = null;
+    }
+    function positionRecipeCatUnderline() {
+      const active = $("recipeCats").querySelector(".rcat.active"), u = $("recipeCatUnderline");
+      if (!active) { u.style.width = "0px"; return; }
+      u.style.left = active.offsetLeft + "px";
+      u.style.width = active.offsetWidth + "px";
+    }
+
+    // --- Scroll-spy sin reflow por fotograma ---
+    // Precalculamos, una sola vez tras pintar la lista, la posición (en coordenadas
+    // del documento) del primer elemento de cada categoría y la línea de la cabecera.
+    // Durante el scroll solo comparamos números (cero lecturas de layout), así que
+    // ni hay reflow ni la barra "vibra".
+    let catAnchors = [];        // [{ cat, top }]
+    let headerLine = 0;         // borde inferior de la cabecera pegajosa (viewport)
+    let spyLocked = false, spyIdleTimer = null;
+
+    function buildCatAnchors() {
+      const cards = $("foodList").querySelectorAll(".addf[data-cat], .rcard[data-cat]");
+      catAnchors = [];
+      const seen = new Set();
+      cards.forEach(card => {
+        const c = card.dataset.cat;
+        if (!seen.has(c)) { seen.add(c); catAnchors.push({ cat: c, top: card.getBoundingClientRect().top + window.scrollY }); }
+      });
+      headerLine = $("recipeCats").getBoundingClientRect().bottom;   // constante mientras está pegajosa
+    }
+
+    // Marca 'cat' como activa: subrayado (transición CSS suave) y, si procede,
+    // desliza la barra para centrar su botón. No toca el scroll vertical.
+    function applyActiveCat(cat, moveBar) {
+      recipeActiveCat = cat;
+      const bar = $("recipeCats");
+      bar.querySelectorAll(".rcat").forEach(b => b.classList.toggle("active", b.dataset.rcat === cat));
+      positionRecipeCatUnderline();
+      if (moveBar) { const btn = bar.querySelector(".rcat.active"); if (btn) scrollCatIntoView(bar, btn); }
+    }
+
+    function updateSpy() {
+      if (currentView !== "sheet" || spyLocked || !catAnchors.length) return;
+      const line = window.scrollY + headerLine + 12;
+      let current = catAnchors[0].cat;
+      for (let i = 0; i < catAnchors.length; i++) {
+        if (catAnchors[i].top <= line) current = catAnchors[i].cat; else break;
+      }
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4)
+        current = catAnchors[catAnchors.length - 1].cat;
+      if (current !== recipeActiveCat) applyActiveCat(current, true);
+    }
+
+    // Bloquea el scroll-spy mientras dura una animación de salto (al tocar una
+    // categoría): así el subrayado va DIRECTO al destino sin pasar por las
+    // categorías intermedias (lo que se sentía como un tirón/parón). Se desbloquea
+    // cuando el scroll deja de moverse.
+    function lockSpy() {
+      spyLocked = true;
+      clearTimeout(spyIdleTimer);
+      spyIdleTimer = setTimeout(() => { spyLocked = false; }, 600);
+    }
+    // Desplaza horizontalmente la barra de categorías para que 'btn' quede visible.
+    // Usa offsetLeft (coordenadas propias de la barra) en vez de getBoundingClientRect:
+    // así el cálculo no depende del scroll ya aplicado y es estable de un tirón al siguiente.
+    function scrollCatIntoView(bar, btn) {
+      const margin = 18;
+      const left = btn.offsetLeft, right = left + btn.offsetWidth;
+      if (left < bar.scrollLeft + margin) {
+        bar.scrollTo({ left: Math.max(0, left - margin), behavior: "smooth" });
+      } else if (right > bar.scrollLeft + bar.clientWidth - margin) {
+        bar.scrollTo({ left: right - bar.clientWidth + margin, behavior: "smooth" });
+      }
+    }
+
+    const cardHTML = (key, attr, emoji, name, sub, kcal, brand, cat) => `
+      <li class="addf" ${attr}="${key}"${cat ? ` data-cat="${cat}"` : ""}>
+        <div class="addf-top"><span class="addf-emoji">${emoji}</span>${brand === "Hacendado" ? '<span class="addf-brand" aria-label="Hacendado">H</span>' : ""}</div>
+        <div class="addf-info">
+          <div class="addf-name">${name}</div>
+          <div class="addf-sub">${sub}</div>
+          <span class="addf-kcal">${kcal} <span>kcal</span></span>
+        </div>
+      </li>`;
+
+    function renderFoodList() {
+      const q = $("search").value.trim().toLowerCase();
+      const list = $("foodList");
+
+      if (activeType === "recetas") {
+        const all = Object.assign({}, RECIPES, userRecipes);
+        let entries = Object.entries(all).filter(([, r]) => !q || r.name.toLowerCase().includes(q));
+        // agrupar por categoría en el orden canónico (para el scroll-spy)
+        entries.sort((a, b) => CAT_ORDER.indexOf(a[1].cat) - CAT_ORDER.indexOf(b[1].cat));
+        const cats = CAT_ORDER.filter(c => entries.some(([, r]) => r.cat === c));
+        buildRecipeCats(cats);
+        const createCard = `<li class="rcard rcard-new" data-newrecipe="1">＋ Crear receta</li>`;
+        list.classList.add("as-recipes");
+        list.innerHTML = entries.map(([k, r]) => recipeCardHTML(k, r)).join("") + createCard;
+        requestAnimationFrame(() => { buildCatAnchors(); updateSpy(); });
+        return;
+      }
+
+      // Alimentos: cuadrícula de 2 columnas agrupada por categoría (scroll-spy)
+      list.classList.remove("as-recipes");
+      let entries = Object.entries(FOODS).filter(([, f]) => !q || f.name.toLowerCase().includes(q));
+      entries.sort((a, b) => CAT_ORDER.indexOf(a[1].cat) - CAT_ORDER.indexOf(b[1].cat));
+      const cats = CAT_ORDER.filter(c => entries.some(([, f]) => f.cat === c));
+      buildRecipeCats(cats);
+      list.innerHTML = entries.length
+        ? entries.map(([k, f]) => cardHTML(k, "data-add", f.emoji, f.name, f.ration, f.kcal, f.brand, f.cat)).join("")
+        : `<li class="food-empty">Sin resultados</li>`;
+      requestAnimationFrame(() => { buildCatAnchors(); updateSpy(); });
+    }
+
+    $("addBtn").addEventListener("click", openSheet);
+    $("search").addEventListener("input", renderFoodList);
+
+    // ----- Buscador flotante "glass" (siempre visible) -----
+    $("gsIco").addEventListener("click", () => {
+      const gs = $("glassSearch");
+      const open = gs.classList.toggle("open");
+      if (open) { setTimeout(() => $("search").focus(), 60); }
+      else { $("search").value = ""; renderFoodList(); $("search").blur(); }
+    });
+    // Al perder el foco sin texto, se recoge a lupa
+    $("search").addEventListener("blur", () => {
+      if (!$("search").value.trim()) $("glassSearch").classList.remove("open");
+      positionSearchOverKeyboard();
+    });
+
+    // Al abrir el teclado, la barra de búsqueda se pega justo encima de él.
+    // En iOS los elementos fixed quedan anclados al viewport de layout, así que
+    // sin esto la barra se queda demasiado arriba sobre el teclado.
+    function positionSearchOverKeyboard() {
+      const gs = $("glassSearch"), vv = window.visualViewport;
+      if (!vv) return;
+      const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      if (kb > 80 && gs.classList.contains("active")) {
+        gs.style.bottom = (kb + 12) + "px";
+      } else {
+        gs.style.bottom = "";
+      }
+    }
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", positionSearchOverKeyboard);
+      window.visualViewport.addEventListener("scroll", positionSearchOverKeyboard);
+    }
+    $("search").addEventListener("focus", () => setTimeout(positionSearchOverKeyboard, 60));
+
+    // Deslizar hacia abajo (estando arriba del todo) cierra el panel
+    function enablePullToDismiss(el, dismiss, threshold = 160) {
+      let startY = null, tracking = false;
+      el.addEventListener("touchstart", (e) => {
+        // No armar el cierre si el dedo empieza sobre los filtros, las pestañas o la
+        // barra de búsqueda: ahí el usuario sólo está desplazando en horizontal.
+        const onScroller = e.target.closest(".cat-tabs, .rcat-tabs, .sheet-tabs, .glass-search, .rv-meals, .grams-field");
+        tracking = !onScroller && window.scrollY <= 0;
+        startY = tracking ? e.touches[0].clientY : null;
+      }, { passive: true });
+      el.addEventListener("touchmove", (e) => {
+        if (!tracking || startY === null) return;
+        if (window.scrollY > 0) { tracking = false; return; }
+        if (e.touches[0].clientY - startY > threshold) { tracking = false; startY = null; dismiss(); }
+      }, { passive: true });
+      el.addEventListener("touchend", () => { tracking = false; startY = null; });
+    }
+    enablePullToDismiss($("sheet"), closeSheet, 140);     // un poco más de recorrido para no salir sin querer
+    enablePullToDismiss($("simPick"), closeSimPick);
+    enablePullToDismiss($("recipeView"), backToSheet, 140);   // tirar hacia abajo vuelve al listado
+
+    // La ficha del alimento ACOMPAÑA al dedo al arrastrar hacia abajo, y se cierra
+    // al soltar si se pasó el umbral; si no, vuelve a su sitio.
+    (function () {
+      const m = $("modal"), card = m.querySelector(".modal-card");
+      let startY = null, dragging = false, dy = 0;
+      m.addEventListener("touchstart", (e) => {
+        if (!m.classList.contains("open")) return;
+        // no arrancar el arrastre desde controles (botones, campo de gramos)
+        if (e.target.closest("button, input")) { dragging = false; startY = null; return; }
+        startY = e.touches[0].clientY; dragging = true; dy = 0;
+        card.style.transition = "none";
+      }, { passive: true });
+      m.addEventListener("touchmove", (e) => {
+        if (!dragging || startY === null) return;
+        dy = Math.max(0, e.touches[0].clientY - startY);
+        card.style.transform = "translateY(" + dy + "px)";
+        m.style.background = "rgba(19,19,17," + (0.34 * Math.max(0, 1 - dy / 420)) + ")";
+      }, { passive: true });
+      m.addEventListener("touchend", () => {
+        if (!dragging) return;
+        dragging = false;
+        card.style.transition = "";        // vuelve la transición del CSS
+        m.style.background = "";
+        if (dy > 90) {                      // se cierra acompañando el deslizamiento
+          card.style.transform = "translateY(100%)";
+          closeModal();
+          setTimeout(() => { card.style.transform = ""; }, 320);
+        } else {                            // vuelve a su sitio
+          card.style.transform = "";
+        }
+        startY = null; dy = 0;
+      });
+    })();
+
+    $("typeTabs").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-type]"); if (!b) return;
+      if (b.dataset.type === activeType) return;
+      const forward = b.dataset.type === "recetas";
+      activeType = b.dataset.type; activeCat = "todos";
+      window.scrollTo(0, 0);                 // empieza arriba en la lista nueva
+      syncSheetTabs(); renderFoodList();
+      const fl = $("foodList");
+      fl.classList.remove("slide-fwd", "slide-back"); void fl.offsetWidth;
+      fl.classList.add(forward ? "slide-fwd" : "slide-back");
+    });
+    $("catTabs").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-cat]"); if (!b) return;
+      activeCat = b.dataset.cat; syncSheetTabs(); renderFoodList();
+    });
+
+    // Tocar una categoría: el subrayado va DIRECTO a ese botón (transición suave)
+    // y la barra se desliza para centrarlo, de inmediato. El contenido salta a
+    // la sección con scroll suave; da igual que llegue un pelín después. El spy
+    // queda bloqueado mientras dura el salto, así el subrayado no pasa por las
+    // categorías intermedias (era lo que se sentía como un tirón/parón).
+    // (Arrastrar la barra con el dedo sin tocar ningún botón no cambia nada.)
+    $("recipeCats").addEventListener("click", (e) => {
+      const btn = e.target.closest(".rcat"); if (!btn) return;
+      applyActiveCat(btn.dataset.rcat, true);
+      lockSpy();
+      const sel = '.addf[data-cat="' + btn.dataset.rcat + '"], .rcard[data-cat="' + btn.dataset.rcat + '"]';
+      const card = $("foodList").querySelector(sel);
+      if (!card) return;
+      window.scrollTo({ top: card.getBoundingClientRect().top + window.scrollY - headerLine - 8, behavior: "smooth" });
+    });
+    // Scroll-spy: al desplazar la lista, marca la categoría visible. Mientras el
+    // spy esté bloqueado (salto en curso), cada evento de scroll reinicia un
+    // temporizador de reposo; cuando el scroll se para, se desbloquea.
+    let spyTick = false;
+    window.addEventListener("scroll", () => {
+      if (currentView !== "sheet") return;
+      if (spyLocked) {
+        // Mientras dura el salto, mantén la categoría elegida. Al parar el scroll
+        // solo desbloquea (sin reevaluar): así un pequeño "undershoot" no cambia
+        // la categoría recién tocada; el siguiente scroll real ya la reajusta.
+        clearTimeout(spyIdleTimer);
+        spyIdleTimer = setTimeout(() => { spyLocked = false; }, 140);
+        return;
+      }
+      if (spyTick) return;
+      spyTick = true;
+      requestAnimationFrame(() => { updateSpy(); spyTick = false; });
+    }, { passive: true });
+    // Recalcula los anclajes si cambia el tamaño (giro de pantalla, etc.)
+    window.addEventListener("resize", () => { if (currentView === "sheet") { buildCatAnchors(); updateSpy(); } });
+
+    $("foodList").addEventListener("click", (e) => {
+      if (e.target.closest("[data-newrecipe]")) { openSim(); return; }
+      const food = e.target.closest("[data-add]");
+      if (food) { openAdd(food.dataset.add); return; }
+      const rec = e.target.closest("[data-recipe]");
+      if (rec) openRecipe(rec.dataset.recipe);
+    });
+
+    /* =========================================================
+       MODAL  (añadir alimento / receta, y editar/eliminar)
+       ========================================================= */
+    const modal = $("modal");
+    let modalState = null;   // { mode:'add'|'edit'|'recipe', foodKey/recipeKey, time, idx }
+
+    function syncMealPicker() {
+      $("mMeals").querySelectorAll("button").forEach(b =>
+        b.classList.toggle("active", b.dataset.meal === modalState.time));
+    }
+
+    function showModal() {
+      const mode = modalState.mode;
+      const isRecipe = mode === "recipe";
+      const isSim = mode === "simadd" || mode === "simedit";   // dentro del creador de recetas
+      $("mGramsField").style.display = isRecipe ? "none" : "";
+      $("mMeals").style.display = isSim ? "none" : "";          // en el creador no se asigna comida
+      if (isRecipe) {
+        const r = getRecipe(modalState.recipeKey);
+        $("mEmoji").textContent = r.emoji;
+        $("mTitle").textContent = r.name;
+        $("mRef").textContent = r.items.filter(it => FOODS[it.food]).map(it => FOODS[it.food].name + " " + it.grams + " g").join(" · ");
+        $("mDelete").hidden = !r.user;          // solo recetas propias se pueden borrar
+        $("mDelete").textContent = "Eliminar";
+        $("mSave").textContent = "Añadir receta";
+      } else {
+        const f = FOODS[modalState.foodKey];
+        const editing = mode === "edit" || mode === "simedit";
+        $("mEmoji").textContent = f.emoji;
+        $("mTitle").textContent = f.name;
+        $("mRef").textContent = "Referencia: " + f.ration + " · " + f.kcal + " kcal";
+        $("mDelete").hidden = !editing;
+        $("mDelete").textContent = "Eliminar";
+        $("mSave").textContent = editing ? "Guardar" : "Añadir";
+      }
+      syncMealPicker();
+      updatePreview();
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden", "false");
+      // Tiñe el fondo del documento (que SÍ llega al borde físico en Safari) para
+      // que bajo la ficha fija no asome el blanco de la página: la franja se funde.
+      document.documentElement.classList.add("gram-open");
+      updateScrollLock();             // bloquea el scroll del fondo mientras está abierto
+    }
+    function closeModal() {
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+      document.documentElement.classList.remove("gram-open");
+      modalState = null;
+      updateScrollLock();
+    }
+
+    function openAdd(foodKey) {
+      modalState = { mode: "add", foodKey, time: defaultMeal() };
+      $("mGrams").value = FOODS[foodKey].base;
+      showModal();
+    }
+    // ---- Detalle de receta a pantalla completa ----
+    // items: copia local de los ingredientes; las cantidades se pueden ajustar
+    // ad hoc (sólo para esta vez, no se guardan en la receta). editing: índice del
+    // ingrediente cuyo panel de gramos está desplegado (o null).
+    let recipeView = null;   // { key, time, items:[{food,grams}], editing }
+    function openRecipe(recipeKey) {
+      const r = getRecipe(recipeKey);
+      if (!r) return;
+      const items = r.items.filter(it => FOODS[it.food]).map(it => ({ food: it.food, grams: it.grams }));
+      recipeView = { key: recipeKey, time: defaultMeal(), items, editing: null, user: !!r.user };
+      if (r.photo) {
+        $("rvImg").src = r.photo; $("rvImg").style.display = "";
+        $("rvEmoji").style.display = "none"; $("rvEmoji").textContent = "";
+      } else {
+        $("rvImg").removeAttribute("src"); $("rvImg").style.display = "none";
+        $("rvEmoji").style.display = ""; $("rvEmoji").textContent = r.emoji;
+      }
+      $("rvName").textContent = r.name;
+      $("rvDelete").hidden = !r.user;            // sólo recetas propias se pueden borrar
+      $("rvGramPanel").classList.remove("open");
+      renderRecipeIngredients();
+      syncRecipeMeals();
+      updateRecipePreview();
+      setDocTint("recipe-open");
+      showView("recipeView");
+    }
+    function renderRecipeIngredients() {
+      $("rvIngredients").innerHTML = recipeView.items.map((it, i) => {
+        const f = FOODS[it.food];
+        return `<div class="rv-ing${recipeView.editing === i ? " active" : ""}" data-ing="${i}">`
+          + `<span>${f.name}</span><span class="rv-ing-g">${it.grams} g</span></div>`;
+      }).join("");
+    }
+    function recipeNutriItems(items) {
+      const sum = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+      items.forEach(it => {
+        if (!FOODS[it.food]) return;
+        const n = nutri(it.food, it.grams);
+        sum.kcal += n.kcal; sum.protein += n.protein; sum.carbs += n.carbs; sum.fat += n.fat;
+      });
+      sum.protein = round1(sum.protein); sum.carbs = round1(sum.carbs); sum.fat = round1(sum.fat);
+      return sum;
+    }
+    function syncRecipeMeals() {
+      $("rvMeals").querySelectorAll("button").forEach(b =>
+        b.classList.toggle("active", b.dataset.meal === recipeView.time));
+    }
+    function updateRecipePreview() {
+      const n = recipeNutriItems(recipeView.items);
+      $("rvKcal").textContent = Math.round(n.kcal);
+      $("rvP").textContent = n.protein; $("rvC").textContent = n.carbs; $("rvF").textContent = n.fat;
+      setPvRing("rvKcal", n.kcal, DATA.goal.kcal);
+      setPvRing("rvP", n.protein, DATA.goal.protein);
+      setPvRing("rvC", n.carbs, DATA.goal.carbs);
+      setPvRing("rvF", n.fat, DATA.goal.fat);
+    }
+    // Tocar un ingrediente despliega/repliega el panel de gramos para esa línea
+    $("rvIngredients").addEventListener("click", (e) => {
+      const row = e.target.closest(".rv-ing"); if (!row || !recipeView) return;
+      const i = +row.dataset.ing;
+      if (recipeView.editing === i) { recipeView.editing = null; $("rvGramPanel").classList.remove("open"); }
+      else {
+        recipeView.editing = i;
+        $("rvgInput").value = recipeView.items[i].grams;
+        $("rvGramPanel").classList.add("open");
+      }
+      renderRecipeIngredients();
+    });
+    function setRecipeGrams(v) {
+      if (recipeView == null || recipeView.editing == null) return;
+      const g = Math.max(0, v);
+      $("rvgInput").value = g;
+      recipeView.items[recipeView.editing].grams = g;
+      renderRecipeIngredients();
+      updateRecipePreview();
+    }
+    $("rvgInput").addEventListener("input", () => {
+      if (recipeView == null || recipeView.editing == null) return;
+      const v = parseInt($("rvgInput").value, 10);
+      recipeView.items[recipeView.editing].grams = isNaN(v) ? 0 : Math.max(0, v);
+      renderRecipeIngredients(); updateRecipePreview();
+    });
+    bindHold($("rvgPlus"),  () => setRecipeGrams((parseInt($("rvgInput").value, 10) || 0) + 10));
+    bindHold($("rvgMinus"), () => setRecipeGrams((parseInt($("rvgInput").value, 10) || 0) - 10));
+
+    function backToSheet() { setDocTint("sheet-open"); showView("sheet"); }
+    $("rvBack").addEventListener("click", backToSheet);
+    $("rvMeals").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-meal]"); if (!b || !recipeView) return;
+      recipeView.time = b.dataset.meal; syncRecipeMeals();
+    });
+    $("rvSave").addEventListener("click", () => {
+      if (!recipeView) return;
+      recipeView.items.forEach(it => {
+        if (FOODS[it.food] && it.grams > 0) DATA.meals.push({ food: it.food, time: recipeView.time, grams: it.grams });
+      });
+      saveLog(); render();
+      setDocTint(null); showView("app");
+    });
+    $("rvDelete").addEventListener("click", () => {
+      if (userRecipes[recipeView.key]) { delete userRecipes[recipeView.key]; saveRecipes(); renderFoodList(); }
+      backToSheet();
+    });
+    function openEdit(idx) {
+      const meal = DATA.meals[idx];
+      if (!meal || !FOODS[meal.food]) return;
+      modalState = { mode: "edit", foodKey: meal.food, idx, time: meal.time };
+      $("mGrams").value = meal.grams;
+      showModal();
+    }
+    // Creador de recetas: elegir un alimento abre el modal con su info nutricional
+    function openSimAdd(foodKey) {
+      if (!FOODS[foodKey]) return;
+      modalState = { mode: "simadd", foodKey };
+      $("mGrams").value = FOODS[foodKey].base;
+      showModal();
+    }
+    function openSimEdit(i) {
+      const it = simItems[i];
+      if (!it || !FOODS[it.food]) return;
+      modalState = { mode: "simedit", foodKey: it.food, simIdx: i };
+      $("mGrams").value = it.grams;
+      showModal();
+    }
+
+    function currentGrams() {
+      const v = parseInt($("mGrams").value, 10);
+      return isNaN(v) ? 0 : Math.max(0, v);
+    }
+    function setGrams(v) {
+      $("mGrams").value = Math.max(0, v);
+      updatePreview();
+    }
+    // Rellena un anillo del preview: proporción de 'val' sobre el objetivo diario
+    function setPvRing(id, val, goal) {
+      const pct = goal > 0 ? Math.round(val / goal * 100) : 0;
+      $(id + "Pct").textContent = pct + "%";
+      requestAnimationFrame(() => { $(id + "Ring").style.strokeDasharray = Math.min(100, pct) + " 100"; });
+    }
+    function updatePreview() {
+      const n = modalState.mode === "recipe"
+        ? recipeNutri(modalState.recipeKey)
+        : nutri(modalState.foodKey, currentGrams());
+      $("pvKcal").textContent = n.kcal;
+      $("pvP").textContent = n.protein;
+      $("pvC").textContent = n.carbs;
+      $("pvF").textContent = n.fat;
+      setPvRing("pvKcal", n.kcal, DATA.goal.kcal);
+      setPvRing("pvP", n.protein, DATA.goal.protein);
+      setPvRing("pvC", n.carbs, DATA.goal.carbs);
+      setPvRing("pvF", n.fat, DATA.goal.fat);
+    }
+
+    $("mMeals").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-meal]"); if (!b || !modalState) return;
+      modalState.time = b.dataset.meal;
+      syncMealPicker();
+    });
+    $("mGrams").addEventListener("input", updatePreview);
+
+    // Pulsación mantenida en un botón +/−: primer paso inmediato y, si se
+    // mantiene, auto-repetición. Reutilizable en toda la app.
+    function bindHold(btn, step) {
+      let holdTimer = null, repeatTimer = null;
+      const clear = () => { clearTimeout(holdTimer); clearInterval(repeatTimer); holdTimer = repeatTimer = null; };
+      btn.addEventListener("pointerdown", (e) => {
+        e.preventDefault();            // evita scroll/zoom al pulsar
+        clear();
+        step();                        // primer paso inmediato
+        holdTimer = setTimeout(() => { repeatTimer = setInterval(step, 80); }, 400);
+      });
+      ["pointerup", "pointerleave", "pointercancel"].forEach(ev => btn.addEventListener(ev, clear));
+    }
+
+    bindHold($("mPlus"),  () => setGrams(currentGrams() + 10));
+    bindHold($("mMinus"), () => setGrams(currentGrams() - 10));
+    $("mCancel").addEventListener("click", closeModal);
+    modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+
+    $("mSave").addEventListener("click", () => {
+      // Creador de recetas: añade/edita el ingrediente y vuelve al simulador
+      if (modalState.mode === "simadd") {
+        simItems.push({ food: modalState.foodKey, grams: Math.max(1, currentGrams()) });
+        simRender(); closeModal(); return;
+      }
+      if (modalState.mode === "simedit") {
+        simItems[modalState.simIdx].grams = Math.max(1, currentGrams());
+        simRender(); closeModal(); return;
+      }
+      if (modalState.mode === "recipe") {
+        getRecipe(modalState.recipeKey).items.forEach(it => {
+          if (FOODS[it.food]) DATA.meals.push({ food: it.food, time: modalState.time, grams: it.grams });
+        });
+      } else if (modalState.mode === "add") {
+        DATA.meals.push({ food: modalState.foodKey, time: modalState.time, grams: Math.max(1, currentGrams()) });
+      } else {
+        DATA.meals[modalState.idx].grams = Math.max(1, currentGrams());
+        DATA.meals[modalState.idx].time = modalState.time;   // permite reasignar la comida
+      }
+      saveLog();
+      render();
+      closeModal();
+    });
+
+    $("mDelete").addEventListener("click", () => {
+      if (modalState.mode === "simedit") {
+        const i = modalState.simIdx;
+        simItems.splice(i, 1);
+        if (simActiveFood === i) simActiveFood = null;
+        else if (simActiveFood != null && simActiveFood > i) simActiveFood--;
+        simRender();
+        closeModal();
+        return;
+      }
+      if (modalState.mode === "edit") {
+        DATA.meals.splice(modalState.idx, 1);
+        saveLog();
+        render();
+      } else if (modalState.mode === "recipe" && userRecipes[modalState.recipeKey]) {
+        delete userRecipes[modalState.recipeKey];
+        saveRecipes();
+        renderFoodList();
+      }
+      closeModal();
+    });
+
+    /* =========================================================
+       SIMULADOR DE RECETAS  (crear tu propio plato y guardarlo)
+       ========================================================= */
+    let simItems = [];            // [{ food, grams }]
+    let simActiveFood = null;     // índice del alimento "enfocado" (filtro), como en Home
+
+    function openSim() {
+      simItems = [];
+      simActiveFood = null;
+      simRender();
+      showView("sim");
+    }
+    function closeSim() { showView("sheet"); }   // vuelve a Añadir → Recetas
+
+    // Resumen (números, macros, anillo). Si hay un alimento enfocado, se muestra
+    // su aporte (lima) sobre el total de la receta (apagado), igual que en Home.
+    function simRenderSummary() {
+      const goal = DATA.goal;
+      const sum = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+      simItems.forEach(it => {
+        const n = nutri(it.food, it.grams);
+        sum.kcal += n.kcal; sum.protein += n.protein; sum.carbs += n.carbs; sum.fat += n.fat;
+      });
+      sum.protein = Math.round(sum.protein); sum.carbs = Math.round(sum.carbs); sum.fat = Math.round(sum.fat);
+
+      if (simActiveFood != null && !simItems[simActiveFood]) simActiveFood = null;
+      const foodSel = simActiveFood != null ? simItems[simActiveFood] : null;
+      const fn = foodSel ? nutri(foodSel.food, foodSel.grams) : null;
+
+      // ---- Hero ----
+      $("simGoal").textContent = "/ " + goal.kcal.toLocaleString("es-ES") + " KCAL";
+      let heroPct;
+      if (foodSel) {
+        $("simNow").textContent = Math.round(fn.kcal).toLocaleString("es-ES");
+        $("simNow").classList.remove("over");
+        $("simSub").innerHTML = "<b>" + FOODS[foodSel.food].name + "</b> · " + foodSel.grams + " g";
+        heroPct = goal.kcal > 0 ? Math.round(fn.kcal / goal.kcal * 100) : 0;
+      } else {
+        $("simNow").textContent = sum.kcal.toLocaleString("es-ES");
+        $("simNow").classList.toggle("over", sum.kcal > goal.kcal);
+        heroPct = goal.kcal > 0 ? Math.round(sum.kcal / goal.kcal * 100) : 0;
+        $("simSub").innerHTML = simItems.length ? ("<b>" + heroPct + "%</b> del objetivo diario") : "Añade alimentos para empezar";
+      }
+      $("simRingPct").textContent = heroPct + "%";
+
+      // ---- Macros ----
+      const macros = [
+        { name: "Proteínas", prop: "protein", g: goal.protein },
+        { name: "Carbohidratos", prop: "carbs", g: goal.carbs },
+        { name: "Grasas", prop: "fat", g: goal.fat }
+      ];
+      $("simMacros").innerHTML = macros.map(m => {
+        const total = sum[m.prop];
+        const focus = foodSel ? round1(fn[m.prop]) : total;
+        const sp = Math.min(100, Math.round(focus / m.g * 100));
+        const restVal = foodSel ? Math.max(0, total - focus) : 0;
+        const rp = Math.min(100 - sp, Math.round(restVal / m.g * 100));
+        const over = focus > m.g;
+        let valText;
+        if (foodSel) {
+          const pctRec = total > 0 ? Math.round(focus / total * 100) : 0;
+          valText = `${focus}<span> g · <span class="pct">${pctRec}%</span> de la receta</span>`;
+        } else {
+          valText = `${focus}<span> / ${m.g} g</span>`;
+        }
+        return `<div class="macro"><div class="top"><div class="name">${m.name}</div>
+          <div class="val${over ? " over" : ""}">${valText}</div></div>
+          <div class="mini"><span class="seg" data-w="${sp}"></span><span class="seg rest" data-w="${rp}"></span></div></div>`;
+      }).join("");
+
+      requestAnimationFrame(() => {
+        $("simRingSel").style.strokeDasharray = Math.min(100, heroPct) + " 100";
+        document.querySelectorAll('#simMacros .mini .seg').forEach(s => s.style.width = s.dataset.w + "%");
+      });
+
+      $("simSave").disabled = !simItems.length;
+    }
+
+    // Lista de alimentos de la receta: tarjetas grandes como en Home.
+    function simRender() {
+      $("simItems").innerHTML = simItems.length
+        ? `<ul class="log-list">${simItems.map((it, i) => {
+            const f = FOODS[it.food]; const n = nutri(it.food, it.grams);
+            return `<li class="logf${i === simActiveFood ? " sel" : ""}" data-i="${i}">
+              <div class="logf-main">
+                <div class="logf-top"><span class="logf-emoji">${f.emoji}</span></div>
+                <div class="logf-info">
+                  <div class="logf-name">${f.name}</div>
+                  <div class="logf-foot">
+                    <span class="logf-grams">${it.grams} g</span>
+                    <span class="logf-kcal">${n.kcal} <span>kcal</span></span>
+                  </div>
+                </div>
+              </div>
+            </li>`;
+          }).join("")}</ul>`
+        : "";
+      simRenderSummary();
+    }
+
+    $("simClose").addEventListener("click", closeSim);
+
+    // Parte beige = enfocar/desenfocar ese alimento (filtro); resto = editar gramos.
+    $("simItems").addEventListener("click", (e) => {
+      const card = e.target.closest(".logf"); if (!card) return;
+      const i = parseInt(card.dataset.i, 10);
+      if (e.target.closest(".logf-top")) {
+        simActiveFood = (simActiveFood === i) ? null : i;
+        simRender();
+      } else {
+        openSimEdit(i);
+      }
+    });
+
+    $("simSave").addEventListener("click", () => {
+      if (!simItems.length) return;
+      const name = (prompt("Nombre del plato:", "") || "").trim();
+      if (!name) return;                       // pide el nombre al guardar
+      // pide la categoría al guardar (Aceptar = Dulce · Cancelar = Salado)
+      const cat = confirm("¿Es un plato dulce?\n\nAceptar = Dulce   ·   Cancelar = Salado") ? "dulce" : "salado";
+      const id = "u" + Date.now();
+      userRecipes[id] = {
+        name, cat, user: true,
+        emoji: FOODS[simItems[0].food].emoji,
+        items: simItems.map(it => ({ food: it.food, grams: it.grams }))
+      };
+      saveRecipes();
+      activeType = "recetas"; activeCat = "todos"; syncSheetTabs(); renderFoodList();
+      showView("sheet");                       // a Añadir → Recetas, ya con el plato guardado
+    });
+
+    /* ---- Selector de alimentos del simulador ---- */
+    let simPickCat = "todos";
+    function openSimPick() {
+      simPickCat = "todos"; $("simSearch").value = "";
+      $("simPickCat").querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.cat === "todos"));
+      renderSimPick();
+      showView("simPick");
+    }
+    function closeSimPick() { showView("sim"); }
+    function renderSimPick() {
+      const q = $("simSearch").value.trim().toLowerCase();
+      const entries = Object.entries(FOODS).filter(([, f]) =>
+        (simPickCat === "todos" || f.cat === simPickCat) && (!q || f.name.toLowerCase().includes(q)));
+      $("simPickList").innerHTML = entries.length
+        ? entries.map(([k, f]) => cardHTML(k, "data-pick", f.emoji, f.name, f.ration, f.kcal, f.brand)).join("")
+        : `<li class="food-empty">Sin resultados</li>`;
+    }
+    $("simAddFood").addEventListener("click", openSimPick);
+    $("simPickClose").addEventListener("click", closeSimPick);
+    $("simSearch").addEventListener("input", renderSimPick);
+    $("simPickCat").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-cat]"); if (!b) return;
+      simPickCat = b.dataset.cat;
+      $("simPickCat").querySelectorAll("button").forEach(x => x.classList.toggle("active", x === b));
+      renderSimPick();
+    });
+    $("simPickList").addEventListener("click", (e) => {
+      const li = e.target.closest("[data-pick]"); if (!li) return;
+      showView("sim");                 // volver al simulador; el modal se superpone
+      openSimAdd(li.dataset.pick);      // muestra la info nutricional antes de añadir
+    });
+
+    /* =========================================================
+       TUS DATOS  —  perfil + objetivos (entre semana / fin de semana)
+       ========================================================= */
+    // Filas de cada objetivo. type:"input" = editable; type:"calc" = calculado.
+    // (pasivo/activo/total son globales y viven arriba, fuera de los objetivos)
+    const GOAL_ROWS = [
+      { prop: "protein", name: "Proteínas",     unit: "g",    type: "input", gkg: true },
+      { prop: "carbs",   name: "Carbohidratos", unit: "g",    type: "input", gkg: true },
+      { prop: "fat",     name: "Grasas",        unit: "g",    type: "input", gkg: true },
+      { prop: "kcal",    name: "Calorías",      unit: "kcal", type: "calc"  }
+    ];
+    // Campos editables y propiedades guardadas de cada objetivo
+    const GOAL_INPUTS = GOAL_ROWS.filter(r => r.type === "input").map(r => r.prop);
+    // kcal (ingesta) = 4·prot + 4·carb + 9·grasa ; total = pasivo + activo
+    function goalKcal(g) { return Math.round(g.protein * 4 + g.carbs * 4 + g.fat * 9); }
+    function recomputeGoalKcal() { ["week", "weekend"].forEach(w => DATA.goals[w].kcal = goalKcal(DATA.goals[w])); }
+
+    function buildGoalSets() {
+      document.querySelectorAll(".goal-set").forEach(set => {
+        const which = set.dataset.set;   // "week" | "weekend"
+        set.innerHTML = GOAL_ROWS.map(r => {
+          const gkg = r.gkg
+            ? `<span class="pr-gkg empty" id="gkg_${which}_${r.prop}">—</span>`
+            : `<span class="pr-gkg empty">—</span>`;
+          const val = r.type === "input"
+            ? `<div class="pr-val"><div class="prof-inp">
+                 <input id="g_${which}_${r.prop}" type="number" inputmode="numeric" min="0" step="1">
+                 <span class="unit">${r.unit}</span></div></div>`
+            : `<div class="pr-val"><div class="pr-calc"><b id="calc_${which}_${r.prop}">0</b><span class="unit">${r.unit}</span></div></div>`;
+          return `<div class="prof-row${r.type === "calc" ? " calc" : ""}">
+              <span class="pr-name">${r.name}</span>${gkg}${val}</div>`;
+        }).join("");
+      });
+    }
+    const KCAL_PER_KG = 7700;   // 1 kg de peso ≈ 7.700 kcal
+    const intakeKcal = (which) => {
+      const v = (prop) => parseFloat($("g_" + which + "_" + prop).value) || 0;
+      return v("protein") * 4 + v("carbs") * 4 + v("fat") * 9;
+    };
+    // Pone una cifra de déficit (kcal y gramos) con su signo y color (rojo si es superávit).
+    function setDef(key, kcal) {
+      const grams = kcal / KCAL_PER_KG * 1000;
+      const sign = (n) => (n > 0 ? "+" : "") + Math.round(n).toLocaleString("es-ES");
+      $("defK_" + key).textContent = sign(kcal);
+      $("defG_" + key).textContent = sign(grams);
+      // déficit (kcal < 0 = comes menos de lo que gastas = bajas) en negro; superávit en rojo
+      [$("defK_" + key).parentElement, $("defG_" + key).parentElement].forEach(el => el.classList.toggle("surplus", kcal > 0));
+    }
+    // Recalcula en vivo: total quemado, g/kg, calorías ingeridas y déficit estimado.
+    function updateCalc() {
+      const w = parseFloat($("pWeight").value);
+      const exp = (parseFloat($("pPasivo").value) || 0) + (parseFloat($("pActivo").value) || 0);
+      $("calcTotal").textContent = exp.toLocaleString("es-ES");
+      ["week", "weekend"].forEach(which => {
+        const v = (prop) => parseFloat($("g_" + which + "_" + prop).value) || 0;
+        const protein = v("protein"), carbs = v("carbs"), fat = v("fat");
+        $("calc_" + which + "_kcal").textContent = Math.round(protein * 4 + carbs * 4 + fat * 9).toLocaleString("es-ES");
+        [["protein", protein], ["carbs", carbs], ["fat", fat]].forEach(([prop, g]) => {
+          const el = $("gkg_" + which + "_" + prop);
+          if (w > 0) { el.textContent = (g / w).toFixed(1) + " g/kg"; el.classList.remove("empty"); }
+          else { el.textContent = "—"; el.classList.add("empty"); }
+        });
+      });
+      // Balance = ingesta - gasto (negativo = déficit = pierdes peso). Acumulado por días.
+      const balWeek = (intakeKcal("week") - exp) * 5;
+      const balWkd  = (intakeKcal("weekend") - exp) * 2;
+      setDef("week", balWeek);
+      setDef("weekend", balWkd);
+      setDef("total", balWeek + balWkd);
+    }
+    function syncSexToggle() {
+      $("pSex").querySelectorAll("button").forEach(b =>
+        b.classList.toggle("active", b.dataset.sex === DATA.profile.sex));
+    }
+    function fillProfileForm() {
+      $("pWeight").value = DATA.profile.weight;
+      $("pHeight").value = DATA.profile.height;
+      $("pPasivo").value = DATA.profile.pasivo;
+      $("pActivo").value = DATA.profile.activo;
+      syncSexToggle();
+      ["week", "weekend"].forEach(which => {
+        GOAL_INPUTS.forEach(prop => { $("g_" + which + "_" + prop).value = DATA.goals[which][prop]; });
+      });
+      updateCalc();
+    }
+    function openProfile() { fillProfileForm(); showView("profile"); }
+    function closeProfile() { showView("app"); }
+
+    buildGoalSets();
+    $("drawerSettings").addEventListener("click", () => { closeDrawer(); openProfile(); });
+    $("profileClose").addEventListener("click", closeProfile);
+    $("pWeight").addEventListener("input", updateCalc);
+    $("pPasivo").addEventListener("input", updateCalc);
+    $("pActivo").addEventListener("input", updateCalc);
+    document.querySelectorAll(".goal-set input").forEach(inp => inp.addEventListener("input", updateCalc));
+
+    // Al tocar una cifra se vacía para escribir desde cero (sin tener que borrar).
+    // Si se sale sin escribir nada, se recupera el valor anterior.
+    document.querySelectorAll("#profile input[type=number]").forEach(el => {
+      el.addEventListener("focus", () => { el.dataset.prev = el.value; el.value = ""; updateCalc(); });
+      el.addEventListener("blur", () => { if (el.value === "") el.value = el.dataset.prev || ""; updateCalc(); });
+    });
+    $("pSex").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-sex]"); if (!b) return;
+      DATA.profile.sex = b.dataset.sex; syncSexToggle();
+    });
+    $("profileSave").addEventListener("click", () => {
+      DATA.profile.weight = Math.max(0, parseFloat($("pWeight").value) || 0);
+      DATA.profile.height = Math.max(0, parseInt($("pHeight").value, 10) || 0);
+      DATA.profile.pasivo = Math.max(0, parseInt($("pPasivo").value, 10) || 0);
+      DATA.profile.activo = Math.max(0, parseInt($("pActivo").value, 10) || 0);
+      ["week", "weekend"].forEach(which => {
+        GOAL_INPUTS.forEach(prop => {
+          DATA.goals[which][prop] = Math.max(0, parseInt($("g_" + which + "_" + prop).value, 10) || 0);
+        });
+      });
+      recomputeGoalKcal();  // calorías ingeridas = a partir de los macros
+      saveProfile();
+      applyActiveGoal();    // recalcula el objetivo activo según el día
+      render();
+      closeProfile();
+    });
+    enablePullToDismiss($("profile"), closeProfile);
+
+    /* =========================================================
+       MENÚ LATERAL  —  perfiles de personas (cambiar entre José, Mai…)
+       ========================================================= */
+    const personInitial = (name) => (name || "?").trim().charAt(0).toUpperCase();
+    const activePerson = () => people.list.find(p => p.id === people.active) || people.list[0];
+    function updateMenuAvatar() { /* el botón de usuario se retiró; el cajón se abre deslizando */ }
+    function renderPeople() {
+      $("peopleList").innerHTML = people.list.map(pn => `
+        <li class="person${pn.id === people.active ? " active" : ""}" data-id="${pn.id}">
+          <span class="person-av">${personInitial(pn.name)}</span>
+          <span class="person-name">${pn.name}</span>
+          ${pn.id === people.active ? '<span class="person-check">✓</span>' : ''}
+        </li>`).join("");
+    }
+    function openDrawer() { renderPeople(); document.documentElement.classList.add("drawer-open"); }
+    function closeDrawer() { document.documentElement.classList.remove("drawer-open"); }
+
+    function switchPerson(id) {
+      if (id === people.active) { closeDrawer(); return; }
+      saveProfile(); saveLog();              // guarda la persona actual
+      people.active = id; savePeople();
+      loadPersonData();                      // carga la nueva (sus ajustes y su registro)
+      render(); renderPeople(); updateMenuAvatar();
+      closeDrawer();
+    }
+    function addPerson() {
+      const name = (prompt("Nombre de la persona:", "") || "").trim();
+      if (!name) return;
+      saveProfile(); saveLog();              // guarda la persona actual
+      const id = "p" + Date.now();
+      people.list.push({ id, name });
+      people.active = id; savePeople();
+      loadPersonData();                      // nueva persona: valores por defecto, registro vacío
+      saveProfile(); saveLog();              // crea ya sus registros
+      render(); renderPeople(); updateMenuAvatar();
+      closeDrawer();
+      openProfile();                         // abre "Tus datos" para que rellene sus objetivos
+    }
+
+    $("drawerBackdrop").addEventListener("click", closeDrawer);
+    $("addPersonBtn").addEventListener("click", addPerson);
+    $("peopleList").addEventListener("click", (e) => {
+      const li = e.target.closest(".person[data-id]"); if (!li) return;
+      switchPerson(li.dataset.id);
+    });
+
+    // El cajón de perfiles se abre deslizando desde el borde izquierdo hacia la
+    // derecha (ya no hay botón de usuario). Solo en la Home y con el cajón cerrado.
+    (function () {
+      let startX = null, startY = null, tracking = false;
+      window.addEventListener("touchstart", (e) => {
+        const t = e.touches[0];
+        tracking = currentView === "app"
+          && !document.documentElement.classList.contains("drawer-open")
+          && t.clientX <= 24;
+        startX = tracking ? t.clientX : null; startY = tracking ? t.clientY : null;
+      }, { passive: true });
+      window.addEventListener("touchmove", (e) => {
+        if (!tracking || startX === null) return;
+        const t = e.touches[0], dx = t.clientX - startX, dy = t.clientY - startY;
+        if (Math.abs(dy) > 40 && Math.abs(dy) > Math.abs(dx)) { tracking = false; return; }  // gesto vertical
+        if (dx > 45) { tracking = false; startX = null; openDrawer(); }
+      }, { passive: true });
+      window.addEventListener("touchend", () => { tracking = false; startX = null; });
+    })();
+
+    /* =========================================================
+       SELECTOR DE DÍA  —  seguimiento de comidas por fechas
+       ========================================================= */
+    function renderDayStrip() {
+      const tKey = todayKey();
+      $("dayStrip").innerHTML = windowKeys().map(key => {
+        const isToday = key === tKey, isSel = key === selectedDate && selectedDate !== tKey;
+        return `<button class="day-chip${isToday ? " today" : ""}${isSel ? " sel" : ""}" data-key="${key}">
+          <span class="day-dot">${key.split("-")[2]}</span></button>`;
+      }).join("");
+    }
+    // Día cuyo centro está más cerca del puntero (centro del dial)
+    function centeredDayKey() {
+      const strip = $("dayStrip");
+      const center = strip.scrollLeft + strip.clientWidth / 2;
+      let best = null, bestDist = Infinity;
+      strip.querySelectorAll(".day-chip").forEach(c => {
+        const mid = c.offsetLeft + c.offsetWidth / 2;
+        const d = Math.abs(mid - center);
+        if (d < bestDist) { bestDist = d; best = c; }
+      });
+      return best ? best.dataset.key : null;
+    }
+    // Resalta en vivo el día que está bajo el puntero (negro), salvo hoy (lima)
+    function highlightCenteredDay() {
+      const key = centeredDayKey(); if (!key) return;
+      const tKey = todayKey();
+      $("dayStrip").querySelectorAll(".day-chip").forEach(c =>
+        c.classList.toggle("sel", c.dataset.key === key && key !== tKey));
+    }
+    function scrollDayTo(key, smooth) {
+      const strip = $("dayStrip");
+      const el = strip.querySelector('.day-chip[data-key="' + key + '"]'); if (!el) return;
+      strip.scrollTo({ left: el.offsetLeft - (strip.clientWidth - el.offsetWidth) / 2, behavior: smooth ? "smooth" : "auto" });
+    }
+    // Carga y muestra un día (sin reconstruir la tira, para no cortar el deslizamiento)
+    function commitDay(key) {
+      if (key === selectedDate) return;
+      saveLog();
+      selectedDate = key;
+      activeView = "dia"; activeMacro = null; activeFood = null; normalize100 = false;
+      applyActiveGoal();
+      loadLog();
+      render();
+    }
+    function toggleDayPanel() {
+      const open = $("dayPanel").classList.toggle("open");
+      if (open) {
+        renderDayStrip();
+        requestAnimationFrame(() => { scrollDayTo(selectedDate, false); highlightCenteredDay(); });
+      }
+    }
+    let dayScrollTimer = null;
+    $("dayStrip").addEventListener("scroll", () => {
+      highlightCenteredDay();
+      clearTimeout(dayScrollTimer);
+      dayScrollTimer = setTimeout(() => { const k = centeredDayKey(); if (k) commitDay(k); }, 130);
+    });
+    // Tocar un día lo lleva al centro (y el scroll lo selecciona)
+    $("dayStrip").addEventListener("click", (e) => {
+      const c = e.target.closest(".day-chip[data-key]"); if (!c) return;
+      scrollDayTo(c.dataset.key, true);
+    });
+    $("greeting").addEventListener("click", toggleDayPanel);
+    function closeDayPanel() { $("dayPanel").classList.remove("open"); }
+    // Cerrar el desplegable deslizando la pantalla hacia abajo (como salir de "Añadir")
+    (function () {
+      let startY = null, tracking = false;
+      const root = $("app");
+      root.addEventListener("touchstart", (e) => {
+        // El gesto vale desde cualquier sitio MENOS el propio desplegable de días:
+        // ahí el dedo se mueve en horizontal para cambiar de día y no debe cerrarlo.
+        const onPanel = e.target.closest("#dayPanel");
+        tracking = !onPanel && $("dayPanel").classList.contains("open") && window.scrollY <= 0;
+        startY = tracking ? e.touches[0].clientY : null;
+      }, { passive: true });
+      root.addEventListener("touchmove", (e) => {
+        if (!tracking || startY === null) return;
+        if (window.scrollY > 0) { tracking = false; return; }
+        if (e.touches[0].clientY - startY > 160) { tracking = false; startY = null; closeDayPanel(); }
+      }, { passive: true });
+      root.addEventListener("touchend", () => { tracking = false; startY = null; });
+    })();
+
+    /* ---------- Arranque ---------- */
+    const APP_VERSION = "V.5";   // súbelo en cada cambio para confirmar que tienes la última
+    $("version").textContent = APP_VERSION;
+    $("drawerVersion").textContent = APP_VERSION;
+    loadPeople();          // personas + migración de datos a "José"
+    loadPersonData();      // carga la persona activa (día de hoy)
+    renderPeople();        // pinta la lista del menú lateral
+    updateMenuAvatar();    // inicial de la persona activa en el botón
+    renderDayStrip();      // prepara la tira de días
+    render();
+  </script>
+</body>
+</html>
