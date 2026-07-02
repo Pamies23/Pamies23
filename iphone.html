@@ -134,7 +134,7 @@
       flex: 1; min-width: 0;
       font-family: var(--exp);
       font-weight: 900; font-size: 30px; line-height: 0.95;
-      letter-spacing: -0.015em; text-transform: uppercase; color: #fff;
+      letter-spacing: -0.015em; text-transform: uppercase; color: var(--lime);
     }
     /* Círculo de acción de las cabeceras secundarias (✕ del creador de recetas) */
     .avatar {
@@ -149,7 +149,7 @@
     .home-cats {
       display: flex; gap: 10px; align-items: center;
       overflow-x: auto; scrollbar-width: none;
-      margin: 0 -18px; padding: 14px 18px;
+      margin: 0 -18px; padding: 9px 18px;   /* fila fina, mismo aire arriba y abajo */
       background: #000;
     }
     .home-cats::-webkit-scrollbar { display: none; }
@@ -167,16 +167,17 @@
        "Ver pedido · 4,50€" de HG). Solo aparece al llegar al fondo del scroll. */
     .add-cta, .rv-cta {
       position: fixed; left: 20px; right: 20px; z-index: 40;
-      bottom: calc(env(safe-area-inset-bottom) + 5px);
+      bottom: max(calc(env(safe-area-inset-bottom) - 10px), 8px);
       display: flex; align-items: center; justify-content: space-between; gap: 12px;
       border: none; border-radius: 99px; cursor: pointer;
       background: var(--ink); color: #fff; padding: 5px 5px 5px 26px;
       font-family: var(--disp); font-size: 19px; font-weight: 700; text-align: left;
       box-shadow: 0 12px 30px rgba(0,0,0,0.28);
-      opacity: 0; transform: translateY(90px); pointer-events: none;
-      transition: transform 0.4s cubic-bezier(.22,.61,.36,1), opacity 0.28s ease;
+      /* Entrada SÓLIDA: solo desliza desde abajo, sin fundido de color */
+      transform: translateY(130px); pointer-events: none;
+      transition: transform 0.4s cubic-bezier(.22,.61,.36,1);
     }
-    .add-cta.show, .rv-cta.show { opacity: 1; transform: none; pointer-events: auto; }
+    .add-cta.show, .rv-cta.show { transform: none; pointer-events: auto; }
     .add-cta.show:active, .rv-cta.show:active { transform: scale(0.98); }
     .add-cta.hidden, .rv-cta.hidden { display: none; }
     /* Altura mínima de la fila aunque no haya píldora de kcal (Home) */
@@ -290,42 +291,6 @@
        blanca, relleno lima (y lima apagado para el "resto" al filtrar), el
        nombre en letras finas negras al arranque de cada anillo y su objetivo
        al final. A la derecha, solo inicial y número (P. 104). */
-    /* Tarjeta BLANCA (la estética original de los cajetines de macros), con la
-       vía sombreada clara de las barras antiguas. Letras y números a la derecha. */
-    .macro-card {
-      background: var(--bg); border-radius: var(--r-lg);
-      padding: 14px 16px; display: flex; align-items: center; gap: 12px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-    }
-    .mr { width: 208px; height: 208px; flex-shrink: 0; }
-    .mr-ring { cursor: pointer; transition: opacity 0.22s ease; }
-    .mr-ring.dim { opacity: 0.3; }
-    .mr-track { fill: none; stroke: rgba(19,19,17,0.14); stroke-width: 13; }
-    .mr-fill, .mr-rest {
-      fill: none; stroke-width: 13;
-      stroke-dasharray: 0 100;
-      transform: rotate(-90deg); transform-origin: 75px 75px;
-      transition: stroke-dasharray 0.72s cubic-bezier(.22,.61,.36,1),
-                  stroke-dashoffset 0.72s cubic-bezier(.22,.61,.36,1);
-    }
-    .mr-fill { stroke: var(--lime); stroke-linecap: round; }
-    .mr-rest { stroke: var(--lime-dim); }
-    .mr-fill.over { stroke: var(--red); }
-    .mr-label {
-      font-family: var(--sans); font-weight: 500; font-size: 7.6px;
-      letter-spacing: 0.13em; fill: var(--ink); dominant-baseline: middle;
-      pointer-events: none;
-    }
-    .mr-legend { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
-    .mr-leg { border: none; background: none; cursor: pointer; text-align: right; padding: 3px 0; transition: opacity 0.22s ease; }
-    .mr-leg.dim { opacity: 0.35; }
-    .mr-leg-v {
-      font-family: var(--exp); font-weight: 800; font-size: 25px; letter-spacing: -0.01em;
-      color: var(--ink); white-space: nowrap;
-    }
-    .mr-leg.sel .mr-leg-v { color: var(--lime-dim); }
-    .mr-leg-v.over { color: var(--red); }
-
     /* ---------- Ventana Compra (pantalla propia, abierta desde Alimentos) ---------- */
     .shop-page { min-height: 100%; background: #F8F9F4; }
     .shop-head-sticky {
@@ -527,10 +492,10 @@
     .shop-aisle.cart .shop-emoji { background: rgba(255,255,255,0.12); }
     .shop-aisle.cart .shop-item + .shop-item { border-top-color: rgba(255,255,255,0.12); }
     .shop-empty { font-size: 14px; color: var(--muted); padding: 6px 2px; }
-    /* Botones de acción del Home: píldoras en tinta (elegancia en negro).
-       Entran con una pequeña animación cuando aparecen. */
+    /* Botones de acción del Home. "Limpiar filtros" en lima; los demás
+       definen su propio estilo. Entran con una pequeña animación. */
     .clear-filters {
-      border: none; background: var(--ink); color: #fff;
+      border: none; background: var(--lime); color: var(--ink);
       border-radius: 99px; padding: 11px 16px;
       font-family: var(--disp); font-size: 12px; font-weight: 700;
       letter-spacing: 0.03em; text-transform: uppercase; cursor: pointer; white-space: nowrap;
@@ -2210,7 +2175,7 @@
     // para que el "dibujado" se vea al entrar y no quede oculto detrás del splash)
     function replayStatsAnimation() {
       const segs = [...document.querySelectorAll('.macro .mini .seg')];
-      const rings = [$("kcalRingSel"), $("kcalRingRest"), ...document.querySelectorAll('#macros .mr-fill, #macros .mr-rest')].filter(Boolean);
+      const rings = [$("kcalRingSel"), $("kcalRingRest")].filter(Boolean);
       const segW = segs.map(s => s.style.width);
       const ringD = rings.map(r => r.style.strokeDasharray);
       [...segs, ...rings].forEach(el => el.style.transition = 'none');
@@ -2341,54 +2306,53 @@
         $("kcalRingSel").style.strokeDasharray = kSel + " 100";
       });
 
-      // ---- Macros: anillos anidados estilo Apple Watch (clic = filtrar) ----
-      // Proteínas el anillo grande, grasas el mediano, carbos el pequeño.
-      // Vía blanca; relleno lima = parte "enfocada" (el alimento elegido, o la
-      // vista entera) y lima apagado = el resto de esa misma vista, con la
-      // misma lógica y colores de las barras antiguas (dobles filtros).
-      // El nombre va al ARRANQUE del anillo y su objetivo al FINAL, sobre la
-      // propia vía. La leyenda es solo inicial y número: "P. 104".
-      const RING_C = 75;
-      const rings = [
-        { key: "p", letter: "P", label: "PROTEÍNAS", r: 65.5, prop: "protein", goal: DATA.goal.protein },
-        { key: "f", letter: "G", label: "GRASAS",    r: 49,   prop: "fat",     goal: DATA.goal.fat },
-        { key: "c", letter: "C", label: "CARBOS",    r: 32.5, prop: "carbs",   goal: DATA.goal.carbs }
+      // ---- Macros: las barras originales (clic = filtrar; el seleccionado en negro) ----
+      // Segmento lima = parte "enfocada" (el alimento elegido, o la vista entera);
+      // segmento apagado = el resto de esa misma vista.
+      const macros = [
+        { key: "p", name: "Proteínas",     prop: "protein", goal: DATA.goal.protein },
+        { key: "c", name: "Carbohidratos", prop: "carbs",   goal: DATA.goal.carbs },
+        { key: "f", name: "Grasas",        prop: "fat",     goal: DATA.goal.fat }
       ];
-      let arcsHTML = "", legendHTML = "";
-      rings.forEach(m => {
+      const viewLabel = isDay ? "del día" : "de " + activeView.toLowerCase();
+      $("macros").innerHTML = macros.map(m => {
         const goalV = m.goal;
-        const viewVal = view[m.prop];                                   // total de la vista (día o comida)
-        const focusVal = foodSel ? round1(foodSelN[m.prop]) : viewVal;  // parte enfocada (lima)
-        let restVal;                                                    // resto (lima apagado)
+        const viewVal = view[m.prop];                              // total de la vista (día o comida)
+        const focusVal = foodSel ? round1(foodSelN[m.prop]) : viewVal;  // parte resaltada (lima)
+        let restVal;
+        // Al normalizar a 100 g comparamos el alimento solo: sin "resto".
         if (foodSel) restVal = normalize100 ? 0 : Math.max(0, viewVal - focusVal);
         else if (!isDay) restVal = Math.max(0, sum[m.prop] - viewVal);  // resto del día
         else restVal = 0;
-        const sPct = goalV > 0 ? Math.min(100, Math.round(focusVal / goalV * 100)) : 0;
-        const rPct = goalV > 0 ? Math.min(100 - sPct, Math.round(restVal / goalV * 100)) : 0;
+        const sPct = Math.min(100, Math.round(focusVal / goalV * 100));
+        const rPct = Math.min(100 - sPct, Math.round(restVal / goalV * 100));
         const over = focusVal > goalV;   // rojo si te pasas
-        const dim = activeMacro && activeMacro !== m.key;
-        // Trayecto circular que arranca a las 12 en el sentido del reloj:
-        // raíl del nombre (al inicio) y del objetivo (al final) sobre la vía.
-        const path = `M ${RING_C} ${RING_C - m.r} a ${m.r} ${m.r} 0 1 1 -0.01 0`;
-        arcsHTML += `
-          <g class="mr-ring${dim ? " dim" : ""}" data-macro="${m.key}">
-            <circle class="mr-track" cx="${RING_C}" cy="${RING_C}" r="${m.r}"></circle>
-            <circle class="mr-rest" cx="${RING_C}" cy="${RING_C}" r="${m.r}" pathLength="100" data-p="${sPct}" data-r="${rPct}"></circle>
-            <circle class="mr-fill${over ? " over" : ""}" cx="${RING_C}" cy="${RING_C}" r="${m.r}" pathLength="100" data-p="${sPct}"></circle>
-            <path id="mrp-${m.key}" d="${path}" fill="none"></path>
-            <text class="mr-label"><textPath href="#mrp-${m.key}" startOffset="1.5%">${m.label}</textPath></text>
-            <text class="mr-label" text-anchor="end"><textPath href="#mrp-${m.key}" startOffset="98.5%">${goalV} g</textPath></text>
-          </g>`;
-        legendHTML += `
-          <button class="mr-leg${activeMacro === m.key ? " sel" : ""}${dim ? " dim" : ""}" data-macro="${m.key}">
-            <span class="mr-leg-v${over ? " over" : ""}">${m.letter}. ${Math.round(focusVal)}</span>
-          </button>`;
-      });
-      $("macros").innerHTML = `
-        <div class="macro-card">
-          <svg class="mr" viewBox="0 0 150 150" aria-hidden="true">${arcsHTML}</svg>
-          <div class="mr-legend">${legendHTML}</div>
-        </div>`;
+        let valText;
+        if (foodSel) {
+          if (normalize100) {
+            valText = `${focusVal}<span> g <span class="pct">/ 100 g</span></span>`;
+          } else {
+            const pctCtx = viewVal > 0 ? Math.round(focusVal / viewVal * 100) : 0;
+            valText = `${focusVal}<span> g · <span class="pct">${pctCtx}%</span> ${viewLabel}</span>`;
+          }
+        } else if (isDay) {
+          valText = `${focusVal}<span> / ${goalV} g</span>`;
+        } else {
+          const pctDay = sum[m.prop] > 0 ? Math.round(viewVal / sum[m.prop] * 100) : 0;
+          valText = `${focusVal}<span> g · <span class="pct">${pctDay}%</span> del día</span>`;
+        }
+        return `
+          <div class="macro ${m.key}${activeMacro === m.key ? " sel" : ""}" data-macro="${m.key}">
+            <div class="top">
+              <div class="name">${m.name}</div>
+              <div class="val${over ? " over" : ""}">${valText}</div>
+            </div>
+            <div class="mini">
+              <span class="seg" data-w="${sPct}"></span>
+              <span class="seg rest" data-w="${rPct}"></span>
+            </div>
+          </div>`;
+      }).join("");
 
       // ---- Log de alimentos ----
       // Con "/ 100 g" activo se muestran los valores por 100 g (para comparar).
@@ -2446,13 +2410,9 @@
           : `<div class="meal-empty">No has registrado nada en ${activeView}</div>`;
       }
 
-      // Animar el llenado de los anillos de macros (parte enfocada + resto)
+      // Animar barras (segmento seleccionado + resto)
       requestAnimationFrame(() => {
-        document.querySelectorAll('#macros .mr-fill').forEach(c => { c.style.strokeDasharray = c.dataset.p + " 100"; });
-        document.querySelectorAll('#macros .mr-rest').forEach(c => {
-          c.style.strokeDashoffset = -c.dataset.p;              // arranca donde acaba el lima
-          c.style.strokeDasharray = c.dataset.r + " 100";
-        });
+        document.querySelectorAll('#macros .mini .seg').forEach(s => { s.style.width = s.dataset.w + "%"; });
       });
 
       // Si la ventana Compra está abierta, mantenerla al día
@@ -2733,7 +2693,12 @@
       currentView = id;
     }
 
+    // La última comida elegida se recuerda: al apuntar varios alimentos de la
+    // misma comida seguidos no hay que reelegirla cada vez. Sin elección
+    // previa, se propone por la hora del día.
+    let lastMeal = null;
     function defaultMeal() {
+      if (lastMeal) return lastMeal;
       const h = new Date().getHours();
       if (h < 11) return "Desayuno";
       if (h < 16) return "Comida";
@@ -3382,7 +3347,9 @@
     $("rvBack").addEventListener("click", backToSheet);
     $("rvMeals").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-meal]"); if (!b || !recipeView) return;
-      recipeView.time = b.dataset.meal; syncRecipeMeals();
+      recipeView.time = b.dataset.meal;
+      lastMeal = b.dataset.meal;             // se recuerda para la siguiente vez
+      syncRecipeMeals();
     });
     $("rvSave").addEventListener("click", () => {
       if (!recipeView) return;
@@ -3449,6 +3416,7 @@
     $("mMeals").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-meal]"); if (!b || !modalState) return;
       modalState.time = b.dataset.meal;
+      lastMeal = b.dataset.meal;             // se recuerda para el siguiente alimento
       syncMealPicker();
     });
     $("mGrams").addEventListener("input", updatePreview);
@@ -3982,7 +3950,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.10";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.11";   // súbelo en cada cambio para confirmar que tienes la última
     $("drawerVersion").textContent = APP_VERSION;   // la versión vive en el cajón lateral
     loadPeople();          // personas + migración de datos a "José"
     loadPersonData();      // carga la persona activa (día de hoy)

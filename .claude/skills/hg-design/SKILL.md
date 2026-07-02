@@ -61,8 +61,9 @@ TOTAL/summary block.
 bottom safe-area+10, side 20): big 19px bold label starting from the LEFT,
 optional **nested darker pill on the right** with the figure
 (`rgba(255,255,255,0.16)`). Both CTAs identical. They appear ONLY when the
-user reaches the bottom of the scroll (translateY+opacity in, 0.4s spring);
-if the view doesn't scroll, they show immediately. Never keep them fixed
+user reaches the bottom of the scroll, sliding up SOLID — no opacity fade
+(user rule); 0.4s spring, bottom max(safe-area − 10px, 8px). If the view
+doesn't scroll, they show immediately. Never keep them fixed
 while browsing — they'd steal content space (user rule).
 
 ### Tag chips (diet/allergen style)
@@ -89,24 +90,18 @@ gray text-button. Content below (category tabs + list) stays visible.
 White bg, horizontal scroll, sentence-case bold text; active = ink +
 2–3px ink underline flush with a hairline that spans the full bar width.
 
-### Macro rings (home, Apple Watch style)
-WHITE `--r-lg` card (the original macro-box look) that lives ON the water region (scrolls away with it;
-only the meal chips row is sticky). SVG viewBox 150, center 75, rendered
-~182px; nested rings **P r=65.5, F(Grasas) r=49, C(Carbos) r=32.5**,
-stroke 13, rendered ~208px. Light tracks (`rgba(19,19,17,0.14)`, the old bars' via); TWO stacked arcs per ring reproducing the
-old bars' double-filter semantics: `.mr-fill` lime = focused part (selected
-food, or the filtered view), `.mr-rest` lime-dim = rest of that view,
-drawn after the fill via `stroke-dashoffset: -focusPct`. Red fill when
-over goal. `pathLength="100"`, rotate −90° so arcs start at 12 o'clock.
-Ring NAME in thin black letters on the band at the start (`textPath`
-startOffset 1.5%, font 7.6) and its GOAL ("140 g") at the end
-(startOffset 98.5%, text-anchor end). Legend right: just initial + value
-("P. 104") in display 25px ink, RIGHT-ALIGNED to the card edge (lime-dim
-when selected as filter, red when over). Tap ring/legend = macro filter;
-non-selected rings/legend dim.
-The meal-filter row below is a BLACK full-bleed sticky strip with the
-ORDENAR-style chips (light outline, lime when active) — it doubles as the
-notch cover when pinned.
+### Macro bars (home)
+The ORIGINAL stacked white macro cards on the water region (user tried
+Apple-Watch rings twice and reverted): each card = name caps left, bold
+value + gray goal right, and a 12px pill track (`rgba(19,19,17,0.14)`)
+with TWO segments — lime `.seg` (focused part: selected food or filtered
+view) + lime-dim `.seg.rest` (rest of that view). Widths set in rAF after
+render so the CSS transition draws them. Tap card = macro filter (card
+turns ink). The home date above is display caps in LIME over the water.
+The meal-filter row below the water is a BLACK full-bleed sticky strip
+(thin: 9px vertical padding, equal above/below) with the ORDENAR-style
+chips (light outline, lime when active) — it doubles as the notch cover
+when pinned. "Limpiar filtros" chip is lime.
 
 ### Aisle cards (Compra)
 Off-white page; black sticky header holds title + lime `n/m` counter,
