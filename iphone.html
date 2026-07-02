@@ -134,7 +134,7 @@
       flex: 1; min-width: 0;
       font-family: var(--exp);
       font-weight: 900; font-size: 30px; line-height: 0.95;
-      letter-spacing: -0.015em; text-transform: uppercase; color: var(--coral);
+      letter-spacing: -0.015em; text-transform: uppercase; color: #fff;
     }
     /* Círculo de acción de las cabeceras secundarias (✕ del creador de recetas) */
     .avatar {
@@ -144,16 +144,17 @@
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
 
-    /* ---------- Filtros de comida del Home: chips de contorno (como ORDENAR) ---------- */
+    /* ---------- Filtros de comida del Home: franja NEGRA con chips de contorno
+       claro que se ponen lima, calcados al panel ORDENAR de Alimentos/Recetas. */
     .home-cats {
       display: flex; gap: 10px; align-items: center;
       overflow-x: auto; scrollbar-width: none;
-      margin: 0 -18px; padding: 12px 18px 14px;
-      background: var(--bg);
+      margin: 0 -18px; padding: 14px 18px;
+      background: #000;
     }
     .home-cats::-webkit-scrollbar { display: none; }
     .home-cats button {
-      flex: 0 0 auto; border: 2px solid var(--ink); background: none; color: var(--ink);
+      flex: 0 0 auto; border: 2px solid rgba(255,255,255,0.4); background: none; color: #fff;
       cursor: pointer; border-radius: 12px; padding: 10px 16px;
       font-family: var(--disp); font-size: 13px; font-weight: 700; letter-spacing: 0.02em;
       white-space: nowrap; transition: all 0.15s ease;
@@ -166,10 +167,10 @@
        "Ver pedido · 4,50€" de HG). Solo aparece al llegar al fondo del scroll. */
     .add-cta, .rv-cta {
       position: fixed; left: 20px; right: 20px; z-index: 40;
-      bottom: calc(env(safe-area-inset-bottom) + 10px);
+      bottom: calc(env(safe-area-inset-bottom) + 5px);
       display: flex; align-items: center; justify-content: space-between; gap: 12px;
       border: none; border-radius: 99px; cursor: pointer;
-      background: var(--ink); color: #fff; padding: 8px 8px 8px 26px;
+      background: var(--ink); color: #fff; padding: 5px 5px 5px 26px;
       font-family: var(--disp); font-size: 19px; font-weight: 700; text-align: left;
       box-shadow: 0 12px 30px rgba(0,0,0,0.28);
       opacity: 0; transform: translateY(90px); pointer-events: none;
@@ -179,10 +180,10 @@
     .add-cta.show:active, .rv-cta.show:active { transform: scale(0.98); }
     .add-cta.hidden, .rv-cta.hidden { display: none; }
     /* Altura mínima de la fila aunque no haya píldora de kcal (Home) */
-    .add-cta::after { content: ""; width: 0; height: 44px; }
+    .add-cta::after { content: ""; width: 0; height: 40px; }
     .rv-cta-kcal {
       background: rgba(255,255,255,0.16); border-radius: 99px;
-      padding: 12px 18px; font-size: 16px; font-weight: 800; white-space: nowrap;
+      padding: 10px 16px; font-size: 16px; font-weight: 800; white-space: nowrap;
     }
 
     /* ---------- Hero: contador de calorías (tarjeta negra) ---------- */
@@ -277,11 +278,11 @@
     .home-head-sticky {
       position: sticky; top: env(safe-area-inset-top); z-index: 2;
       margin: 0 -18px; padding: 0 18px;
-      background: var(--bg);
+      background: #000;
     }
     .home-head-sticky::before {
       content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
-      height: calc(env(safe-area-inset-top) + 2px); background: var(--bg);
+      height: calc(env(safe-area-inset-top) + 2px); background: #000;
     }
     /* ---------- Anillos de macros (estilo Apple Watch, SOBRE el agua) ----------
        Tarjeta negra dentro de la región del agua: tres anillos anidados —
@@ -289,14 +290,17 @@
        blanca, relleno lima (y lima apagado para el "resto" al filtrar), el
        nombre en letras finas negras al arranque de cada anillo y su objetivo
        al final. A la derecha, solo inicial y número (P. 104). */
+    /* Tarjeta BLANCA (la estética original de los cajetines de macros), con la
+       vía sombreada clara de las barras antiguas. Letras y números a la derecha. */
     .macro-card {
-      background: var(--ink); border-radius: var(--r-lg);
-      padding: 14px 18px; display: flex; align-items: center; gap: 16px;
+      background: var(--bg); border-radius: var(--r-lg);
+      padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
     }
-    .mr { width: 182px; height: 182px; flex-shrink: 0; }
+    .mr { width: 208px; height: 208px; flex-shrink: 0; }
     .mr-ring { cursor: pointer; transition: opacity 0.22s ease; }
     .mr-ring.dim { opacity: 0.3; }
-    .mr-track { fill: none; stroke: #fff; stroke-width: 13; }
+    .mr-track { fill: none; stroke: rgba(19,19,17,0.14); stroke-width: 13; }
     .mr-fill, .mr-rest {
       fill: none; stroke-width: 13;
       stroke-dasharray: 0 100;
@@ -312,14 +316,14 @@
       letter-spacing: 0.13em; fill: var(--ink); dominant-baseline: middle;
       pointer-events: none;
     }
-    .mr-legend { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
-    .mr-leg { border: none; background: none; cursor: pointer; text-align: left; padding: 3px 0; transition: opacity 0.22s ease; }
+    .mr-legend { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+    .mr-leg { border: none; background: none; cursor: pointer; text-align: right; padding: 3px 0; transition: opacity 0.22s ease; }
     .mr-leg.dim { opacity: 0.35; }
     .mr-leg-v {
       font-family: var(--exp); font-weight: 800; font-size: 25px; letter-spacing: -0.01em;
-      color: #fff; white-space: nowrap;
+      color: var(--ink); white-space: nowrap;
     }
-    .mr-leg.sel .mr-leg-v { color: var(--lime); }
+    .mr-leg.sel .mr-leg-v { color: var(--lime-dim); }
     .mr-leg-v.over { color: var(--red); }
 
     /* ---------- Ventana Compra (pantalla propia, abierta desde Alimentos) ---------- */
@@ -3978,7 +3982,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.9";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.10";   // súbelo en cada cambio para confirmar que tienes la última
     $("drawerVersion").textContent = APP_VERSION;   // la versión vive en el cajón lateral
     loadPeople();          // personas + migración de datos a "José"
     loadPersonData();      // carga la persona activa (día de hoy)
