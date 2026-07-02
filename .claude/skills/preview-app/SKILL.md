@@ -47,6 +47,15 @@ const OUT = process.env.OUT || '/tmp';
 Run it, then Read the PNG to actually look at the result — a blank frame means
 it never rendered.
 
+## Always deliver the screenshot to the user
+
+This runs in an isolated remote container: the local `http.server` is not
+reachable from the user's own browser, and there is no way to hand them a
+live interactive preview ("virtual iPhone on screen"). The closest
+equivalent is a static image, so after verifying a visual change, always
+send the screenshot(s) with `SendUserFile` (not just `Read` them yourself) —
+that's the only way the user actually sees the result.
+
 ## Navigation hints (verify against current markup — these drift)
 
 The DOM ids/classes below were current as of the recipe-detail redesign. The app
