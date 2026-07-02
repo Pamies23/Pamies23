@@ -21,6 +21,7 @@ derivable from these rules.
 | Lime accent | `--lime` (#C7F23E) | ONE small accent at a time: "new" badge, active filter chip, highlight. Never large surfaces |
 | Muted gray | `--muted` | Descriptions, metadata (allergens, units), inactive tabs |
 | Black overlay | `#000` | Full-bleed headers, the FILTRAR expanding panel, drawer header block |
+| Intense red | `--red` (#D90429) | Over-goal numbers, destructive actions (user rejected orange-ish reds) |
 | Warning amber | `#E8A13D`-ish | Only for state notices ("cocina cerrada") |
 
 Rule: color hierarchy is **black on white on beige on off-white**, with lime
@@ -82,6 +83,31 @@ gray text-button. Content below (category tabs + list) stays visible.
 White bg, horizontal scroll, sentence-case bold text; active = ink +
 2–3px ink underline flush with a hairline that spans the full bar width.
 
+### Macro rings (home, Apple Watch style)
+Black `--r-lg` card, pinned (sticky) while the kcal hero scrolls away.
+SVG viewBox 150, center 75; nested rings **P r=63, F r=47, C r=31**,
+stroke 12 (4px gaps). White solid tracks, lime fill (red when over goal),
+`pathLength="100"` + `stroke-dasharray: pct 100`, rotate −90° so fills
+start at 12 o'clock. Ring names in thin black uppercase letters ON the
+band via `<textPath>` (font 6.4, spacing 0.12em, startOffset 1.5%).
+Legend column right: tiny gray caps label + bold white figure per ring.
+Tap ring/legend = macro filter; non-selected rings dim to 0.3.
+
+### Aisle cards (Compra)
+Off-white page; black sticky header holds title + lime `n/m` counter,
+lime progress bar, gray meta line and the day chips (dark outline, lime
+when selected). Each pending category = white rounded card ("aisle") with
+caps header + group total, hairline-separated rows (beige emoji circle,
+name, bold grams, check ring → lime when got). Got items live in a final
+**black** card "En el carro", struck through; tap returns them. All done →
+"🎉 ¡Compra lista!" display banner.
+
+### Action chips (home)
+Ink pills (solid) for primary actions; outline (2px inset ring) for
+toggles; outline red for destructive. Uppercase 12px display font. The
+row hides entirely when no chip is visible (`:has`), so it never leaves a
+dead gap above the grid.
+
 ### Side drawer
 Black header block (photo avatar + UPPERCASE bold white name + gray
 action link) then white list: icon + 17px medium label per row, generous
@@ -99,18 +125,63 @@ inline where relevant. Footer: small social/link icons.
 
 ## 5. Motion & mechanics (the "fluid" feel)
 
-- **Header hides on scroll down, returns on scroll up** (list screens):
-  the black top bar slides away leaving only the white category bar
-  pinned; ~0.3s ease-out. (In-app: `.sheet-head-sticky.bar-hidden`.)
+The user loves the ORDENAR panel's fluidity — these are the EXACT recipes
+that produce it. Reuse them verbatim for anything new.
+
+### 5a. Collapsible panel (the one the user loves)
+Animates open/closed with dynamic content height, no JS measuring:
+```css
+.panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.36s cubic-bezier(.22,.61,.36,1); }
+.panel.open { grid-template-rows: 1fr; }
+.panel-inner { overflow: hidden; min-height: 0; }   /* direct child; content inside */
+```
+Standardized at **0.36s + cubic-bezier(.22,.61,.36,1)** app-wide (day
+picker, gram panel, ORDENAR). Any new expanding UI uses this.
+
+### 5b. Hide-on-scroll header
+Slide with `transform` (NEVER margins/height: layout changes feed back
+into scroll events and the bar oscillates). Fade the bar too, and paint
+the sticky wrapper white so content never shows through the notch strip:
+```css
+.sticky-head { position: sticky; top: 0; transition: transform 0.34s cubic-bezier(.4,0,.2,1), background-color 0.28s ease; }
+.sticky-head.bar-hidden { transform: translateY(calc((var(--tabsH) - env(safe-area-inset-top)) * -1)); background: #fff; }
+.sticky-head.bar-hidden .black-bar { opacity: 0; pointer-events: none; }
+```
+JS: compare `scrollY` deltas (>4px) per direction; always show near top
+(`y <= 24`); set `--tabsH` from `offsetHeight` on open/resize.
+
+### 5c. Staggered card entrance
+```css
+@keyframes cardIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+.list.reveal .card { animation: cardIn 0.42s cubic-bezier(.22,.61,.36,1) both; }
+/* nth-child delays 0.04s steps, cap at n+8 */
+```
+Add `.reveal` on open, remove after ~750ms so re-renders don't replay.
+Respect `prefers-reduced-motion`.
+
+### 5d. Chip/button appearance
+```css
+@keyframes chipIn { from { opacity: 0; transform: translateY(6px) scale(0.95); } to { opacity: 1; transform: none; } }
+.chip:not(.hidden) { animation: chipIn 0.3s cubic-bezier(.22,.61,.36,1); }
+```
+(`classList.toggle(c, force)` doesn't mutate when state is unchanged, so
+this only replays when a chip actually appears.)
+
+### 5e. Gotchas that break fluidity (learned the hard way)
+- **View-enter animations that use `transform` with `fill: both` keep the
+  view as a containing block** → `position: fixed` children (bottom CTAs)
+  get positioned against the view, not the viewport. Remove the animation
+  class on `animationend` (guard `e.target === viewEl`).
+- `overflow-x: auto` on a bar clips pseudo-elements hanging above it
+  (`bottom: 100%`) — put notch covers on the non-scrolling wrapper.
+- Progress fills (rings/bars) rebuild with value 0 in markup, then set the
+  real value inside `requestAnimationFrame` so the CSS transition draws it.
+
+### 5f. Other rules
 - Tab underline **slides** between tabs (never jumps).
-- Panels expand with `grid-template-rows 0fr→1fr` (calendar effect) —
-  used by day picker, gram panel, FILTRAR.
-- Sheets/modals slide from bottom with `cubic-bezier(.22,.61,.36,1)`,
-  dismissible by pull-down that follows the finger.
+- Sheets/modals slide from bottom, dismissible by pull-down that follows
+  the finger.
 - Every tappable thing compresses on `:active` (scale 0.94–0.98).
-- Lists entering a screen get a subtle staggered rise (translateY 14px →
-  0, ~40ms/card, cap ~8 cards). Respect `prefers-reduced-motion`.
-- Numbers/rings animate to their value on render (existing pattern).
 
 ## 6. Semantic mapping HG → Real Food
 

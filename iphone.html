@@ -29,7 +29,7 @@
       --lime:  #C7F23E;   /* verde lima eléctrico (consumido en la comida) */
       --lime-dim: #7FA22E; /* lima apagado (total del día / resto) */
       --green: #2FA84F;   /* verde check */
-      --red:   #EF4136;   /* rojo luminoso (avisos y eliminar) */
+      --red:   #D90429;   /* rojo carmesí intenso (avisos y eliminar) */
       --muted: #908C81;
       --line:  #E3DFD4;
 
@@ -276,29 +276,50 @@
       content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
       height: calc(env(safe-area-inset-top) + 2px); background: var(--bg);
     }
-    /* Macros compactos en UNA fila dentro del bloque fijo: siempre a la vista
-       al desplazar (el cajetín de calorías, en cambio, se va con el agua). */
-    .home-head-sticky .macros { flex-direction: row; gap: 8px; margin-bottom: 2px; }
-    .home-head-sticky .macro {
-      flex: 1 1 0; min-width: 0; padding: 10px 12px; border-radius: 14px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    /* ---------- Anillos de macros (estilo Apple Watch) ----------
+       Tarjeta negra siempre a la vista (sticky): tres anillos anidados —
+       proteínas el grande, grasas el mediano, carbohidratos el pequeño —
+       con vía blanca que se rellena en lima y el nombre en letras finas
+       negras sobre la propia vía, en el arranque de cada anillo. */
+    .home-head-sticky .macros { margin-bottom: 2px; }
+    .macro-card {
+      background: var(--ink); border-radius: var(--r-lg);
+      padding: 12px 18px; display: flex; align-items: center; gap: 16px;
     }
-    .home-head-sticky .macro .top {
-      flex-direction: column; align-items: flex-start; gap: 2px; margin-bottom: 8px;
+    .mr { width: 148px; height: 148px; flex-shrink: 0; }
+    .mr-ring { cursor: pointer; transition: opacity 0.22s ease; }
+    .mr-ring.dim { opacity: 0.3; }
+    .mr-track { fill: none; stroke: #fff; stroke-width: 12; }
+    .mr-fill {
+      fill: none; stroke: var(--lime); stroke-width: 12; stroke-linecap: round;
+      stroke-dasharray: 0 100;
+      transform: rotate(-90deg); transform-origin: 75px 75px;
+      transition: stroke-dasharray 0.72s cubic-bezier(.22,.61,.36,1);
     }
-    .home-head-sticky .macro .name { font-size: 10px; letter-spacing: 0.06em; }
-    .home-head-sticky .macro .val {
-      font-size: 15px; max-width: 100%;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    .mr-fill.over { stroke: var(--red); }
+    .mr-label {
+      font-family: var(--sans); font-weight: 500; font-size: 6.4px;
+      letter-spacing: 0.12em; fill: var(--ink); dominant-baseline: middle;
+      pointer-events: none;
     }
-    .home-head-sticky .macro .val span { font-size: 10px; }
-    .home-head-sticky .macro .mini { height: 6px; }
+    .mr-legend { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 9px; }
+    .mr-leg { border: none; background: none; cursor: pointer; text-align: left; padding: 3px 0; }
+    .mr-leg-n {
+      display: block; font-family: var(--disp); font-size: 9px; font-weight: 700;
+      letter-spacing: 0.09em; text-transform: uppercase; color: rgba(255,255,255,0.5);
+      margin-bottom: 2px; transition: color 0.18s ease;
+    }
+    .mr-leg.sel .mr-leg-n { color: var(--lime); }
+    .mr-leg-v { font-family: var(--disp); font-weight: 800; font-size: 16px; color: #fff; white-space: nowrap; }
+    .mr-leg-v span { font-family: var(--sans); font-size: 10.5px; font-weight: 500; color: rgba(255,255,255,0.55); }
+    .mr-leg-v .pct { color: var(--lime); font-weight: 700; }
+    .mr-leg-v.over { color: var(--red); }
 
     /* ---------- Ventana Compra (pantalla propia, abierta desde Alimentos) ---------- */
-    .shop-page { min-height: 100%; background: var(--bg); }
+    .shop-page { min-height: 100%; background: #F4F2EB; }
     .shop-head-sticky {
       position: sticky; top: 0; z-index: 5; background: #000;
-      padding: calc(env(safe-area-inset-top) + 14px) 18px 14px;
+      padding: calc(env(safe-area-inset-top) + 14px) 18px 16px;
     }
     .shop-head { display: flex; align-items: center; gap: 12px; }
     .shop-head .rv-back { position: static; color: #fff; }
@@ -318,21 +339,21 @@
       display: block; height: 100%; width: 0; background: var(--lime);
       border-radius: 99px; transition: width 0.5s cubic-bezier(.22,.61,.36,1);
     }
+    /* Resumen bajo la barra: artículos · peso · días */
+    .shop-meta { margin-top: 10px; font-size: 12.5px; font-weight: 500; color: rgba(255,255,255,0.55); }
     /* Cabecera de cada pasillo (categoría) con el total del grupo */
     .shop-cat-h {
       display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
-      font-family: var(--exp); font-weight: 800; font-size: 17px;
+      font-family: var(--exp); font-weight: 800; font-size: 16px;
       text-transform: uppercase; letter-spacing: -0.01em; color: var(--ink);
-      margin: 24px 2px 10px;
+      margin: 12px 0 4px;
     }
     .shop-cat-h span { font-family: var(--disp); font-size: 12px; font-weight: 700; color: var(--muted); text-transform: none; }
     .shop-done {
       text-align: center; font-family: var(--exp); font-weight: 800; font-size: 22px;
       color: var(--ink); padding: 26px 0 4px;
     }
-    #shopPage .shop-days, #shopPage .shop-list { padding-left: 18px; padding-right: 18px; }
-    #shopPage .shop-days { padding-top: 14px; }
-    #shopPage .shop-list { padding-bottom: calc(env(safe-area-inset-bottom) + 40px); }
+    #shopPage .shop-list { padding: 2px 18px calc(env(safe-area-inset-bottom) + 40px); }
 
     /* Botones de la cabecera Alimentos|Recetas: filtro (ordenar) + Compra (carrito) */
     .sheet-filter {
@@ -428,37 +449,48 @@
     .slide-fwd  { animation: homeSlideFwd  0.30s cubic-bezier(.33,1,.68,1); }
     .slide-back { animation: homeSlideBack 0.30s cubic-bezier(.33,1,.68,1); }
 
-    /* ---------- Compra (lista de la compra de los días marcados) ---------- */
+    /* ---------- Compra: días marcables DENTRO de la cabecera negra ---------- */
     .shop-days {
       display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
-      margin: 0 -18px 18px; padding: 0 18px 2px;
+      margin: 16px -18px 0; padding: 0 18px;
     }
     .shop-days::-webkit-scrollbar { display: none; }
     .shop-day {
-      flex: 0 0 auto; cursor: pointer; border: none; background: var(--bg);
+      flex: 0 0 auto; cursor: pointer; border: none;
+      background: rgba(255,255,255,0.08);
+      box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.22);
       border-radius: 16px; padding: 9px 0 9px; width: 52px;
       display: flex; flex-direction: column; align-items: center; gap: 3px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
       transition: background 0.15s ease, transform 0.12s ease;
     }
     .shop-day:active { transform: scale(0.96); }
-    .sd-wd { font-family: var(--disp); font-weight: 800; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
-    .sd-num { font-family: var(--disp); font-weight: 800; font-size: 18px; line-height: 1; color: var(--ink); }
-    .shop-day.today { box-shadow: inset 0 0 0 2px var(--lime), 0 2px 10px rgba(0,0,0,0.06); }
-    .shop-day.sel { background: var(--ink); box-shadow: none; }
-    .shop-day.sel .sd-wd { color: rgba(255,255,255,0.55); }
-    .shop-day.sel .sd-num { color: #fff; }
-    /* Hoy, cuando está seleccionado: letras y número en lima para distinguirlo */
-    .shop-day.today.sel .sd-wd,
-    .shop-day.today.sel .sd-num { color: var(--lime); }
+    .sd-wd { font-family: var(--disp); font-weight: 800; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: rgba(255,255,255,0.55); }
+    .sd-num { font-family: var(--disp); font-weight: 800; font-size: 18px; line-height: 1; color: #fff; }
+    .shop-day.today { box-shadow: inset 0 0 0 2px var(--lime); }
+    /* Día marcado: pastilla lima con letras en tinta */
+    .shop-day.sel { background: var(--lime); box-shadow: none; }
+    .shop-day.sel .sd-wd { color: rgba(19,19,17,0.6); }
+    .shop-day.sel .sd-num { color: var(--ink); }
 
-    .shop-items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+    /* Cada pasillo es una tarjeta blanca; el carro, una tarjeta negra */
+    .shop-aisle {
+      background: #fff; border-radius: 20px; margin-top: 14px;
+      padding: 6px 16px 8px;
+      box-shadow: 0 6px 20px rgba(40,46,54,0.08);
+    }
+    /* Entrada escalonada de los pasillos al abrir la Compra */
+    .shop-list.reveal .shop-aisle { animation: cardIn 0.42s cubic-bezier(.22,.61,.36,1) both; }
+    .shop-list.reveal .shop-aisle:nth-child(2) { animation-delay: 0.05s; }
+    .shop-list.reveal .shop-aisle:nth-child(3) { animation-delay: 0.10s; }
+    .shop-list.reveal .shop-aisle:nth-child(4) { animation-delay: 0.15s; }
+    .shop-list.reveal .shop-aisle:nth-child(n+5) { animation-delay: 0.20s; }
+    .shop-items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
     .shop-item {
       display: flex; align-items: center; gap: 13px;
-      background: var(--bg); border-radius: var(--r-md); padding: 11px 14px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.07); cursor: pointer;
+      background: none; padding: 11px 0; cursor: pointer;
       transition: opacity 0.18s ease, transform 0.12s ease;
     }
+    .shop-item + .shop-item { border-top: 1px solid rgba(0,0,0,0.07); }
     .shop-item:active { transform: scale(0.985); }
     .shop-emoji {
       width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%;
@@ -476,25 +508,36 @@
       transition: background 0.18s ease, border-color 0.18s ease;
     }
     .shop-item.got .shop-check { background: var(--lime); border-color: var(--lime); }
-    /* Ya en el carro: atenuado y tachado (tocar lo devuelve a pendientes) */
-    .shop-item.got { opacity: 0.55; }
-    .shop-item.got .shop-name { text-decoration: line-through; }
+    /* Ya en el carro: tarjeta negra al final, artículos tachados (tocar recupera) */
+    .shop-aisle.cart { background: var(--ink); }
+    .shop-aisle.cart .shop-cat-h { color: #fff; }
+    .shop-aisle.cart .shop-name { color: rgba(255,255,255,0.75); text-decoration: line-through; }
+    .shop-aisle.cart .shop-grams { color: rgba(255,255,255,0.75); }
+    .shop-aisle.cart .shop-emoji { background: rgba(255,255,255,0.12); }
+    .shop-aisle.cart .shop-item + .shop-item { border-top-color: rgba(255,255,255,0.12); }
     .shop-empty { font-size: 14px; color: var(--muted); padding: 6px 2px; }
-    /* Botones de acción: rectangulares con esquinas redondeadas, como los filtros */
+    /* Botones de acción del Home: píldoras en tinta (elegancia en negro).
+       Entran con una pequeña animación cuando aparecen. */
     .clear-filters {
-      border: none; background: var(--lime); color: var(--ink);
-      border-radius: 12px; padding: 12px 15px;
-      font-family: var(--disp); font-size: 13px; font-weight: 800;
-      letter-spacing: 0.02em; text-transform: uppercase; cursor: pointer; white-space: nowrap;
+      border: none; background: var(--ink); color: #fff;
+      border-radius: 99px; padding: 11px 16px;
+      font-family: var(--disp); font-size: 12px; font-weight: 700;
+      letter-spacing: 0.03em; text-transform: uppercase; cursor: pointer; white-space: nowrap;
     }
     .clear-filters.hidden { display: none; }
-    /* Acciones de filtrado: van en el flujo (bajo las pestañas), se desplazan con el contenido */
-    .hero-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin: 12px 0 0; }
-    /* Botón rojo para borrar todos los alimentos del día (sin filtros) */
-    .clear-all { background: var(--red); color: #fff; }
-    /* Botón normalizar a 100 g: blanco y, al activarlo, negro (como el resto de filtros) */
-    .norm-btn { background: var(--bg); color: var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
-    .norm-btn.on { background: var(--ink); color: #fff; box-shadow: none; }
+    @keyframes chipIn { from { opacity: 0; transform: translateY(6px) scale(0.95); } to { opacity: 1; transform: none; } }
+    .clear-filters:not(.hidden) { animation: chipIn 0.3s cubic-bezier(.22,.61,.36,1); }
+    /* Acciones de filtrado: van en el flujo (bajo las pestañas), se desplazan con
+       el contenido. Si no hay ninguna visible, la fila desaparece del todo
+       (los botones aparecen solo cuando hay comida o filtros activos). */
+    .hero-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin: 14px 0 2px; }
+    .hero-actions:not(:has(> :not(.hidden))) { display: none; }
+    #menuView { margin-top: 12px; }
+    /* Borrar todo: contorno rojo (menos gritón que el relleno) */
+    .clear-all { background: none; color: var(--red); box-shadow: inset 0 0 0 2px var(--red); }
+    /* Normalizar a 100 g: contorno en tinta; activo = relleno en tinta */
+    .norm-btn { background: none; color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
+    .norm-btn.on { background: var(--ink); color: #fff; box-shadow: inset 0 0 0 2px var(--ink); }
 
     /* Etiquetas de cada comida (tan grandes como "Comidas de hoy") */
     .log-sub {
@@ -586,25 +629,22 @@
     #sheet { padding-top: 0; }
     /* La cabecera negra se esconde al bajar y reaparece al subir (HG): se desliza
        con transform (no cambia el layout → el scroll no se realimenta) dejando la
-       barra de categorías arriba, con su relleno blanco cubriendo el notch. */
+       barra de categorías arriba. El propio wrapper se pinta de blanco al
+       esconderse: su caja cubre exactamente desde el notch hasta la barra de
+       categorías, así el contenido nunca asoma por encima. */
     .sheet-head-sticky {
-      position: sticky; top: 0; z-index: 5;
-      transition: transform 0.34s cubic-bezier(.4,0,.2,1);
+      position: sticky; top: 0; z-index: 5; background: transparent;
+      transition: transform 0.34s cubic-bezier(.4,0,.2,1), background-color 0.28s ease;
     }
     .sheet-head-sticky.bar-hidden {
       transform: translateY(calc((var(--tabsH, 110px) - env(safe-area-inset-top)) * -1));
+      background: #fff;
     }
     .sheet-tabs {
       position: relative;             /* para el ::before del notch */
       display: flex; align-items: flex-end; gap: 26px;
       background: #000;
       padding: calc(env(safe-area-inset-top) + 16px) 18px 18px; margin: 0;
-    }
-    /* Relleno blanco sobre la barra de categorías: cubre el notch cuando la
-       cabecera negra está escondida (queda detrás de ella cuando está a la vista). */
-    .rcat-tabs::before {
-      content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
-      height: calc(env(safe-area-inset-top) + 2px); background: #fff; z-index: -1;
     }
     /* Al esconderse, la barra negra ADEMÁS se desvanece: en pantallas con notch
        su franja inferior seguía asomando por la zona de la barra de estado
@@ -886,7 +926,7 @@
       letter-spacing: 0.05em; color: var(--muted); margin-bottom: 11px;
     }
     /* Panel de gramos ad-hoc: se despliega con el mismo efecto que el calendario */
-    .rv-grampanel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.34s cubic-bezier(.22,.61,.36,1); }
+    .rv-grampanel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.36s cubic-bezier(.22,.61,.36,1); }
     .rv-grampanel.open { grid-template-rows: 1fr; }
     .rv-grampanel-inner { overflow: hidden; min-height: 0; }
     /* Fondo beige, a juego con la paleta de la ventana de receta (la foto). */
@@ -1149,7 +1189,7 @@
 
     /* ---------- Selector de día (se despliega al tocar la fecha) ---------- */
     .topbar h1 { cursor: pointer; }
-    .day-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.34s cubic-bezier(.22,.61,.36,1); }
+    .day-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.36s cubic-bezier(.22,.61,.36,1); }
     .day-panel.open { grid-template-rows: 1fr; }
     .day-panel-inner { overflow: hidden; min-height: 0; }   /* colapsa a 0 limpio, sin pestaña */
     .day-card {
@@ -1563,8 +1603,9 @@
         <span class="shop-count" id="shopCount">0/0</span>
       </div>
       <div class="shop-progress"><span id="shopProgressFill"></span></div>
+      <div class="shop-meta" id="shopMeta">&nbsp;</div>
+      <div class="shop-days" id="shopDays"></div>
     </div>
-    <div class="shop-days" id="shopDays"></div>
     <div class="shop-list" id="shopList"></div>
   </section>
 
@@ -2174,7 +2215,7 @@
     // para que el "dibujado" se vea al entrar y no quede oculto detrás del splash)
     function replayStatsAnimation() {
       const segs = [...document.querySelectorAll('.macro .mini .seg')];
-      const rings = [$("kcalRingSel"), $("kcalRingRest")].filter(Boolean);
+      const rings = [$("kcalRingSel"), $("kcalRingRest"), ...document.querySelectorAll('#macros .mr-fill')].filter(Boolean);
       const segW = segs.map(s => s.style.width);
       const ringD = rings.map(r => r.style.strokeDasharray);
       [...segs, ...rings].forEach(el => el.style.transition = 'none');
@@ -2306,27 +2347,23 @@
         $("kcalRingSel").style.strokeDasharray = kSel + " 100";
       });
 
-      // ---- Macros (clic = filtrar; el seleccionado se resalta en negro) ----
-      // Segmento lima = parte "enfocada" (el alimento elegido, o la vista entera);
-      // segmento apagado = el resto de esa misma vista (lo que aportan los demás
-      // alimentos, o el resto del día cuando filtras por comida sin alimento).
-      const macros = [
-        { key: "p", name: "Proteínas",     prop: "protein", goal: DATA.goal.protein },
-        { key: "c", name: "Carbohidratos", prop: "carbs",   goal: DATA.goal.carbs },
-        { key: "f", name: "Grasas",        prop: "fat",     goal: DATA.goal.fat }
+      // ---- Macros: anillos anidados estilo Apple Watch (clic = filtrar) ----
+      // Proteínas el anillo grande, grasas el mediano, carbohidratos el pequeño.
+      // Vía blanca, relleno lima (rojo al pasarse) y el nombre en letras finas
+      // negras sobre la vía, arrancando a las 12. Leyenda con cifras a la derecha.
+      const RING_C = 75;
+      const rings = [
+        { key: "p", label: "PROTEÍNAS",     name: "Proteínas",     r: 63, prop: "protein", goal: DATA.goal.protein },
+        { key: "f", label: "GRASAS",        name: "Grasas",        r: 47, prop: "fat",     goal: DATA.goal.fat },
+        { key: "c", label: "CARBOHIDRATOS", name: "Carbohidratos", r: 31, prop: "carbs",   goal: DATA.goal.carbs }
       ];
       const viewLabel = isDay ? "del día" : "de " + activeView.toLowerCase();
-      $("macros").innerHTML = macros.map(m => {
+      let arcsHTML = "", legendHTML = "";
+      rings.forEach(m => {
         const goalV = m.goal;
-        const viewVal = view[m.prop];                              // total de la vista (día o comida)
-        const focusVal = foodSel ? round1(foodSelN[m.prop]) : viewVal;  // parte resaltada (lima)
-        let restVal;
-        // Al normalizar a 100 g comparamos el alimento solo: sin "resto".
-        if (foodSel) restVal = normalize100 ? 0 : Math.max(0, viewVal - focusVal);
-        else if (!isDay) restVal = Math.max(0, sum[m.prop] - viewVal);  // resto del día
-        else restVal = 0;
-        const sPct = Math.min(100, Math.round(focusVal / goalV * 100));
-        const rPct = Math.min(100 - sPct, Math.round(restVal / goalV * 100));
+        const viewVal = view[m.prop];                                   // total de la vista (día o comida)
+        const focusVal = foodSel ? round1(foodSelN[m.prop]) : viewVal;  // parte enfocada (lima)
+        const pct = goalV > 0 ? Math.min(100, Math.round(focusVal / goalV * 100)) : 0;
         const over = focusVal > goalV;   // rojo si te pasas
         let valText;
         if (foodSel) {
@@ -2342,18 +2379,28 @@
           const pctDay = sum[m.prop] > 0 ? Math.round(viewVal / sum[m.prop] * 100) : 0;
           valText = `${focusVal}<span> g · <span class="pct">${pctDay}%</span> del día</span>`;
         }
-        return `
-          <div class="macro ${m.key}${activeMacro === m.key ? " sel" : ""}" data-macro="${m.key}">
-            <div class="top">
-              <div class="name">${m.name}</div>
-              <div class="val${over ? " over" : ""}">${valText}</div>
-            </div>
-            <div class="mini">
-              <span class="seg" data-w="${sPct}"></span>
-              <span class="seg rest" data-w="${rPct}"></span>
-            </div>
-          </div>`;
-      }).join("");
+        const dim = activeMacro && activeMacro !== m.key;
+        // Trayecto circular que arranca a las 12 en el sentido del reloj:
+        // sirve de raíl para el nombre (textPath) sobre la propia vía.
+        const path = `M ${RING_C} ${RING_C - m.r} a ${m.r} ${m.r} 0 1 1 -0.01 0`;
+        arcsHTML += `
+          <g class="mr-ring${dim ? " dim" : ""}" data-macro="${m.key}">
+            <circle class="mr-track" cx="${RING_C}" cy="${RING_C}" r="${m.r}"></circle>
+            <circle class="mr-fill${over ? " over" : ""}" cx="${RING_C}" cy="${RING_C}" r="${m.r}" pathLength="100" data-p="${pct}"></circle>
+            <path id="mrp-${m.key}" d="${path}" fill="none"></path>
+            <text class="mr-label"><textPath href="#mrp-${m.key}" startOffset="1.5%">${m.label}</textPath></text>
+          </g>`;
+        legendHTML += `
+          <button class="mr-leg${activeMacro === m.key ? " sel" : ""}" data-macro="${m.key}">
+            <span class="mr-leg-n">${m.name}</span>
+            <span class="mr-leg-v${over ? " over" : ""}">${valText}</span>
+          </button>`;
+      });
+      $("macros").innerHTML = `
+        <div class="macro-card">
+          <svg class="mr" viewBox="0 0 150 150" aria-hidden="true">${arcsHTML}</svg>
+          <div class="mr-legend">${legendHTML}</div>
+        </div>`;
 
       // ---- Log de alimentos ----
       // Con "/ 100 g" activo se muestran los valores por 100 g (para comparar).
@@ -2411,9 +2458,9 @@
           : `<div class="meal-empty">No has registrado nada en ${activeView}</div>`;
       }
 
-      // Animar barras (segmento seleccionado + resto)
+      // Animar el llenado de los anillos de macros
       requestAnimationFrame(() => {
-        document.querySelectorAll('.macro .mini .seg').forEach(s => { s.style.width = s.dataset.w + "%"; });
+        document.querySelectorAll('#macros .mr-fill').forEach(c => { c.style.strokeDasharray = c.dataset.p + " 100"; });
       });
 
       // Si la ventana Compra está abierta, mantenerla al día
@@ -2473,10 +2520,14 @@
       const got = items.filter(it => shopGot.has(it.food));
       const pending = items.filter(it => !shopGot.has(it.food));
 
-      // Contador + barra de progreso en la cabecera negra
+      // Contador + barra de progreso + resumen en la cabecera negra
       $("shopCount").textContent = got.length + "/" + items.length;
       const pct = items.length ? Math.round(got.length / items.length * 100) : 0;
       requestAnimationFrame(() => { $("shopProgressFill").style.width = pct + "%"; });
+      const totalG = items.reduce((s, it) => s + it.grams, 0);
+      $("shopMeta").innerHTML = items.length
+        ? `${items.length} artículo${items.length === 1 ? "" : "s"} · ${fmtGrams(totalG)} · ${shopSel.size} día${shopSel.size === 1 ? "" : "s"}`
+        : "&nbsp;";
 
       if (!shopSel.size) {
         list.innerHTML = `<div class="shop-empty">Marca uno o más días para ver qué comprar.</div>`;
@@ -2501,18 +2552,29 @@
         const group = pending.filter(it => FOODS[it.food].cat === cat);
         if (!group.length) return;
         const tot = group.reduce((s, it) => s + it.grams, 0);
-        html += `<div class="shop-cat-h">${CAT_LABELS[cat]}<span>${fmtGrams(tot)}</span></div>`;
-        html += `<ul class="shop-items">${group.map(itemHTML).join("")}</ul>`;
+        html += `<div class="shop-aisle">
+          <div class="shop-cat-h">${CAT_LABELS[cat]}<span>${fmtGrams(tot)}</span></div>
+          <ul class="shop-items">${group.map(itemHTML).join("")}</ul>
+        </div>`;
       });
       if (got.length) {
-        html += `<div class="shop-cat-h">En el carro<span>${got.length} de ${items.length}</span></div>`;
-        html += `<ul class="shop-items">${got.map(itemHTML).join("")}</ul>`;
+        html += `<div class="shop-aisle cart">
+          <div class="shop-cat-h">En el carro<span>${got.length} de ${items.length}</span></div>
+          <ul class="shop-items">${got.map(itemHTML).join("")}</ul>
+        </div>`;
       }
       list.innerHTML = html;
     }
 
     // Compra tiene su propia ventana, abierta desde el carrito de Alimentos/Recetas.
-    function openShop() { renderShop(); showView("shopPage"); }
+    function openShop() {
+      renderShop();
+      showView("shopPage");
+      // Los pasillos entran escalonados (misma fluidez que el listado de alimentos)
+      const sl = $("shopList");
+      sl.classList.add("reveal");
+      setTimeout(() => sl.classList.remove("reveal"), 750);
+    }
     $("sheetCart").addEventListener("click", openShop);
     $("shopBack").addEventListener("click", () => showView("sheet"));
 
@@ -3919,7 +3981,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.7";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.8";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
