@@ -55,21 +55,28 @@ The local `http.server` in this sandbox is not reachable from the user's own
 browser, so it can't be handed out directly. Instead, after pushing to the
 branch, always end with a link to **htmlpreview.github.io**, which proxies
 the raw file straight from GitHub and actually renders/runs it (relative
-asset paths resolve correctly via its injected `<base>` tag):
+asset paths resolve correctly via its injected `<base>` tag).
 
+Build the link from the **commit SHA just pushed, not the branch name**:
+
+```bash
+git rev-parse HEAD
 ```
-https://htmlpreview.github.io/?https://raw.githubusercontent.com/<owner>/<repo>/<branch>/iphone.html
 ```
+https://htmlpreview.github.io/?https://raw.githubusercontent.com/<owner>/<repo>/<sha>/iphone.html
+```
+
+A branch-name URL is reused across pushes, and the user found that
+htmlpreview/browser caching made it serve stale content and load slowly
+waiting on a refresh. A SHA-pinned URL is a genuinely new address every
+commit, so there's nothing stale to wait on — give a fresh one after every
+push.
 
 This sandbox's outbound network policy blocks `htmlpreview.github.io`, so it
 cannot be verified from here — but it is not reachable through this sandbox's
 proxy at all, which is unrelated to whether the user's own browser can reach
 it. Give the link anyway; ask the user to flag it if something doesn't
 render (e.g. a broken relative asset path), and diagnose from there.
-
-The link is stable — same URL keeps showing the latest commit on that branch,
-no need to regenerate it, just re-share it (or tell the user to refresh)
-after each push.
 
 ## Navigation hints (verify against current markup — these drift)
 
