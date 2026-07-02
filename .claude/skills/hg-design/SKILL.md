@@ -97,11 +97,15 @@ value + gray goal right, and a 12px pill track (`rgba(19,19,17,0.14)`)
 with TWO segments — lime `.seg` (focused part: selected food or filtered
 view) + lime-dim `.seg.rest` (rest of that view). Widths set in rAF after
 render so the CSS transition draws them. Tap card = macro filter (card
-turns ink). The home date above is display caps in LIME over the water.
+turns ink). The home date above is display caps in INK over the water
+(coral and lime were tried and rejected).
 The meal-filter row below the water is a BLACK full-bleed sticky strip
 (thin: 9px vertical padding, equal above/below) with the ORDENAR-style
-chips (light outline, lime when active) — it doubles as the notch cover
-when pinned. "Limpiar filtros" chip is lime.
+chips (light outline, lime when active). The notch is NEVER painted black
+by it: when pinned, a WHITE wrapper ::before covers the status-bar strip
+(that strip never carries app content — user rule; a black notch fill
+made the chips read as vertically off-center on the iPhone).
+"Limpiar filtros" chip is lime.
 
 ### Aisle cards (Compra)
 Off-white page; black sticky header holds title + lime `n/m` counter,
