@@ -134,7 +134,7 @@
       flex: 1; min-width: 0;
       font-family: var(--exp);
       font-weight: 900; font-size: 30px; line-height: 0.95;
-      letter-spacing: -0.015em; text-transform: uppercase; color: var(--lime);
+      letter-spacing: -0.015em; text-transform: uppercase; color: var(--ink);
     }
     /* Círculo de acción de las cabeceras secundarias (✕ del creador de recetas) */
     .avatar {
@@ -145,11 +145,15 @@
     }
 
     /* ---------- Filtros de comida del Home: franja NEGRA con chips de contorno
-       claro que se ponen lima, calcados al panel ORDENAR de Alimentos/Recetas. */
+       claro que se ponen lima, calcados al panel ORDENAR de Alimentos/Recetas.
+       La franja es SIEMPRE simétrica (9px arriba y abajo de los chips); el
+       notch NO se pinta de negro: al fijarse, por encima queda el relleno
+       blanco del wrapper (esa franja nunca lleva contenido, como en todas
+       las apps), igual que hace la barra de categorías de Alimentos. */
     .home-cats {
       display: flex; gap: 10px; align-items: center;
       overflow-x: auto; scrollbar-width: none;
-      margin: 0 -18px; padding: 9px 18px;   /* fila fina, mismo aire arriba y abajo */
+      margin: 0 -18px; padding: 9px 18px;
       background: #000;
     }
     .home-cats::-webkit-scrollbar { display: none; }
@@ -279,18 +283,15 @@
     .home-head-sticky {
       position: sticky; top: env(safe-area-inset-top); z-index: 2;
       margin: 0 -18px; padding: 0 18px;
-      background: #000;
+      background: transparent;
     }
+    /* Relleno BLANCO del notch: en reposo queda tapado por la región del agua
+       (z-index 3 > 2); al fijarse la franja, cubre la zona de la barra de
+       estado en blanco, dejando los chips centrados en su franja negra. */
     .home-head-sticky::before {
       content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
-      height: calc(env(safe-area-inset-top) + 2px); background: #000;
+      height: calc(env(safe-area-inset-top) + 2px); background: var(--bg);
     }
-    /* ---------- Anillos de macros (estilo Apple Watch, SOBRE el agua) ----------
-       Tarjeta negra dentro de la región del agua: tres anillos anidados —
-       proteínas el grande, grasas el mediano, carbos el pequeño — con vía
-       blanca, relleno lima (y lima apagado para el "resto" al filtrar), el
-       nombre en letras finas negras al arranque de cada anillo y su objetivo
-       al final. A la derecha, solo inicial y número (P. 104). */
     /* ---------- Ventana Compra (pantalla propia, abierta desde Alimentos) ---------- */
     .shop-page { min-height: 100%; background: #F8F9F4; }
     .shop-head-sticky {
@@ -3950,7 +3951,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.11";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.12";   // súbelo en cada cambio para confirmar que tienes la última
     $("drawerVersion").textContent = APP_VERSION;   // la versión vive en el cajón lateral
     loadPeople();          // personas + migración de datos a "José"
     loadPersonData();      // carga la persona activa (día de hoy)
