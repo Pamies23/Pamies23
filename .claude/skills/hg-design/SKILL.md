@@ -14,14 +14,15 @@ derivable from these rules.
 
 | Token | Value | Use |
 |---|---|---|
-| Page off-white | `#F4F2EB` | List/grid screen background (never pure white behind cards) |
-| Photo beige | `#E8E4D9` | Product image canvases: card tops, detail hero, thumbnails |
+| Page off-white | `#F8F9F4` | List/grid screen background (never pure white behind cards) — exact hex from the HG app |
+| Photo beige | `#EAE7D8` | Product image canvases: card tops, detail hero, thumbnails — exact hex from the HG app |
 | Card white | `#FFFFFF` | Info zones of cards, detail body, sheet bodies |
 | Ink | `#131311` (app `--ink`) | Text, CTA pills, active states, filled icons |
 | Lime accent | `--lime` (#C7F23E) | ONE small accent at a time: "new" badge, active filter chip, highlight. Never large surfaces |
 | Muted gray | `--muted` | Descriptions, metadata (allergens, units), inactive tabs |
 | Black overlay | `#000` | Full-bleed headers, the FILTRAR expanding panel, drawer header block |
 | Intense red | `--red` (#D90429) | Over-goal numbers, destructive actions (user rejected orange-ish reds) |
+| Coral | `--coral` (#FF6F61) | The home date header (user-requested trial) |
 | Warning amber | `#E8A13D`-ish | Only for state notices ("cocina cerrada") |
 
 Rule: color hierarchy is **black on white on beige on off-white**, with lime
@@ -54,10 +55,16 @@ cards in a row keep figures aligned).
 Full-bleed beige hero (~45vh) with plain `←` top-left (no circle). White
 body: UPPERCASE title (26px) → bold figure (price/kcal) → gray description
 → gray metadata line → outline tag chips. Hairline divider before the
-TOTAL/summary block. Sticky bottom CTA: **black pill, full width**, white
-bold label "+ Acción", with a **nested darker pill on the right** holding
-the figure (`rgba(255,255,255,0.14)` bg). Disabled = whole pill ~35%
-opacity + notice line underneath.
+TOTAL/summary block.
+
+### Bottom CTA (shared: home + detail; `.add-cta` / `.rv-cta`)
+**Black pill, full width, THIN and LOW** (padding 8px + nested pill,
+bottom safe-area+10, side 20): big 19px bold label starting from the LEFT,
+optional **nested darker pill on the right** with the figure
+(`rgba(255,255,255,0.16)`). Both CTAs identical. They appear ONLY when the
+user reaches the bottom of the scroll (translateY+opacity in, 0.4s spring);
+if the view doesn't scroll, they show immediately. Never keep them fixed
+while browsing — they'd steal content space (user rule).
 
 ### Tag chips (diet/allergen style)
 Rounded-square OUTLINE, 2px ink border, radius ~10, ~44px, bold 2-letter
@@ -84,14 +91,19 @@ White bg, horizontal scroll, sentence-case bold text; active = ink +
 2–3px ink underline flush with a hairline that spans the full bar width.
 
 ### Macro rings (home, Apple Watch style)
-Black `--r-lg` card, pinned (sticky) while the kcal hero scrolls away.
-SVG viewBox 150, center 75; nested rings **P r=63, F r=47, C r=31**,
-stroke 12 (4px gaps). White solid tracks, lime fill (red when over goal),
-`pathLength="100"` + `stroke-dasharray: pct 100`, rotate −90° so fills
-start at 12 o'clock. Ring names in thin black uppercase letters ON the
-band via `<textPath>` (font 6.4, spacing 0.12em, startOffset 1.5%).
-Legend column right: tiny gray caps label + bold white figure per ring.
-Tap ring/legend = macro filter; non-selected rings dim to 0.3.
+Black `--r-lg` card that lives ON the water region (scrolls away with it;
+only the meal chips row is sticky). SVG viewBox 150, center 75, rendered
+~182px; nested rings **P r=65.5, F(Grasas) r=49, C(Carbos) r=32.5**,
+stroke 13. White solid tracks; TWO stacked arcs per ring reproducing the
+old bars' double-filter semantics: `.mr-fill` lime = focused part (selected
+food, or the filtered view), `.mr-rest` lime-dim = rest of that view,
+drawn after the fill via `stroke-dashoffset: -focusPct`. Red fill when
+over goal. `pathLength="100"`, rotate −90° so arcs start at 12 o'clock.
+Ring NAME in thin black letters on the band at the start (`textPath`
+startOffset 1.5%, font 7.6) and its GOAL ("140 g") at the end
+(startOffset 98.5%, text-anchor end). Legend right: just initial + value
+("P. 104") in display 25px white (lime when selected as filter, red when
+over). Tap ring/legend = macro filter; non-selected rings/legend dim.
 
 ### Aisle cards (Compra)
 Off-white page; black sticky header holds title + lime `n/m` counter,

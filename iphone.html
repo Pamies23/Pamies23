@@ -30,6 +30,7 @@
       --lime-dim: #7FA22E; /* lima apagado (total del día / resto) */
       --green: #2FA84F;   /* verde check */
       --red:   #D90429;   /* rojo carmesí intenso (avisos y eliminar) */
+      --coral: #FF6F61;   /* coral (fecha de la cabecera) */
       --muted: #908C81;
       --line:  #E3DFD4;
 
@@ -124,7 +125,7 @@
     }
     .splash-sub { position: relative; margin-top: 12px; font-size: 16px; font-weight: 500; color: rgba(255,255,255,0.9); }
 
-    /* ---------- Cabecera (todo en una línea: fecha + círculo de versión) ---------- */
+    /* ---------- Cabecera: la fecha completa, en coral ---------- */
     .topbar {
       display: flex; align-items: center; justify-content: space-between;
       gap: 12px; margin-bottom: 20px;
@@ -133,50 +134,56 @@
       flex: 1; min-width: 0;
       font-family: var(--exp);
       font-weight: 900; font-size: 30px; line-height: 0.95;
-      letter-spacing: -0.015em; text-transform: uppercase; color: var(--ink);
+      letter-spacing: -0.015em; text-transform: uppercase; color: var(--coral);
     }
-    /* El círculo del perfil ahora muestra la versión (mismo estilo de antes) */
+    /* Círculo de acción de las cabeceras secundarias (✕ del creador de recetas) */
     .avatar {
       width: 44px; height: 44px; border-radius: 50%;
       background: var(--ink); color: var(--lime);
       font-family: var(--disp); font-weight: 800; font-size: 14px; letter-spacing: 0.02em;
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
-    /* La versión es un cajetín pequeño (no un círculo), un poco más grande para verlo bien */
-    #version {
-      width: auto; height: auto; border-radius: 9px;
-      padding: 7px 12px; font-size: 15px; letter-spacing: 0.04em; white-space: nowrap;
-    }
 
-    /* ---------- Pestañas de comida del Home (texto + subrayado, estilo HG) ---------- */
+    /* ---------- Filtros de comida del Home: chips de contorno (como ORDENAR) ---------- */
     .home-cats {
-      position: relative; display: flex; gap: 22px; align-items: flex-end;
-      overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
-      margin: 0 -18px; padding: 12px 18px 0;
+      display: flex; gap: 10px; align-items: center;
+      overflow-x: auto; scrollbar-width: none;
+      margin: 0 -18px; padding: 12px 18px 14px;
       background: var(--bg);
-      border-bottom: 1px solid rgba(0,0,0,0.12);
     }
     .home-cats::-webkit-scrollbar { display: none; }
     .home-cats button {
-      flex: 0 0 auto; border: none; background: none; cursor: pointer; padding: 0 0 11px;
-      font-family: var(--exp); font-weight: 800; font-size: 17px;
-      color: var(--muted); white-space: nowrap; transition: color 0.18s ease;
+      flex: 0 0 auto; border: 2px solid var(--ink); background: none; color: var(--ink);
+      cursor: pointer; border-radius: 12px; padding: 10px 16px;
+      font-family: var(--disp); font-size: 13px; font-weight: 700; letter-spacing: 0.02em;
+      white-space: nowrap; transition: all 0.15s ease;
     }
-    .home-cats button.active { color: var(--ink); }
-    .home-cats .tab-underline { bottom: 0; height: 3px; background: var(--ink); }
+    .home-cats button:active { transform: scale(0.94); }
+    .home-cats button.active { background: var(--lime); border-color: var(--lime); color: var(--ink); }
 
-    /* CTA inferior fija "+ Añadir comida" (píldora negra, estilo "Pide ya" de HG) */
-    .add-cta {
-      position: fixed; left: 18px; right: 18px; z-index: 40;
-      bottom: calc(env(safe-area-inset-bottom) + 16px);
-      border: none; border-radius: 99px; padding: 17px; cursor: pointer;
-      background: var(--ink); color: #fff;
-      font-family: var(--disp); font-size: 15px; font-weight: 700; letter-spacing: 0.01em;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.25);
-      transition: transform 0.12s ease, opacity 0.2s ease;
+    /* ---------- CTA inferior compartida (Home y detalle de receta) ----------
+       Píldora negra fina y baja, texto grande desde la izquierda (como el
+       "Ver pedido · 4,50€" de HG). Solo aparece al llegar al fondo del scroll. */
+    .add-cta, .rv-cta {
+      position: fixed; left: 20px; right: 20px; z-index: 40;
+      bottom: calc(env(safe-area-inset-bottom) + 10px);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      border: none; border-radius: 99px; cursor: pointer;
+      background: var(--ink); color: #fff; padding: 8px 8px 8px 26px;
+      font-family: var(--disp); font-size: 19px; font-weight: 700; text-align: left;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.28);
+      opacity: 0; transform: translateY(90px); pointer-events: none;
+      transition: transform 0.4s cubic-bezier(.22,.61,.36,1), opacity 0.28s ease;
     }
-    .add-cta:active { transform: scale(0.98); }
-    .add-cta.hidden { opacity: 0; pointer-events: none; }
+    .add-cta.show, .rv-cta.show { opacity: 1; transform: none; pointer-events: auto; }
+    .add-cta.show:active, .rv-cta.show:active { transform: scale(0.98); }
+    .add-cta.hidden, .rv-cta.hidden { display: none; }
+    /* Altura mínima de la fila aunque no haya píldora de kcal (Home) */
+    .add-cta::after { content: ""; width: 0; height: 44px; }
+    .rv-cta-kcal {
+      background: rgba(255,255,255,0.16); border-radius: 99px;
+      padding: 12px 18px; font-size: 16px; font-weight: 800; white-space: nowrap;
+    }
 
     /* ---------- Hero: contador de calorías (tarjeta negra) ---------- */
     /* Dos columnas: izquierda datos, derecha anillo de progreso */
@@ -269,54 +276,54 @@
        del notch se rellena en BLANCO al bajar (nada de franja negra). */
     .home-head-sticky {
       position: sticky; top: env(safe-area-inset-top); z-index: 2;
-      margin: 0 -18px; padding: 10px 18px 0;
+      margin: 0 -18px; padding: 0 18px;
       background: var(--bg);
     }
     .home-head-sticky::before {
       content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
       height: calc(env(safe-area-inset-top) + 2px); background: var(--bg);
     }
-    /* ---------- Anillos de macros (estilo Apple Watch) ----------
-       Tarjeta negra siempre a la vista (sticky): tres anillos anidados —
-       proteínas el grande, grasas el mediano, carbohidratos el pequeño —
-       con vía blanca que se rellena en lima y el nombre en letras finas
-       negras sobre la propia vía, en el arranque de cada anillo. */
-    .home-head-sticky .macros { margin-bottom: 2px; }
+    /* ---------- Anillos de macros (estilo Apple Watch, SOBRE el agua) ----------
+       Tarjeta negra dentro de la región del agua: tres anillos anidados —
+       proteínas el grande, grasas el mediano, carbos el pequeño — con vía
+       blanca, relleno lima (y lima apagado para el "resto" al filtrar), el
+       nombre en letras finas negras al arranque de cada anillo y su objetivo
+       al final. A la derecha, solo inicial y número (P. 104). */
     .macro-card {
       background: var(--ink); border-radius: var(--r-lg);
-      padding: 12px 18px; display: flex; align-items: center; gap: 16px;
+      padding: 14px 18px; display: flex; align-items: center; gap: 16px;
     }
-    .mr { width: 148px; height: 148px; flex-shrink: 0; }
+    .mr { width: 182px; height: 182px; flex-shrink: 0; }
     .mr-ring { cursor: pointer; transition: opacity 0.22s ease; }
     .mr-ring.dim { opacity: 0.3; }
-    .mr-track { fill: none; stroke: #fff; stroke-width: 12; }
-    .mr-fill {
-      fill: none; stroke: var(--lime); stroke-width: 12; stroke-linecap: round;
+    .mr-track { fill: none; stroke: #fff; stroke-width: 13; }
+    .mr-fill, .mr-rest {
+      fill: none; stroke-width: 13;
       stroke-dasharray: 0 100;
       transform: rotate(-90deg); transform-origin: 75px 75px;
-      transition: stroke-dasharray 0.72s cubic-bezier(.22,.61,.36,1);
+      transition: stroke-dasharray 0.72s cubic-bezier(.22,.61,.36,1),
+                  stroke-dashoffset 0.72s cubic-bezier(.22,.61,.36,1);
     }
+    .mr-fill { stroke: var(--lime); stroke-linecap: round; }
+    .mr-rest { stroke: var(--lime-dim); }
     .mr-fill.over { stroke: var(--red); }
     .mr-label {
-      font-family: var(--sans); font-weight: 500; font-size: 6.4px;
-      letter-spacing: 0.12em; fill: var(--ink); dominant-baseline: middle;
+      font-family: var(--sans); font-weight: 500; font-size: 7.6px;
+      letter-spacing: 0.13em; fill: var(--ink); dominant-baseline: middle;
       pointer-events: none;
     }
-    .mr-legend { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 9px; }
-    .mr-leg { border: none; background: none; cursor: pointer; text-align: left; padding: 3px 0; }
-    .mr-leg-n {
-      display: block; font-family: var(--disp); font-size: 9px; font-weight: 700;
-      letter-spacing: 0.09em; text-transform: uppercase; color: rgba(255,255,255,0.5);
-      margin-bottom: 2px; transition: color 0.18s ease;
+    .mr-legend { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+    .mr-leg { border: none; background: none; cursor: pointer; text-align: left; padding: 3px 0; transition: opacity 0.22s ease; }
+    .mr-leg.dim { opacity: 0.35; }
+    .mr-leg-v {
+      font-family: var(--exp); font-weight: 800; font-size: 25px; letter-spacing: -0.01em;
+      color: #fff; white-space: nowrap;
     }
-    .mr-leg.sel .mr-leg-n { color: var(--lime); }
-    .mr-leg-v { font-family: var(--disp); font-weight: 800; font-size: 16px; color: #fff; white-space: nowrap; }
-    .mr-leg-v span { font-family: var(--sans); font-size: 10.5px; font-weight: 500; color: rgba(255,255,255,0.55); }
-    .mr-leg-v .pct { color: var(--lime); font-weight: 700; }
+    .mr-leg.sel .mr-leg-v { color: var(--lime); }
     .mr-leg-v.over { color: var(--red); }
 
     /* ---------- Ventana Compra (pantalla propia, abierta desde Alimentos) ---------- */
-    .shop-page { min-height: 100%; background: #F4F2EB; }
+    .shop-page { min-height: 100%; background: #F8F9F4; }
     .shop-head-sticky {
       position: sticky; top: 0; z-index: 5; background: #000;
       padding: calc(env(safe-area-inset-top) + 14px) 18px 16px;
@@ -494,7 +501,7 @@
     .shop-item:active { transform: scale(0.985); }
     .shop-emoji {
       width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%;
-      background: #E8E4D9; display: flex; align-items: center; justify-content: center;
+      background: #EAE7D8; display: flex; align-items: center; justify-content: center;
       font-size: 22px; line-height: 1;
     }
     .shop-name { flex: 1; min-width: 0; font-family: var(--sans); font-weight: 600; font-size: 15px; color: var(--ink); }
@@ -592,7 +599,7 @@
     .page { min-height: 100%; background: var(--bg); }
     .page.shown, .sim.shown { display: block; }
     /* Paleta de la hoja: blanco roto cálido (HG) tras las tarjetas blancas. */
-    #sheet { background: #F4F2EB; }
+    #sheet { background: #F8F9F4; }
     /* Con la hoja abierta, el documento va en negro: el overscroll superior
        (rebote al tirar hacia abajo) se ve negro, igual que la cabecera. */
     html.sheet-open, html.sheet-open body { background: #000; }
@@ -742,26 +749,27 @@
     }
     .search-wrap input:focus { box-shadow: inset 0 0 0 2px var(--ink); }
 
-    /* Lista de alimentos en formato cuadro, igual que la Home */
+    /* Lista de alimentos en formato cuadro, igual que la Home.
+       Distancias entre tarjetas calcadas a la app de HG (huecos generosos). */
     .food-list {
       list-style: none;
-      padding: 6px 18px calc(env(safe-area-inset-bottom) + 96px);
-      display: flex; flex-wrap: wrap; align-content: flex-start; gap: 12px;
+      padding: 10px 16px calc(env(safe-area-inset-bottom) + 96px);
+      display: flex; flex-wrap: wrap; align-content: flex-start; gap: 20px;
     }
     /* Tarjetas estilo Honest Greens en cuadrícula de 2 columnas: imagen beige
-       arriba y nombre/info sobre blanco abajo. */
+       arriba y nombre/info sobre blanco abajo. Muy redondeadas, sombra mínima. */
     .addf {
-      width: calc(50% - 6px);
+      width: calc(50% - 10px);
       position: relative; cursor: pointer;
       display: flex; flex-direction: column;
-      background: #fff; border-radius: 20px; overflow: hidden;
-      box-shadow: 0 6px 20px rgba(40,46,54,0.08);
+      background: #fff; border-radius: 26px; overflow: hidden;
+      box-shadow: 0 2px 10px rgba(40,46,54,0.05);
       transition: transform 0.12s ease;
     }
     .addf:active { transform: scale(0.97); }
     .addf-top {
-      position: relative; background: #E8E4D9;     /* beige, igual que las recetas */
-      aspect-ratio: 1 / 0.92; flex-shrink: 0;
+      position: relative; background: #EAE7D8;     /* beige exacto de HG */
+      aspect-ratio: 1 / 0.98; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
     }
     .addf-emoji { font-size: 58px; line-height: 1; }
@@ -770,19 +778,20 @@
       position: absolute; right: 8px; bottom: 8px;
       width: 27px; height: 27px; border-radius: 50%; box-sizing: border-box;
       border: 2.5px solid var(--ink); color: var(--ink);    /* círculo en negrita, igual que la H */
-      background: #E8E4D9;                          /* mismo color que el fondo (la miniatura) */
+      background: #EAE7D8;                          /* mismo color que el fondo (la miniatura) */
       display: flex; align-items: center; justify-content: center;
       font-family: var(--disp); font-weight: 800; font-size: 15px; line-height: 1;
       padding-top: 1.5px;                          /* centra ópticamente la H */
     }
-    /* Zona de texto en blanco: nombre grande + ración + kcal (estilo Honest Greens) */
-    .addf-info { background: #fff; padding: 13px 15px 15px; flex: 1; display: flex; flex-direction: column; }
+    /* Zona de texto en blanco: nombre grande + ración + kcal (estilo Honest Greens):
+       mucho aire entre el nombre y la cifra, como en la app real. */
+    .addf-info { background: #fff; padding: 17px 17px 18px; flex: 1; display: flex; flex-direction: column; }
     .addf-name {
-      font-family: var(--exp); font-size: 16px; font-weight: 800;
-      letter-spacing: -0.01em; text-transform: uppercase; color: var(--ink); line-height: 1.06;
+      font-family: var(--exp); font-size: 17px; font-weight: 800;
+      letter-spacing: -0.01em; text-transform: uppercase; color: var(--ink); line-height: 1.08;
     }
     .addf-sub { font-size: 12px; color: var(--muted); margin-top: 6px; font-weight: 500; }
-    .addf-kcal { font-family: var(--disp); font-size: 16px; font-weight: 800; color: var(--ink); margin-top: auto; padding-top: 12px; }
+    .addf-kcal { font-family: var(--disp); font-size: 17px; font-weight: 800; color: var(--ink); margin-top: auto; padding-top: 22px; }
     .addf-kcal span { font-family: var(--sans); font-size: 11px; font-weight: 500; color: var(--muted); }
     .food-empty {
       width: 100%; background: var(--card); border-radius: var(--r-md);
@@ -816,7 +825,7 @@
     }
 
     /* ---------- Recetas (estilo Honest Greens): columna de tarjetas grandes ---------- */
-    .food-list.as-recipes { flex-direction: column; flex-wrap: nowrap; gap: 16px; padding-top: 8px; }
+    .food-list.as-recipes { flex-direction: column; flex-wrap: nowrap; gap: 20px; padding-top: 10px; }
 
     /* Barra de categorías con subrayado deslizante (scroll-spy): al bajar indica
        en qué categoría de receta estás. Va en el flujo normal, justo debajo de
@@ -852,13 +861,13 @@
 
     .rcard {
       width: 100%; list-style: none; cursor: pointer;
-      background: #fff; border-radius: 22px; overflow: hidden;
-      box-shadow: 0 6px 22px rgba(40,46,54,0.10);
+      background: #fff; border-radius: 26px; overflow: hidden;
+      box-shadow: 0 2px 10px rgba(40,46,54,0.05);
       transition: transform 0.12s ease;
     }
     .rcard:active { transform: scale(0.99); }
     .rcard-img {
-      height: 244px; background: #E8E4D9;         /* beige suave tipo Honest Greens */
+      height: 244px; background: #EAE7D8;         /* beige suave tipo Honest Greens */
       display: flex; align-items: center; justify-content: center; overflow: hidden;
       padding: 28px;                              /* margen para que el plato no toque los bordes */
     }
@@ -889,14 +898,14 @@
     /* ---------- Detalle de receta a pantalla completa (estilo Honest Greens) ---------- */
     .recipe-view { min-height: 100%; background: #fff; }
     .rv-photo {
-      position: relative; background: #E8E4D9;     /* beige a sangre, de pared a pared */
+      position: relative; background: #EAE7D8;     /* beige a sangre, de pared a pared */
       padding: calc(env(safe-area-inset-top) + 8px) 0 0;
       min-height: 44vh; display: flex; align-items: center; justify-content: center;
     }
     /* Prolonga el beige hacia arriba para que el rebote SUPERIOR cuadre con la foto */
     .rv-photo::before {
       content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
-      height: 100vh; background: #E8E4D9;
+      height: 100vh; background: #EAE7D8;
     }
     .rv-back {
       position: absolute; top: calc(env(safe-area-inset-top) + 12px); left: 18px; z-index: 2;
@@ -932,7 +941,7 @@
     /* Fondo beige, a juego con la paleta de la ventana de receta (la foto). */
     .rv-grampanel .grams-field {
       margin: 6px 0 18px; border-radius: 22px; padding: 12px 14px;
-      background: #E8E4D9;
+      background: #EAE7D8;
       -webkit-backdrop-filter: none; backdrop-filter: none;
       border: 1px solid rgba(255,255,255,0.5);
       box-shadow: 0 1px 2px rgba(60,55,45,0.06), 0 12px 28px rgba(60,55,45,0.14);
@@ -968,14 +977,18 @@
     }
     .rv-extra:active { transform: scale(0.94); }
     .rv-extra-ph {
-      width: 84px; height: 84px; border-radius: 50%; background: #E8E4D9;
+      width: 84px; height: 84px; border-radius: 50%; background: #EAE7D8;
       display: flex; align-items: center; justify-content: center; font-size: 40px;
       transition: box-shadow 0.18s ease;
     }
     .rv-extra.added .rv-extra-ph { box-shadow: inset 0 0 0 3px var(--ink); }
+    /* Nombre SIEMPRE a 2 líneas exactas: así las kcal de todos los extras
+       quedan alineadas a la misma altura aunque un nombre sea más corto. */
     .rv-extra-name {
       font-size: 12px; font-weight: 600; color: var(--ink);
-      text-align: center; line-height: 1.25; min-height: 30px;
+      text-align: center; line-height: 1.25; height: 30px;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden;
     }
     .rv-extra-price { font-family: var(--disp); font-weight: 800; font-size: 13px; color: var(--ink); }
     .rv-extra.added .rv-extra-price { color: var(--lime-dim); }
@@ -999,23 +1012,6 @@
       border: none; border-radius: 99px; padding: 15px 22px; cursor: pointer;
       font-family: var(--disp); font-size: 14px; font-weight: 700;
       letter-spacing: 0.04em; text-transform: uppercase; background: var(--red); color: #fff;
-    }
-    /* CTA inferior fija del detalle: "+ Añadir al menú" con la cifra de kcal
-       anidada a la derecha (calcada al "+ Añadir al carrito · 2,25€" de HG). */
-    .rv-cta {
-      position: fixed; left: 16px; right: 16px; z-index: 40;
-      bottom: calc(env(safe-area-inset-bottom) + 16px);
-      display: flex; align-items: center; justify-content: space-between; gap: 12px;
-      border: none; border-radius: 99px; cursor: pointer;
-      background: var(--ink); color: #fff; padding: 11px 11px 11px 24px;
-      font-family: var(--disp); font-size: 16px; font-weight: 700;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.25);
-      transition: transform 0.12s ease;
-    }
-    .rv-cta:active { transform: scale(0.98); }
-    .rv-cta-kcal {
-      background: rgba(255,255,255,0.16); border-radius: 99px;
-      padding: 12px 18px; font-size: 15px; font-weight: 800; white-space: nowrap;
     }
     /* Botón para quitar un ingrediente: aparece al dejar sus gramos a 0 */
     .rv-del-ing {
@@ -1071,7 +1067,7 @@
     .modal.open .modal-card { transform: translateY(0); }
     .modal-top { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
     .modal-emoji {
-      width: 120px; height: 120px; border-radius: 26px; background: #E8E4D9;   /* beige, como la receta */
+      width: 120px; height: 120px; border-radius: 26px; background: #EAE7D8;   /* beige, como la receta */
       display: flex; align-items: center; justify-content: center; font-size: 58px; flex-shrink: 0;
     }
     .modal-title { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
@@ -1094,7 +1090,7 @@
 
     .grams-field {
       display: flex; align-items: center; gap: 14px;
-      background: #E8E4D9; border-radius: 22px;               /* beige, como la receta */
+      background: #EAE7D8; border-radius: 22px;               /* beige, como la receta */
       padding: 12px 14px; margin-bottom: 14px;
       border: 1px solid rgba(255,255,255,0.5);
       box-shadow: 0 1px 2px rgba(60,55,45,0.06), 0 10px 24px rgba(60,55,45,0.12);
@@ -1448,7 +1444,6 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.5</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1479,20 +1474,19 @@
       </div>
     </section>
 
+    <!-- Los anillos de macros forman parte de la imagen del agua -->
+    <section class="macros" id="macros"></section>
+
   </div><!-- /.top-region -->
 
-  <!-- Bloque fijo: macros compactos + pestañas de comida. Se quedan a la vista
-       al desplazar (el hueco del notch se rellena en blanco al bajar); el
-       cajetín de calorías se va con el agua. -->
+  <!-- Bloque fijo: filtros de comida como chips (estilo panel ORDENAR).
+       El hueco del notch se rellena en blanco al bajar. -->
   <div class="home-head-sticky" id="homeHeadSticky">
-    <section class="macros" id="macros"></section>
-    <!-- Pestañas de comida: texto con subrayado deslizante (estilo HG) -->
     <div class="home-cats" id="viewTabs">
       <button data-view="Desayuno">Desayuno</button>
       <button data-view="Comida">Comida</button>
       <button data-view="Cena">Cena</button>
       <button data-view="Snack">Snack</button>
-      <span class="tab-underline" id="homeUnderline"></span>
     </div>
   </div>
 
@@ -1707,10 +1701,6 @@
         </div>
       </div>
 
-      <!-- Extras: añade más alimentos a esta receta (estilo "ESCOGE TUS EXTRAS" de HG) -->
-      <div class="rv-extras-title">Añade extras</div>
-      <div class="rv-extras" id="rvExtras"></div>
-
       <div class="modal-preview">
         <div class="pv-cell">
           <div class="pv-n kcal" id="rvKcal">0</div><div class="pv-l">kcal</div>
@@ -1737,6 +1727,10 @@
         <button data-meal="Cena">Cena</button>
         <button data-meal="Snack">Snack</button>
       </div>
+
+      <!-- Extras: añade más alimentos a esta receta (estilo "ESCOGE TUS EXTRAS" de HG) -->
+      <div class="rv-extras-title">Añade extras</div>
+      <div class="rv-extras" id="rvExtras"></div>
 
       <div class="rv-actions">
         <button class="rv-delete" id="rvDelete" hidden>Eliminar</button>
@@ -2178,13 +2172,10 @@
     function applyActiveGoal() {
       DATA.goal = isWeekendKey(selectedDate) ? DATA.goals.weekend : DATA.goals.week;
     }
-    // Fecha del día seleccionado en UNA sola línea: día de la semana (abreviado)
-    // + día + mes corto. Ej.: "MIÉ 1 JUL".
+    // Fecha del día seleccionado en formato completo: "Miércoles, 2 de julio"
     const todayLabel = () => {
-      const d = dateFromKey(selectedDate);
-      const wd = d.toLocaleDateString("es-ES", { weekday: "short" }).replace(".", "");
-      const mo = d.toLocaleDateString("es-ES", { month: "short" }).replace(".", "");
-      return `${wd} ${d.getDate()} ${mo}`;
+      const s = dateFromKey(selectedDate).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+      return s.charAt(0).toUpperCase() + s.slice(1);
     };
 
     /* =========================================================
@@ -2215,7 +2206,7 @@
     // para que el "dibujado" se vea al entrar y no quede oculto detrás del splash)
     function replayStatsAnimation() {
       const segs = [...document.querySelectorAll('.macro .mini .seg')];
-      const rings = [$("kcalRingSel"), $("kcalRingRest"), ...document.querySelectorAll('#macros .mr-fill')].filter(Boolean);
+      const rings = [$("kcalRingSel"), $("kcalRingRest"), ...document.querySelectorAll('#macros .mr-fill, #macros .mr-rest')].filter(Boolean);
       const segW = segs.map(s => s.style.width);
       const ringD = rings.map(r => r.style.strokeDasharray);
       [...segs, ...rings].forEach(el => el.style.transition = 'none');
@@ -2286,10 +2277,9 @@
       const foodSelN = foodSel ? (normalize100 ? nutri(foodSel.food, 100) : foodSel.n) : null;
       const foodSelG = foodSel ? (normalize100 ? 100 : foodSel.grams) : 0;
 
-      // Pestañas de comida activas + subrayado deslizante
+      // Chips de comida activos
       $("viewTabs").querySelectorAll("button").forEach(b =>
         b.classList.toggle("active", b.dataset.view === activeView));
-      positionHomeUnderline();
 
       // ---- Contador de calorías (hero) ----
       // La 2ª línea es SIEMPRE "/ XXXX KCAL" (objetivo diario) con tamaño fijo,
@@ -2348,52 +2338,46 @@
       });
 
       // ---- Macros: anillos anidados estilo Apple Watch (clic = filtrar) ----
-      // Proteínas el anillo grande, grasas el mediano, carbohidratos el pequeño.
-      // Vía blanca, relleno lima (rojo al pasarse) y el nombre en letras finas
-      // negras sobre la vía, arrancando a las 12. Leyenda con cifras a la derecha.
+      // Proteínas el anillo grande, grasas el mediano, carbos el pequeño.
+      // Vía blanca; relleno lima = parte "enfocada" (el alimento elegido, o la
+      // vista entera) y lima apagado = el resto de esa misma vista, con la
+      // misma lógica y colores de las barras antiguas (dobles filtros).
+      // El nombre va al ARRANQUE del anillo y su objetivo al FINAL, sobre la
+      // propia vía. La leyenda es solo inicial y número: "P. 104".
       const RING_C = 75;
       const rings = [
-        { key: "p", label: "PROTEÍNAS",     name: "Proteínas",     r: 63, prop: "protein", goal: DATA.goal.protein },
-        { key: "f", label: "GRASAS",        name: "Grasas",        r: 47, prop: "fat",     goal: DATA.goal.fat },
-        { key: "c", label: "CARBOHIDRATOS", name: "Carbohidratos", r: 31, prop: "carbs",   goal: DATA.goal.carbs }
+        { key: "p", letter: "P", label: "PROTEÍNAS", r: 65.5, prop: "protein", goal: DATA.goal.protein },
+        { key: "f", letter: "G", label: "GRASAS",    r: 49,   prop: "fat",     goal: DATA.goal.fat },
+        { key: "c", letter: "C", label: "CARBOS",    r: 32.5, prop: "carbs",   goal: DATA.goal.carbs }
       ];
-      const viewLabel = isDay ? "del día" : "de " + activeView.toLowerCase();
       let arcsHTML = "", legendHTML = "";
       rings.forEach(m => {
         const goalV = m.goal;
         const viewVal = view[m.prop];                                   // total de la vista (día o comida)
         const focusVal = foodSel ? round1(foodSelN[m.prop]) : viewVal;  // parte enfocada (lima)
-        const pct = goalV > 0 ? Math.min(100, Math.round(focusVal / goalV * 100)) : 0;
+        let restVal;                                                    // resto (lima apagado)
+        if (foodSel) restVal = normalize100 ? 0 : Math.max(0, viewVal - focusVal);
+        else if (!isDay) restVal = Math.max(0, sum[m.prop] - viewVal);  // resto del día
+        else restVal = 0;
+        const sPct = goalV > 0 ? Math.min(100, Math.round(focusVal / goalV * 100)) : 0;
+        const rPct = goalV > 0 ? Math.min(100 - sPct, Math.round(restVal / goalV * 100)) : 0;
         const over = focusVal > goalV;   // rojo si te pasas
-        let valText;
-        if (foodSel) {
-          if (normalize100) {
-            valText = `${focusVal}<span> g <span class="pct">/ 100 g</span></span>`;
-          } else {
-            const pctCtx = viewVal > 0 ? Math.round(focusVal / viewVal * 100) : 0;
-            valText = `${focusVal}<span> g · <span class="pct">${pctCtx}%</span> ${viewLabel}</span>`;
-          }
-        } else if (isDay) {
-          valText = `${focusVal}<span> / ${goalV} g</span>`;
-        } else {
-          const pctDay = sum[m.prop] > 0 ? Math.round(viewVal / sum[m.prop] * 100) : 0;
-          valText = `${focusVal}<span> g · <span class="pct">${pctDay}%</span> del día</span>`;
-        }
         const dim = activeMacro && activeMacro !== m.key;
         // Trayecto circular que arranca a las 12 en el sentido del reloj:
-        // sirve de raíl para el nombre (textPath) sobre la propia vía.
+        // raíl del nombre (al inicio) y del objetivo (al final) sobre la vía.
         const path = `M ${RING_C} ${RING_C - m.r} a ${m.r} ${m.r} 0 1 1 -0.01 0`;
         arcsHTML += `
           <g class="mr-ring${dim ? " dim" : ""}" data-macro="${m.key}">
             <circle class="mr-track" cx="${RING_C}" cy="${RING_C}" r="${m.r}"></circle>
-            <circle class="mr-fill${over ? " over" : ""}" cx="${RING_C}" cy="${RING_C}" r="${m.r}" pathLength="100" data-p="${pct}"></circle>
+            <circle class="mr-rest" cx="${RING_C}" cy="${RING_C}" r="${m.r}" pathLength="100" data-p="${sPct}" data-r="${rPct}"></circle>
+            <circle class="mr-fill${over ? " over" : ""}" cx="${RING_C}" cy="${RING_C}" r="${m.r}" pathLength="100" data-p="${sPct}"></circle>
             <path id="mrp-${m.key}" d="${path}" fill="none"></path>
             <text class="mr-label"><textPath href="#mrp-${m.key}" startOffset="1.5%">${m.label}</textPath></text>
+            <text class="mr-label" text-anchor="end"><textPath href="#mrp-${m.key}" startOffset="98.5%">${goalV} g</textPath></text>
           </g>`;
         legendHTML += `
-          <button class="mr-leg${activeMacro === m.key ? " sel" : ""}" data-macro="${m.key}">
-            <span class="mr-leg-n">${m.name}</span>
-            <span class="mr-leg-v${over ? " over" : ""}">${valText}</span>
+          <button class="mr-leg${activeMacro === m.key ? " sel" : ""}${dim ? " dim" : ""}" data-macro="${m.key}">
+            <span class="mr-leg-v${over ? " over" : ""}">${m.letter}. ${Math.round(focusVal)}</span>
           </button>`;
       });
       $("macros").innerHTML = `
@@ -2458,13 +2442,20 @@
           : `<div class="meal-empty">No has registrado nada en ${activeView}</div>`;
       }
 
-      // Animar el llenado de los anillos de macros
+      // Animar el llenado de los anillos de macros (parte enfocada + resto)
       requestAnimationFrame(() => {
         document.querySelectorAll('#macros .mr-fill').forEach(c => { c.style.strokeDasharray = c.dataset.p + " 100"; });
+        document.querySelectorAll('#macros .mr-rest').forEach(c => {
+          c.style.strokeDashoffset = -c.dataset.p;              // arranca donde acaba el lima
+          c.style.strokeDasharray = c.dataset.r + " 100";
+        });
       });
 
       // Si la ventana Compra está abierta, mantenerla al día
       if (currentView === "shopPage") renderShop();
+
+      // El alto del contenido puede haber cambiado: reevalúa la CTA inferior
+      requestAnimationFrame(updateBottomCta);
     }
 
     /* =========================================================
@@ -2599,15 +2590,20 @@
     /* =========================================================
        SELECTOR DE VISTA (filtro de estadísticas)
        ========================================================= */
-    // Subrayado de las pestañas del Home: bajo la activa; sin filtro, se recoge.
-    function positionHomeUnderline() {
-      const u = $("homeUnderline"); if (!u) return;
-      const act = $("viewTabs").querySelector("button.active");
-      if (!act) { u.style.width = "0px"; return; }
-      u.style.left = act.offsetLeft + "px";
-      u.style.width = act.offsetWidth + "px";
+    /* Las CTA inferiores (Home y detalle de receta) aparecen SOLO al llegar al
+       fondo del scroll: mientras miras contenido no quitan espacio. Si la vista
+       no da para desplazar, se muestran directamente. */
+    function updateBottomCta() {
+      const cta = currentView === "app" ? $("addBtn")
+                : currentView === "recipeView" ? $("rvSave") : null;
+      [$("addBtn"), $("rvSave")].forEach(b => { if (b !== cta) b.classList.remove("show"); });
+      if (!cta) return;
+      const atBottom = window.innerHeight + window.scrollY
+        >= document.documentElement.scrollHeight - 60;
+      cta.classList.toggle("show", atBottom);
     }
-    window.addEventListener("resize", positionHomeUnderline);
+    window.addEventListener("scroll", updateBottomCta, { passive: true });
+    window.addEventListener("resize", updateBottomCta);
 
     $("viewTabs").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-view]");
@@ -2724,8 +2720,8 @@
       const outTimer = setTimeout(finalize, 420);   // respaldo si no llega animationend
 
       $("addBtn").classList.toggle("hidden", id !== "app");
-      // El subrayado del Home se recoloca al volver (con la vista oculta mide 0)
-      if (id === "app") requestAnimationFrame(positionHomeUnderline);
+      // Reevalúa la CTA inferior con el layout de la vista nueva ya pintado
+      requestAnimationFrame(updateBottomCta);
       // La lupa de búsqueda solo en la pantalla de Añadir comida
       $("glassSearch").classList.toggle("active", id === "sheet");
       if (id !== "sheet") $("glassSearch").classList.remove("open");
@@ -3242,11 +3238,11 @@
       const byProtein = (a, b) => (b[1].protein / b[1].base) - (a[1].protein / a[1].base);
       const extraKeys = Object.entries(FOODS)
         .filter(([k, f]) => !inRec.has(k) && f.cat === r.cat)
-        .sort(byProtein).slice(0, 3).map(([k]) => k);
-      if (extraKeys.length < 3) {
+        .sort(byProtein).slice(0, 2).map(([k]) => k);
+      if (extraKeys.length < 2) {
         Object.entries(FOODS)
           .filter(([k]) => !inRec.has(k) && !extraKeys.includes(k))
-          .sort(byProtein).slice(0, 3 - extraKeys.length)
+          .sort(byProtein).slice(0, 2 - extraKeys.length)
           .forEach(([k]) => extraKeys.push(k));
       }
       recipeView = { key: recipeKey, time: defaultMeal(), items, editing: null, user: !!r.user, extraKeys };
@@ -3330,6 +3326,7 @@
       setPvRing("rvP", n.protein, DATA.goal.protein);
       setPvRing("rvC", n.carbs, DATA.goal.carbs);
       setPvRing("rvF", n.fat, DATA.goal.fat);
+      requestAnimationFrame(updateBottomCta);   // el alto del detalle puede variar
     }
     // Con los gramos a 0 aparece la opción de eliminar el ingrediente de la receta
     function updateRvgDelete() {
@@ -3981,9 +3978,8 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.8";   // súbelo en cada cambio para confirmar que tienes la última
-    $("version").textContent = APP_VERSION;
-    $("drawerVersion").textContent = APP_VERSION;
+    const APP_VERSION = "V.9";   // súbelo en cada cambio para confirmar que tienes la última
+    $("drawerVersion").textContent = APP_VERSION;   // la versión vive en el cajón lateral
     loadPeople();          // personas + migración de datos a "José"
     loadPersonData();      // carga la persona activa (día de hoy)
     renderPeople();        // pinta la lista del menú lateral
