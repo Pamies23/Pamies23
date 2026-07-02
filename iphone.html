@@ -302,17 +302,16 @@
       border-radius: 99px; padding: 6px 13px;
       font-family: var(--disp); font-weight: 800; font-size: 14px;
     }
-    /* Barra de progreso bajo el título: se llena en lima al ir cogiendo cosas */
+    /* Barra de progreso bajo los días: mismo grosor que las barras de macros
+       del Home (12px); se llena en lima al ir cogiendo cosas */
     .shop-progress {
-      height: 5px; border-radius: 99px; background: rgba(255,255,255,0.18);
-      margin-top: 14px; overflow: hidden;
+      height: 12px; border-radius: 99px; background: rgba(255,255,255,0.18);
+      margin-top: 16px; overflow: hidden;
     }
     .shop-progress span {
       display: block; height: 100%; width: 0; background: var(--lime);
       border-radius: 99px; transition: width 0.5s cubic-bezier(.22,.61,.36,1);
     }
-    /* Resumen bajo la barra: artículos · peso · días */
-    .shop-meta { margin-top: 10px; font-size: 12.5px; font-weight: 500; color: rgba(255,255,255,0.55); }
     /* Cabecera de cada pasillo (categoría) con el total del grupo */
     .shop-cat-h {
       display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
@@ -1561,9 +1560,8 @@
         <h2 class="shop-title">Compra</h2>
         <span class="shop-count" id="shopCount">0/0</span>
       </div>
-      <div class="shop-progress"><span id="shopProgressFill"></span></div>
-      <div class="shop-meta" id="shopMeta">&nbsp;</div>
       <div class="shop-days" id="shopDays"></div>
+      <div class="shop-progress"><span id="shopProgressFill"></span></div>
     </div>
     <div class="shop-list" id="shopList"></div>
   </section>
@@ -2471,14 +2469,10 @@
       const got = items.filter(it => shopGot.has(it.food));
       const pending = items.filter(it => !shopGot.has(it.food));
 
-      // Contador + barra de progreso + resumen en la cabecera negra
+      // Contador + barra de progreso en la cabecera negra
       $("shopCount").textContent = got.length + "/" + items.length;
       const pct = items.length ? Math.round(got.length / items.length * 100) : 0;
       requestAnimationFrame(() => { $("shopProgressFill").style.width = pct + "%"; });
-      const totalG = items.reduce((s, it) => s + it.grams, 0);
-      $("shopMeta").innerHTML = items.length
-        ? `${items.length} artículo${items.length === 1 ? "" : "s"} · ${fmtGrams(totalG)} · ${shopSel.size} día${shopSel.size === 1 ? "" : "s"}`
-        : "&nbsp;";
 
       if (!shopSel.size) {
         list.innerHTML = `<div class="shop-empty">Marca uno o más días para ver qué comprar.</div>`;
@@ -3946,7 +3940,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.13";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.14";   // súbelo en cada cambio para confirmar que tienes la última
     $("drawerVersion").textContent = APP_VERSION;   // la versión vive en el cajón lateral
     loadPeople();          // personas + migración de datos a "José"
     loadPersonData();      // carga la persona activa (día de hoy)
