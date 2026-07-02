@@ -149,25 +149,26 @@
     }
 
     /* ---------- Selector de vista (pills, debajo de los macros) ---------- */
-    /* Filtros de comida: pastillas rectangulares (esquinas redondeadas), más
-       pequeñas para caber en una línea, con el botón + de añadir a la derecha. */
+    /* Filtros de comida: pastillas rectangulares (esquinas redondeadas) que
+       llenan la línea entera (el botón + va en la segunda línea). */
     .view-tabs {
-      display: flex; align-items: stretch; gap: 6px;
-      margin: 14px 0 0; padding: 0;
+      display: flex; align-items: stretch; gap: 8px;
+      margin: 0; padding: 0;
     }
     .view-tabs button[data-view] {
-      flex: 0 0 auto; cursor: pointer;
+      flex: 1 1 0; cursor: pointer;
       border: none; background: var(--bg); color: var(--ink);
-      border-radius: 12px; padding: 8px 11px;
-      font-family: var(--disp); font-size: 11.5px; font-weight: 800;
+      border-radius: 12px; padding: 12px 0;
+      font-family: var(--disp); font-size: 13px; font-weight: 800;
       letter-spacing: 0.01em; text-transform: uppercase; white-space: nowrap;
+      text-align: center;
       box-shadow: 0 1px 4px rgba(0,0,0,0.08);
       transition: all 0.15s ease;
     }
     .view-tabs button[data-view].active { background: var(--ink); color: #fff; }
-    /* Botón + de añadir alimentos: a la derecha del todo de la línea de filtros */
+    /* Botón + de añadir alimentos: en la segunda línea, pegado a la derecha */
     .vt-add {
-      flex: 0 0 auto; margin-left: auto; width: 42px; border: none; cursor: pointer;
+      flex: 0 0 auto; width: 48px; height: 40px; border: none; cursor: pointer;
       border-radius: 12px; background: var(--lime); color: var(--ink);
       font-size: 24px; font-weight: 400; line-height: 1;
       display: flex; align-items: center; justify-content: center;
@@ -262,17 +263,17 @@
     .macro .val.over { color: var(--red); }
     .hero .now.over { color: var(--red); }
 
-    /* ---------- Bloque fijo del Home: macros + filtros ----------
-       Se quedan a la vista al desplazar (el registro pasa por debajo). El notch
-       se cubre en negro al bajar, igual que en Alimentos|Recetas. */
+    /* ---------- Bloque fijo del Home: filtros de comida ----------
+       Se quedan a la vista al desplazar (el registro pasa por debajo). El hueco
+       del notch se rellena en BLANCO al bajar (nada de franja negra). */
     .home-head-sticky {
       position: sticky; top: env(safe-area-inset-top); z-index: 2;
-      margin: 0 -18px; padding: 0 18px 12px;
+      margin: 0 -18px; padding: 6px 18px 12px;
       background: var(--bg);
     }
     .home-head-sticky::before {
       content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
-      height: calc(env(safe-area-inset-top) + 2px); background: #000;
+      height: calc(env(safe-area-inset-top) + 2px); background: var(--bg);
     }
 
     /* ---------- Ventana Compra (pantalla propia, abierta desde Alimentos) ---------- */
@@ -385,16 +386,16 @@
     .shop-item.got .shop-name { color: #fff; }
     .shop-item.got .shop-grams { color: #fff; }
     .shop-empty { font-size: 14px; color: var(--muted); padding: 6px 2px; }
-    /* Botón para limpiar/normalizar filtros (mismo tamaño que las pestañas de arriba) */
+    /* Botones de acción: rectangulares con esquinas redondeadas, como los filtros */
     .clear-filters {
       border: none; background: var(--lime); color: var(--ink);
-      border-radius: 99px; padding: 9px 17px;
+      border-radius: 12px; padding: 12px 15px;
       font-family: var(--disp); font-size: 13px; font-weight: 800;
       letter-spacing: 0.02em; text-transform: uppercase; cursor: pointer; white-space: nowrap;
     }
     .clear-filters.hidden { display: none; }
-    /* Fila de acciones de filtro, colocada sobre la imagen del agua y pegada a la derecha */
-    .hero-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+    /* Segunda línea de la cabecera fija: acciones + botón + pegados a la derecha */
+    .hero-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 10px; }
     /* Botón rojo para borrar todos los alimentos del día (sin filtros) */
     .clear-all { background: var(--red); color: #fff; }
     /* Botón normalizar a 100 g: blanco y, al activarlo, negro (como el resto de filtros) */
@@ -1219,7 +1220,6 @@
         padding: calc(env(safe-area-inset-top) + 30px) 26px 26px;
       }
       .app > .top-region::before { display: none; }     /* ya es panel completo */
-      .app > .top-region .view-tabs { margin: 16px 0 0; padding: 0; }
       .app > .top-region .macros { margin-top: 2px; }
       /* Columna derecha: todo lo que no es el panel */
       .app > :not(.top-region) { grid-column: 2; }
@@ -1245,7 +1245,7 @@
   <div class="top-region">
     <header class="topbar">
       <h1 id="greeting">Hola</h1>
-      <div class="avatar" id="version">V.4</div>
+      <div class="avatar" id="version">V.5</div>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1276,24 +1276,27 @@
       </div>
     </section>
 
+    <!-- Los cajetines de macros van sobre la imagen del agua -->
+    <section class="macros" id="macros"></section>
+
   </div><!-- /.top-region -->
 
-  <!-- Bloque fijo: macros + filtros. Se quedan a la vista al desplazar; el notch
-       se cubre en negro al bajar, como en Alimentos|Recetas. -->
+  <!-- Bloque fijo: filtros de comida. Se quedan a la vista al desplazar; el
+       hueco del notch se rellena en blanco al bajar. -->
   <div class="home-head-sticky" id="homeHeadSticky">
-    <section class="macros" id="macros"></section>
-    <!-- Filtros de comida (hacen de título de sección) + botón de añadir -->
+    <!-- Filtros de comida (hacen de título de sección) -->
     <div class="view-tabs" id="viewTabs">
       <button data-view="Desayuno">Desayuno</button>
       <button data-view="Comida">Comida</button>
       <button data-view="Cena">Cena</button>
       <button data-view="Snack">Snack</button>
-      <button class="vt-add" id="addBtn" aria-label="Añadir comida">+</button>
     </div>
+    <!-- Segunda línea: acciones + botón de añadir pegado a la derecha -->
     <div class="hero-actions" id="heroActions">
       <button class="clear-filters norm-btn hidden" id="normBtn">/ 100 g</button>
       <button class="clear-filters hidden" id="clearFilters">Limpiar filtros</button>
       <button class="clear-filters clear-all hidden" id="clearAll">Borrar todo</button>
+      <button class="vt-add" id="addBtn" aria-label="Añadir comida">+</button>
     </div>
   </div>
 
@@ -1312,7 +1315,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
-    <div class="drawer-foot"><span id="drawerVersion">V.4</span></div>
+    <div class="drawer-foot"><span id="drawerVersion">V.5</span></div>
   </aside>
 
   <!-- ===================== Splash de entrada ===================== -->
@@ -3486,7 +3489,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.4";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.5";   // súbelo en cada cambio para confirmar que tienes la última
     $("version").textContent = APP_VERSION;
     $("drawerVersion").textContent = APP_VERSION;
     loadPeople();          // personas + migración de datos a "José"
