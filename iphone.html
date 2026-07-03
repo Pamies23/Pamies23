@@ -580,36 +580,18 @@
     html.recipe-open, html.recipe-open body { background: #fff; }
 
     /* ---------- Rebotes (overscroll) consistentes en TODA la app ----------
-       Cada vista extiende su propio color más allá de la pantalla: la franja
-       que asoma al rebotar continúa siempre el contenido adyacente, arriba
-       (::before, del color de su cabecera) y abajo (::after, del color de su
-       fondo), sin depender del tinte del documento. */
-    #sheet, .shop-page, .sim, .sim-pick, .profile-page { position: relative; }
-    #sheet::before, .shop-page::before {
-      content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
-      height: 100vh; background: #000;               /* cabeceras negras */
+       Dos cubiertas FIJAS aparcadas justo fuera del viewport (una arriba,
+       otra abajo). En iOS el rebote arrastra también los elementos fixed,
+       así que la cubierta entra exactamente en la franja que se revela, del
+       color del contenido adyacente de la vista activa (lo pone showView).
+       No tocan el layout ni amplían el scroll (a diferencia de un extensor
+       absoluto bajo la página) y donde no hay rebote quedan invisibles. */
+    .bounce-cover {
+      position: fixed; left: 0; right: 0; height: 100vh;
+      z-index: -1; pointer-events: none;
     }
-    #sheet::after, .shop-page::after {
-      content: ""; position: absolute; left: 0; right: 0; top: 100%;
-      height: 100vh; background: #F8F9F4;            /* fondo blanco roto */
-    }
-    .sim::after, .sim-pick::after {
-      content: ""; position: absolute; left: 0; right: 0; top: 100%;
-      height: 100vh; background: var(--bg);          /* fondo blanco */
-    }
-    .sim-pick::before {
-      content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
-      height: 100vh; background: var(--bg);          /* cabecera blanca */
-    }
-    /* Perfil: continúa la foto por sus bordes visibles reales (muestreados) */
-    .profile-page::before {
-      content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
-      height: 100vh; background: #89B6A4;
-    }
-    .profile-page::after {
-      content: ""; position: absolute; left: 0; right: 0; top: 100%;
-      height: 100vh; background: #B0E1C0;
-    }
+    #bounceTop { top: -100vh; }
+    #bounceBottom { bottom: -100vh; }
     /* Transiciones de vista: la entrante entra suave; la saliente se desvanece como
        una capa por encima (overlay fijo) para que el cambio sea fluido en ambos sentidos. */
     .v-in  { animation: viewIn 0.34s cubic-bezier(.22,.61,.36,1) both; }
@@ -1442,6 +1424,11 @@
   </style>
 </head>
 <body>
+
+ <!-- Cubiertas de rebote: colorean la franja que asoma al hacer swipe más
+      allá de la pantalla (arriba/abajo), según la vista activa -->
+ <div class="bounce-cover" id="bounceTop"></div>
+ <div class="bounce-cover" id="bounceBottom"></div>
 
  <div class="app" id="app">
 
@@ -2739,6 +2726,25 @@
       if (id !== "sheet") $("glassSearch").classList.remove("open");
       window.scrollTo(0, 0);
       currentView = id;
+      setBounceColors(id);
+    }
+
+    // Colores de las cubiertas de rebote por vista: [arriba, abajo] = el color
+    // del contenido inmediatamente adyacente a cada borde. Los de foto están
+    // muestreados del borde visible real del recorte (cover) renderizado.
+    const BOUNCE_COLORS = {
+      app:        ["#569897", "#FFFFFF"],   // foto del agua · fondo blanco
+      sheet:      ["#000000", "#F8F9F4"],   // cabecera negra · blanco roto
+      shopPage:   ["#000000", "#F8F9F4"],
+      recipeView: ["#EAE7D8", "#FFFFFF"],   // foto beige · cuerpo blanco
+      sim:        ["#BCDFDB", "#FFFFFF"],   // foto sandía con velo · blanco
+      simPick:    ["#FFFFFF", "#FFFFFF"],
+      profile:    ["#89B6A4", "#B0E1C0"]    // bordes reales de la foto
+    };
+    function setBounceColors(id) {
+      const [top, bottom] = BOUNCE_COLORS[id] || ["#FFFFFF", "#FFFFFF"];
+      $("bounceTop").style.background = top;
+      $("bounceBottom").style.background = bottom;
     }
 
     // La última comida elegida se recuerda: al apuntar varios alimentos de la
@@ -3998,7 +4004,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.16";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.17";   // súbelo en cada cambio para confirmar que tienes la última
     $("drawerVersion").textContent = APP_VERSION;   // la versión vive en el cajón lateral
     loadPeople();          // personas + migración de datos a "José"
     loadPersonData();      // carga la persona activa (día de hoy)
@@ -4006,6 +4012,7 @@
     updateMenuAvatar();    // inicial de la persona activa en el botón
     renderDayStrip();      // prepara la tira de días
     render();
+    setBounceColors("app");   // cubiertas de rebote de la vista inicial
   </script>
 </body>
 </html>

@@ -192,13 +192,22 @@ this only replays when a chip actually appears.)
   real value inside `requestAnimationFrame` so the CSS transition draws it.
 
 ### 5f. Overscroll (rubber-band) consistency
-Every view must extend ITS OWN colors beyond the screen so bounce areas
-always continue the adjacent content: a `::before` above (header color)
-and `::after` below (page bg color), `position: absolute; bottom/top: 100%;
-height: 100vh` on the (position: relative) page. For photo regions, sample
-the RENDERED edge color of the cover-cropped image (not the raw file's
-edge row): water top #569897, profile #89B6A4/#B0E1C0, sim-top #BCDFDB.
-Never leave a bounce strip relying on the document tint alone.
+Bounce strips must always continue the adjacent content color. The ONLY
+technique that works on iOS: two FIXED covers parked just outside the
+viewport (`#bounceTop { top: -100vh }`, `#bounceBottom { bottom: -100vh }`,
+`height: 100vh; z-index: -1; pointer-events: none`), recolored per view by
+`setBounceColors(id)` from the `BOUNCE_COLORS` map in `showView`. iOS drags
+fixed elements along with the rubber band, so the cover slides exactly
+into the revealed strip; elsewhere they stay invisible and touch nothing.
+Two approaches were tried and FAILED — do not reintroduce them:
+- `::after` extenders below the page (`top: 100%`): absolutely-positioned
+  overflow EXTENDS the document scroll → artificially scrollable blank
+  screen (user caught it immediately).
+- `::before` extenders above the page: iOS clips painting above the
+  document box in standalone, so they simply never show.
+For photo regions, sample the RENDERED edge color of the cover-cropped
+image (not the raw file's edge row): water top #569897, profile
+#89B6A4/#B0E1C0, sim-top #BCDFDB.
 
 ### 5g. Other rules
 - Tab underline **slides** between tabs (never jumps).
