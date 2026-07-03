@@ -87,7 +87,7 @@
       position: relative; z-index: 3;     /* va por encima de la línea fija: tapa su relleno blanco en reposo */
       margin: calc((env(safe-area-inset-top) + 12px) * -1) -18px 8px;
       padding: calc(env(safe-area-inset-top) + 16px) 18px 22px;
-      background-color: #5A9F9F;                 /* color del agua (relleno y borde superior) */
+      background-color: #569897;                 /* borde superior REAL de la foto (muestreado) */
       background-image: url("water.jpg");
       background-size: cover;
       background-position: center;
@@ -96,7 +96,7 @@
        ni parece que la foto se corta en el borde superior. */
     .top-region::before {
       content: ""; position: absolute; left: 0; right: 0; top: -100vh;
-      height: 100vh; background: #5A9F9F;
+      height: 100vh; background: #569897;
     }
     .standalone .top-region {
       margin-top: calc((env(safe-area-inset-top) + 20px) * -1);
@@ -578,6 +578,38 @@
     /* Bajo el detalle, el documento va en blanco: el rebote INFERIOR cuadra con la
        tarjeta. El rebote SUPERIOR lo cubre el beige de la foto (ver .rv-photo::before). */
     html.recipe-open, html.recipe-open body { background: #fff; }
+
+    /* ---------- Rebotes (overscroll) consistentes en TODA la app ----------
+       Cada vista extiende su propio color más allá de la pantalla: la franja
+       que asoma al rebotar continúa siempre el contenido adyacente, arriba
+       (::before, del color de su cabecera) y abajo (::after, del color de su
+       fondo), sin depender del tinte del documento. */
+    #sheet, .shop-page, .sim, .sim-pick, .profile-page { position: relative; }
+    #sheet::before, .shop-page::before {
+      content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
+      height: 100vh; background: #000;               /* cabeceras negras */
+    }
+    #sheet::after, .shop-page::after {
+      content: ""; position: absolute; left: 0; right: 0; top: 100%;
+      height: 100vh; background: #F8F9F4;            /* fondo blanco roto */
+    }
+    .sim::after, .sim-pick::after {
+      content: ""; position: absolute; left: 0; right: 0; top: 100%;
+      height: 100vh; background: var(--bg);          /* fondo blanco */
+    }
+    .sim-pick::before {
+      content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
+      height: 100vh; background: var(--bg);          /* cabecera blanca */
+    }
+    /* Perfil: continúa la foto por sus bordes visibles reales (muestreados) */
+    .profile-page::before {
+      content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
+      height: 100vh; background: #89B6A4;
+    }
+    .profile-page::after {
+      content: ""; position: absolute; left: 0; right: 0; top: 100%;
+      height: 100vh; background: #B0E1C0;
+    }
     /* Transiciones de vista: la entrante entra suave; la saliente se desvanece como
        una capa por encima (overlay fijo) para que el cambio sea fluido en ambos sentidos. */
     .v-in  { animation: viewIn 0.34s cubic-bezier(.22,.61,.36,1) both; }
@@ -1119,12 +1151,12 @@
     /* La imagen de la sandía va en la región superior (tras hero+macros) y
        corta a blanco debajo, igual que el agua en la Home. */
     .sim-top {
-      background-color: #BFE3DE;
+      background-color: #BCDFDB;
       background-image:
         linear-gradient(rgba(255,255,255,0.28), rgba(255,255,255,0.28)),
         url("recipe-bg.jpg");
     }
-    .sim-top::before { background: #BFE3DE; }
+    .sim-top::before { background: #BCDFDB; }
     .sim { padding-bottom: calc(env(safe-area-inset-bottom) + 28px); }
 
     /* Botón ✕ de cerrar (en el sitio del círculo de versión de la Home) */
@@ -3966,7 +3998,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.15";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.16";   // súbelo en cada cambio para confirmar que tienes la última
     $("drawerVersion").textContent = APP_VERSION;   // la versión vive en el cajón lateral
     loadPeople();          // personas + migración de datos a "José"
     loadPersonData();      // carga la persona activa (día de hoy)
