@@ -2165,9 +2165,17 @@
     function applyActiveGoal() {
       DATA.goal = isWeekendKey(selectedDate) ? DATA.goals.weekend : DATA.goals.week;
     }
-    // Fecha del día seleccionado en formato completo: "Miércoles, 2 de julio"
+    // Fecha del día seleccionado en formato completo: "Miércoles, 2 de julio".
+    // Si el rótulo se pasa de largo (meses tipo "septiembre"), el mes va
+    // abreviado ("sept") para que NUNCA parta en dos líneas.
     const todayLabel = () => {
-      const s = dateFromKey(selectedDate).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+      const d = dateFromKey(selectedDate);
+      let s = d.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+      if (s.length > 21) {
+        const wd = d.toLocaleDateString("es-ES", { weekday: "long" });
+        const mo = d.toLocaleDateString("es-ES", { month: "short" }).replace(".", "");
+        s = `${wd}, ${d.getDate()} de ${mo}`;
+      }
       return s.charAt(0).toUpperCase() + s.slice(1);
     };
 
@@ -3022,7 +3030,22 @@
       requestAnimationFrame(() => { buildCatAnchors(); updateSpy(); });
     }
 
-    $("addBtn").addEventListener("click", openSheet);
+    // Acción al toque aunque la pantalla siga frenando tras un swipe: iOS se
+    // traga el "click" del toque que detiene el scroll, pero pointerup sí
+    // llega. Guardia de arrastre (12px) para no disparar al empezar un swipe
+    // sobre el botón; "click" se mantiene para teclado/lectores (sin duplicar).
+    function bindInstantTap(btn, fn) {
+      let sx = 0, sy = 0, armed = false, fired = false;
+      btn.addEventListener("pointerdown", (e) => { sx = e.clientX; sy = e.clientY; armed = true; });
+      btn.addEventListener("pointerup", (e) => {
+        if (!armed) return;
+        armed = false;
+        if (Math.abs(e.clientX - sx) < 12 && Math.abs(e.clientY - sy) < 12) { fired = true; fn(); }
+      });
+      btn.addEventListener("pointercancel", () => { armed = false; });
+      btn.addEventListener("click", () => { if (fired) { fired = false; return; } fn(); });
+    }
+    bindInstantTap($("addBtn"), openSheet);
     $("search").addEventListener("input", renderFoodList);
 
     // ----- Buscador flotante "glass" (siempre visible) -----
@@ -3389,14 +3412,15 @@
       lastMeal = b.dataset.meal;             // se recuerda para la siguiente vez
       syncRecipeMeals();
     });
-    $("rvSave").addEventListener("click", () => {
+    function saveRecipeToMenu() {
       if (!recipeView) return;
       recipeView.items.forEach(it => {
         if (FOODS[it.food] && it.grams > 0) DATA.meals.push({ food: it.food, time: recipeView.time, grams: it.grams });
       });
       saveLog(); render();
       setDocTint(null); showView("app");
-    });
+    }
+    bindInstantTap($("rvSave"), saveRecipeToMenu);
     $("rvDelete").addEventListener("click", () => {
       if (userRecipes[recipeView.key]) { delete userRecipes[recipeView.key]; saveRecipes(); renderFoodList(); }
       backToSheet();
@@ -3990,7 +4014,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.18";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.19";   // súbelo en cada cambio para confirmar que tienes la última
     $("drawerVersion").textContent = APP_VERSION;   // la versión vive en el cajón lateral
     loadPeople();          // personas + migración de datos a "José"
     loadPersonData();      // carga la persona activa (día de hoy)
