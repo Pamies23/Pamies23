@@ -192,19 +192,21 @@ this only replays when a chip actually appears.)
   real value inside `requestAnimationFrame` so the CSS transition draws it.
 
 ### 5f. Overscroll (rubber-band) consistency
-Bounce strips must always continue the adjacent content color. The ONLY
-technique that works on iOS: two FIXED covers parked just outside the
-viewport (`#bounceTop { top: -100vh }`, `#bounceBottom { bottom: -100vh }`,
-`height: 100vh; z-index: -1; pointer-events: none`), recolored per view by
-`setBounceColors(id)` from the `BOUNCE_COLORS` map in `showView`. iOS drags
-fixed elements along with the rubber band, so the cover slides exactly
-into the revealed strip; elsewhere they stay invisible and touch nothing.
-Two approaches were tried and FAILED — do not reintroduce them:
-- `::after` extenders below the page (`top: 100%`): absolutely-positioned
-  overflow EXTENDS the document scroll → artificially scrollable blank
-  screen (user caught it immediately).
-- `::before` extenders above the page: iOS clips painting above the
-  document box in standalone, so they simply never show.
+Bounce strips must always continue the adjacent content color. The proven
+pattern on the user's iPhone is the RECIPE VIEW's (verified by them):
+- TOP bounce: in-page `::before` extender on the view's top block —
+  `position: absolute; left/right: 0; bottom: 100%; height: 100vh;
+  background: <header color>` (parent `position: relative`). Upward
+  absolute overflow does NOT extend document scroll, so it's safe.
+- BOTTOM bounce: the DOCUMENT tint — `html.<vista>-open, body { background:
+  <page bg> }` set via `setDocTint()` in the open/close functions (and the
+  class listed in setDocTint's removal set). sheet/shop → #F8F9F4,
+  recipe/sim/pick → #fff, profile → #B0E1C0, home → default #fff.
+Approaches tried and FAILED — do not reintroduce:
+- `::after` extenders below the page (`top: 100%`): downward abs overflow
+  EXTENDS the document scroll → artificially scrollable blank screen.
+- Fixed covers parked at ±100vh expecting iOS to drag fixed elements with
+  the rubber band: they never entered the revealed strip on the user's iOS.
 For photo regions, sample the RENDERED edge color of the cover-cropped
 image (not the raw file's edge row): water top #569897, profile
 #89B6A4/#B0E1C0, sim-top #BCDFDB.

@@ -95,7 +95,7 @@
     /* Prolonga el color del agua hacia arriba: al tirar/rebotar nunca se ve blanco
        ni parece que la foto se corta en el borde superior. */
     .top-region::before {
-      content: ""; position: absolute; left: 0; right: 0; top: -100vh;
+      content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
       height: 100vh; background: #569897;
     }
     .standalone .top-region {
@@ -572,26 +572,34 @@
     .page.shown, .sim.shown { display: block; }
     /* Paleta de la hoja: blanco roto cálido (HG) tras las tarjetas blancas. */
     #sheet { background: #F8F9F4; }
-    /* Con la hoja abierta, el documento va en negro: el overscroll superior
-       (rebote al tirar hacia abajo) se ve negro, igual que la cabecera. */
-    html.sheet-open, html.sheet-open body { background: #000; }
+    /* Con la hoja (o la Compra) abierta, el documento va en blanco roto: es
+       lo que asoma en el rebote INFERIOR (el superior lo cubre el ::before
+       negro de la propia página, como hace la receta con su beige). */
+    html.sheet-open, html.sheet-open body { background: #F8F9F4; }
+    /* Bajo "Tus datos": borde inferior real de su foto */
+    html.profile-open, html.profile-open body { background: #B0E1C0; }
     /* Bajo el detalle, el documento va en blanco: el rebote INFERIOR cuadra con la
        tarjeta. El rebote SUPERIOR lo cubre el beige de la foto (ver .rv-photo::before). */
     html.recipe-open, html.recipe-open body { background: #fff; }
 
-    /* ---------- Rebotes (overscroll) consistentes en TODA la app ----------
-       Dos cubiertas FIJAS aparcadas justo fuera del viewport (una arriba,
-       otra abajo). En iOS el rebote arrastra también los elementos fixed,
-       así que la cubierta entra exactamente en la franja que se revela, del
-       color del contenido adyacente de la vista activa (lo pone showView).
-       No tocan el layout ni amplían el scroll (a diferencia de un extensor
-       absoluto bajo la página) y donde no hay rebote quedan invisibles. */
-    .bounce-cover {
-      position: fixed; left: 0; right: 0; height: 100vh;
-      z-index: -1; pointer-events: none;
+    /* ---------- Rebotes (overscroll) consistentes: patrón de la RECETA ----------
+       El detalle de receta es la referencia que funciona en iOS: un extensor
+       ::before (bottom:100%, 100vh) del color de la cabecera cubre el rebote
+       SUPERIOR, y el tinte del documento (html.<vista>-open) pone el color
+       del rebote INFERIOR. Nunca extensores por debajo (amplían el scroll). */
+    #sheet, .shop-page, .sim-pick, .profile-page { position: relative; }
+    #sheet::before, .shop-page::before {
+      content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
+      height: 100vh; background: #000;               /* cabeceras negras */
     }
-    #bounceTop { top: -100vh; }
-    #bounceBottom { bottom: -100vh; }
+    .sim-pick::before {
+      content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
+      height: 100vh; background: var(--bg);          /* cabecera blanca */
+    }
+    .profile-page::before {
+      content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
+      height: 100vh; background: #89B6A4;            /* borde real de la foto */
+    }
     /* Transiciones de vista: la entrante entra suave; la saliente se desvanece como
        una capa por encima (overlay fijo) para que el cambio sea fluido en ambos sentidos. */
     .v-in  { animation: viewIn 0.34s cubic-bezier(.22,.61,.36,1) both; }
@@ -1424,11 +1432,6 @@
   </style>
 </head>
 <body>
-
- <!-- Cubiertas de rebote: colorean la franja que asoma al hacer swipe más
-      allá de la pantalla (arriba/abajo), según la vista activa -->
- <div class="bounce-cover" id="bounceTop"></div>
- <div class="bounce-cover" id="bounceBottom"></div>
 
  <div class="app" id="app">
 
@@ -2726,25 +2729,6 @@
       if (id !== "sheet") $("glassSearch").classList.remove("open");
       window.scrollTo(0, 0);
       currentView = id;
-      setBounceColors(id);
-    }
-
-    // Colores de las cubiertas de rebote por vista: [arriba, abajo] = el color
-    // del contenido inmediatamente adyacente a cada borde. Los de foto están
-    // muestreados del borde visible real del recorte (cover) renderizado.
-    const BOUNCE_COLORS = {
-      app:        ["#569897", "#FFFFFF"],   // foto del agua · fondo blanco
-      sheet:      ["#000000", "#F8F9F4"],   // cabecera negra · blanco roto
-      shopPage:   ["#000000", "#F8F9F4"],
-      recipeView: ["#EAE7D8", "#FFFFFF"],   // foto beige · cuerpo blanco
-      sim:        ["#BCDFDB", "#FFFFFF"],   // foto sandía con velo · blanco
-      simPick:    ["#FFFFFF", "#FFFFFF"],
-      profile:    ["#89B6A4", "#B0E1C0"]    // bordes reales de la foto
-    };
-    function setBounceColors(id) {
-      const [top, bottom] = BOUNCE_COLORS[id] || ["#FFFFFF", "#FFFFFF"];
-      $("bounceTop").style.background = top;
-      $("bounceBottom").style.background = bottom;
     }
 
     // La última comida elegida se recuerda: al apuntar varios alimentos de la
@@ -2828,7 +2812,7 @@
     // Tinta del documento por vista (para que el overscroll superior no asome blanco)
     function setDocTint(cls) {
       const h = document.documentElement;
-      h.classList.remove("sheet-open", "recipe-open");
+      h.classList.remove("sheet-open", "recipe-open", "profile-open");
       if (cls) h.classList.add(cls);
     }
     function closeSheet() { setDocTint(null); showView("app"); }
@@ -3559,9 +3543,10 @@
       simItems = [];
       simActiveFood = null;
       simRender();
+      setDocTint(null);                      // rebote inferior en blanco, como su fondo
       showView("sim");
     }
-    function closeSim() { showView("sheet"); }   // vuelve a Añadir → Recetas
+    function closeSim() { setDocTint("sheet-open"); showView("sheet"); }   // vuelve a Añadir → Recetas
 
     // Resumen (números, macros, anillo). Si hay un alimento enfocado, se muestra
     // su aporte (lima) sobre el total de la receta (apagado), igual que en Home.
@@ -3677,6 +3662,7 @@
       };
       saveRecipes();
       activeType = "recetas"; activeCat = "todos"; syncSheetTabs(); renderFoodList();
+      setDocTint("sheet-open");
       showView("sheet");                       // a Añadir → Recetas, ya con el plato guardado
     });
 
@@ -3814,8 +3800,8 @@
       });
       updateCalc();
     }
-    function openProfile() { fillProfileForm(); showView("profile"); }
-    function closeProfile() { showView("app"); }
+    function openProfile() { fillProfileForm(); setDocTint("profile-open"); showView("profile"); }
+    function closeProfile() { setDocTint(null); showView("app"); }
 
     buildGoalSets();
     $("drawerSettings").addEventListener("click", () => { closeDrawer(); openProfile(); });
@@ -4004,7 +3990,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.17";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.18";   // súbelo en cada cambio para confirmar que tienes la última
     $("drawerVersion").textContent = APP_VERSION;   // la versión vive en el cajón lateral
     loadPeople();          // personas + migración de datos a "José"
     loadPersonData();      // carga la persona activa (día de hoy)
@@ -4012,7 +3998,6 @@
     updateMenuAvatar();    // inicial de la persona activa en el botón
     renderDayStrip();      // prepara la tira de días
     render();
-    setBounceColors("app");   // cubiertas de rebote de la vista inicial
   </script>
 </body>
 </html>
