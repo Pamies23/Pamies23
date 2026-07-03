@@ -191,7 +191,16 @@ this only replays when a chip actually appears.)
 - Progress fills (rings/bars) rebuild with value 0 in markup, then set the
   real value inside `requestAnimationFrame` so the CSS transition draws it.
 
-### 5f. Other rules
+### 5f. Overscroll (rubber-band) consistency
+Every view must extend ITS OWN colors beyond the screen so bounce areas
+always continue the adjacent content: a `::before` above (header color)
+and `::after` below (page bg color), `position: absolute; bottom/top: 100%;
+height: 100vh` on the (position: relative) page. For photo regions, sample
+the RENDERED edge color of the cover-cropped image (not the raw file's
+edge row): water top #569897, profile #89B6A4/#B0E1C0, sim-top #BCDFDB.
+Never leave a bounce strip relying on the document tint alone.
+
+### 5g. Other rules
 - Tab underline **slides** between tabs (never jumps).
 - Sheets/modals slide from bottom, dismissible by pull-down that follows
   the finger.
