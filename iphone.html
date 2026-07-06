@@ -474,8 +474,9 @@
     .shop-emoji {
       width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%;
       background: #EAE7D8; display: flex; align-items: center; justify-content: center;
-      font-size: 22px; line-height: 1;
+      font-size: 22px; line-height: 1; overflow: hidden;
     }
+    .shop-emoji img { width: 78%; height: 78%; object-fit: contain; }
     .shop-name { flex: 1; min-width: 0; font-family: var(--sans); font-weight: 600; font-size: 15px; color: var(--ink); }
     .shop-grams { font-family: var(--disp); font-weight: 800; font-size: 16px; color: var(--ink); white-space: nowrap; }
     /* Anillo de check a la derecha: al cogerlo se rellena en lima */
@@ -548,6 +549,7 @@
     /* Alimento seleccionado como filtro: su parte de arriba se pone en negro */
     .logf.sel .logf-top { background: var(--ink); }
     .logf-emoji { font-size: 52px; line-height: 1; }
+    .logf-photo { width: 76%; height: 76%; object-fit: contain; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.18)); }
     .logf-info { padding: 12px 14px 14px; flex: 1; display: flex; flex-direction: column; }
     .logf-name {
       font-family: var(--disp); font-size: 15px; font-weight: 800;
@@ -767,6 +769,12 @@
       display: flex; align-items: center; justify-content: center;
     }
     .addf-emoji { font-size: 58px; line-height: 1; }
+    /* Foto real de un alimento (en vez de emoji): recorte y sombra como las
+       fotos de receta, con margen para que no toque los bordes. */
+    .addf-photo {
+      width: 82%; height: 82%; object-fit: contain;
+      filter: drop-shadow(0 8px 14px rgba(0,0,0,0.22));
+    }
     /* Sello "Ⓗ" de Hacendado (estilo ®, sombreado) abajo a la derecha de la miniatura */
     .addf-brand {
       position: absolute; right: 8px; bottom: 8px;
@@ -1063,7 +1071,9 @@
     .modal-emoji {
       width: 120px; height: 120px; border-radius: 26px; background: #EAE7D8;   /* beige, como la receta */
       display: flex; align-items: center; justify-content: center; font-size: 58px; flex-shrink: 0;
+      overflow: hidden;
     }
+    .modal-emoji img { width: 82%; height: 82%; object-fit: contain; }
     .modal-title { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
     .modal-title h3 { font-family: var(--disp); font-weight: 800; font-size: 22px; line-height: 1.05; text-transform: uppercase; letter-spacing: 0.01em; color: var(--ink); }
     .modal-ref { font-size: 13px; color: var(--muted); margin-top: 6px; font-weight: 500; }
@@ -1954,6 +1964,7 @@
       hamburguesa_pollo:{ name: "Hamburguesa de pollo", emoji: "🍔", cat: "carne",  base: 90,   ration: "90 g (1 ud)", kcal: 111, protein: 14, carbs: 1.4, fat: 5.2 },
       carne_picada:    { name: "Carne picada (vacuno y cerdo)", emoji: "🥩", cat: "carne", base: 100, ration: "100 g", kcal: 184, protein: 17, carbs: 2.0, fat: 12 },
       lomo_embuchado:  { name: "Lomo embuchado",      emoji: "🥓", cat: "carne",    base: 37.5, ration: "37,5 g", kcal: 75,  protein: 14,   carbs: 0.5,  fat: 1.1 },
+      filete_vacuno:   { name: "Filete de vacuno marinado", emoji: "🥩", cat: "carne", base: 100, ration: "100 g", kcal: 96, protein: 19, carbs: 0.5, fat: 2.0, photo: "filete-vacuno.jpg" },
       // ---- Pescado ----
       salmon:          { name: "Salmón",              emoji: "🐟", cat: "pescado",  base: 100,  ration: "100 g",  kcal: 208, protein: 20,   carbs: 0,    fat: 13 },
       merluza:         { name: "Merluza",             emoji: "🐟", cat: "pescado",  base: 150,  ration: "150 g",  kcal: 198, protein: 32.1, carbs: 0.6,  fat: 6.6 },
@@ -2398,7 +2409,7 @@
         return `
           <li class="logf${r.idx === activeFood ? " sel" : ""}" data-idx="${r.idx}">
             <div class="logf-main">
-              <div class="logf-top"><span class="logf-emoji">${FOODS[r.food].emoji}</span></div>
+              <div class="logf-top">${foodMediaHTML(FOODS[r.food], "logf-emoji", "logf-photo")}</div>
               <div class="logf-info">
                 <div class="logf-name">${FOODS[r.food].name}</div>
                 <div class="logf-foot">
@@ -2523,7 +2534,7 @@
       const itemHTML = (it) => {
         const g = shopGot.has(it.food);
         return `<li class="shop-item${g ? " got" : ""}" data-food="${it.food}">
-          <span class="shop-emoji">${FOODS[it.food].emoji}</span>
+          <span class="shop-emoji">${FOODS[it.food].photo ? `<img src="${FOODS[it.food].photo}" alt="">` : FOODS[it.food].emoji}</span>
           <span class="shop-name">${FOODS[it.food].name}</span>
           <span class="shop-grams">${fmtGrams(it.grams)}</span>
           <span class="shop-check">${g ? "✓" : ""}</span>
@@ -2953,13 +2964,19 @@
       }
     }
 
-    const cardHTML = (key, attr, emoji, name, sub, kcal, brand, cat) => `
+    // Alimento con foto propia (en vez de emoji): imagen real, mismo recorte
+    // y sombra que las fotos de receta.
+    const foodMediaHTML = (f, emojiClass, photoClass) => f.photo
+      ? `<img class="${photoClass}" src="${f.photo}" alt="" loading="lazy">`
+      : `<span class="${emojiClass}">${f.emoji}</span>`;
+
+    const cardHTML = (key, attr, f, cat) => `
       <li class="addf" ${attr}="${key}"${cat ? ` data-cat="${cat}"` : ""}>
-        <div class="addf-top"><span class="addf-emoji">${emoji}</span>${brand === "Hacendado" ? '<span class="addf-brand" aria-label="Hacendado">H</span>' : ""}</div>
+        <div class="addf-top">${foodMediaHTML(f, "addf-emoji", "addf-photo")}${f.brand === "Hacendado" ? '<span class="addf-brand" aria-label="Hacendado">H</span>' : ""}</div>
         <div class="addf-info">
-          <div class="addf-name">${name}</div>
-          <div class="addf-sub">${sub}</div>
-          <span class="addf-kcal">${kcal} <span>kcal</span></span>
+          <div class="addf-name">${f.name}</div>
+          <div class="addf-sub">${f.ration}</div>
+          <span class="addf-kcal">${f.kcal} <span>kcal</span></span>
         </div>
       </li>`;
 
@@ -3008,7 +3025,7 @@
       // Alimentos: cuadrícula de 2 columnas agrupada por categoría (scroll-spy)
       list.classList.remove("as-recipes");
       let entries = Object.entries(FOODS).filter(([, f]) => !q || f.name.toLowerCase().includes(q));
-      const foodCard = ([k, f]) => cardHTML(k, "data-add", f.emoji, f.name, f.ration, f.kcal, f.brand, f.cat);
+      const foodCard = ([k, f]) => cardHTML(k, "data-add", f, f.cat);
       if (sortBy) {
         // Orden activo: lista plana por aporte POR 100 g (comparable entre alimentos)
         const per100 = ([, f]) => (sortBy === "kcal" ? f.kcal : f[sortBy]) / f.base * 100;
@@ -3214,7 +3231,7 @@
       $("mMeals").style.display = isSim ? "none" : "";          // dentro de una receta no se asigna comida
       if (isRecipe) {
         const r = getRecipe(modalState.recipeKey);
-        $("mEmoji").textContent = r.emoji;
+        $("mEmoji").innerHTML = r.emoji;
         $("mTitle").textContent = r.name;
         $("mRef").textContent = r.items.filter(it => FOODS[it.food]).map(it => FOODS[it.food].name + " " + it.grams + " g").join(" · ");
         $("mDelete").hidden = !r.user;          // solo recetas propias se pueden borrar
@@ -3223,7 +3240,7 @@
       } else {
         const f = FOODS[modalState.foodKey];
         const editing = mode === "edit" || mode === "simedit";
-        $("mEmoji").textContent = f.emoji;
+        $("mEmoji").innerHTML = foodMediaHTML(f, "", "");
         $("mTitle").textContent = f.name;
         $("mRef").textContent = "Referencia: " + f.ration + " · " + f.kcal + " kcal";
         $("mDelete").hidden = !editing;
@@ -3643,7 +3660,7 @@
             const f = FOODS[it.food]; const n = nutri(it.food, it.grams);
             return `<li class="logf${i === simActiveFood ? " sel" : ""}" data-i="${i}">
               <div class="logf-main">
-                <div class="logf-top"><span class="logf-emoji">${f.emoji}</span></div>
+                <div class="logf-top">${foodMediaHTML(f, "logf-emoji", "logf-photo")}</div>
                 <div class="logf-info">
                   <div class="logf-name">${f.name}</div>
                   <div class="logf-foot">
@@ -3716,7 +3733,7 @@
       const entries = Object.entries(FOODS).filter(([, f]) =>
         (simPickCat === "todos" || f.cat === simPickCat) && (!q || f.name.toLowerCase().includes(q)));
       $("simPickList").innerHTML = entries.length
-        ? entries.map(([k, f]) => cardHTML(k, "data-pick", f.emoji, f.name, f.ration, f.kcal, f.brand)).join("")
+        ? entries.map(([k, f]) => cardHTML(k, "data-pick", f)).join("")
         : `<li class="food-empty">Sin resultados</li>`;
     }
     $("simAddFood").addEventListener("click", openSimPick);
@@ -4014,7 +4031,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.1";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.2";   // súbelo en cada cambio para confirmar que tienes la última
     $("drawerVersion").textContent = APP_VERSION;   // la versión vive en el cajón lateral
     loadPeople();          // personas + migración de datos a "José"
     loadPersonData();      // carga la persona activa (día de hoy)
