@@ -4066,23 +4066,51 @@
     })();
 
     /* =========================================================
-       VISOR DE FOTO A PANTALLA COMPLETA
+       VISOR DE FOTO A PANTALLA COMPLETA — gestos "de iPhone" de verdad
        Se abre al tocar una foto real (no emoji) de la ficha de un alimento
-       o receta. Pellizcar con dos dedos para ampliar/reducir (1×–4×),
-       arrastrar para mover con zoom, doble toque para alternar 1×/2,5×.
+       o receta. Pellizcar ancla el zoom exactamente bajo los dedos (como
+       Fotos de iOS, no un zoom "de cámara" desde el centro); con un dedo
+       se arrastra libremente por la imagen ampliada, en cualquier
+       dirección; doble toque amplía centrado en el punto tocado (o
+       vuelve a 1×). Usa Pointer Events (no touch) para llevar la cuenta
+       de los dedos activos con un Map, así pasar de pellizcar a
+       arrastrar con un solo dedo no da un salto.
        ========================================================= */
     (function () {
-      const zoom = $("photoZoom"), img = $("photoZoomImg");
+      const zoom = $("photoZoom"), img = $("photoZoomImg"), closeBtn = $("photoZoomClose");
       let scale = 1, tx = 0, ty = 0;
-      let pinchStartDist = 0, pinchStartScale = 1;
-      let dragging = false, dragStartX = 0, dragStartY = 0, dragOrigX = 0, dragOrigY = 0;
-      let lastTapTime = 0;
+      let baseW = 0, baseH = 0;             // tamaño de la foto en pantalla a escala 1×
+      const pts = new Map();                // pointerId -> {x,y} de cada dedo activo
+      let pinchPrevDist = 0, pinchPrevMid = null;
+      let panStart = null;                  // {x,y,tx,ty} de partida del arrastre
+      let gestureMoved = false;             // distingue un toque de un arrastre/pellizco
+      let lastTapTime = 0, lastTapX = 0, lastTapY = 0;
 
+      // No se deja arrastrar la foto totalmente fuera de la pantalla: como
+      // mucho, su borde llega hasta donde estaba antes de ampliar.
+      function clampPan() {
+        const maxTx = Math.max(0, (baseW * scale - baseW) / 2);
+        const maxTy = Math.max(0, (baseH * scale - baseH) / 2);
+        tx = Math.min(maxTx, Math.max(-maxTx, tx));
+        ty = Math.min(maxTy, Math.max(-maxTy, ty));
+      }
       function applyTransform(animate) {
+        clampPan();
         img.style.transition = animate ? "transform 0.25s cubic-bezier(.22,.61,.36,1)" : "none";
         img.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
       }
       function resetZoom(animate) { scale = 1; tx = 0; ty = 0; applyTransform(animate); }
+
+      // Ancla el zoom al punto de PANTALLA (px, py): lo que había bajo ese
+      // punto sigue bajo ese punto tras cambiar la escala.
+      function zoomAt(px, py, newScale) {
+        newScale = Math.min(4, Math.max(1, newScale));
+        const factor = newScale / scale;
+        const cx = window.innerWidth / 2 + tx, cy = window.innerHeight / 2 + ty;
+        tx += (px - cx) * (1 - factor);
+        ty += (py - cy) * (1 - factor);
+        scale = newScale;
+      }
 
       function openPhotoZoom(src) {
         img.src = src;
@@ -4090,11 +4118,14 @@
         zoom.classList.add("open");
         zoom.setAttribute("aria-hidden", "false");
         document.documentElement.classList.add("locked");
+        const measure = () => { const r = img.getBoundingClientRect(); baseW = r.width; baseH = r.height; };
+        if (img.complete) requestAnimationFrame(measure); else img.onload = () => requestAnimationFrame(measure);
       }
       function closePhotoZoom() {
         zoom.classList.remove("open");
         zoom.setAttribute("aria-hidden", "true");
         document.documentElement.classList.remove("locked");
+        pts.clear(); panStart = null; pinchPrevDist = 0;
       }
       // Hace zoomable la foto real de la ficha (no cuando se muestra el
       // emoji de respaldo, aunque el <img> siga en el DOM oculto).
@@ -4108,46 +4139,76 @@
       }
       window.makeZoomable = makeZoomable;   // usado tras pintar el modal / la receta
 
-      const dist = (t0, t1) => Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+      const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+      const mid  = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
 
-      zoom.addEventListener("touchstart", (e) => {
-        if (e.touches.length === 2) {
-          pinchStartDist = dist(e.touches[0], e.touches[1]);
-          pinchStartScale = scale;
-        } else if (e.touches.length === 1) {
-          dragging = true;
-          dragStartX = e.touches[0].clientX; dragStartY = e.touches[0].clientY;
-          dragOrigX = tx; dragOrigY = ty;
-        }
-      }, { passive: true });
-      zoom.addEventListener("touchmove", (e) => {
-        if (e.touches.length === 2 && pinchStartDist) {
-          scale = Math.min(4, Math.max(1, pinchStartScale * dist(e.touches[0], e.touches[1]) / pinchStartDist));
-          applyTransform(false);
-        } else if (e.touches.length === 1 && dragging && scale > 1) {
-          tx = dragOrigX + (e.touches[0].clientX - dragStartX);
-          ty = dragOrigY + (e.touches[0].clientY - dragStartY);
-          applyTransform(false);
-        }
-      }, { passive: true });
-      zoom.addEventListener("touchend", (e) => {
-        dragging = false; pinchStartDist = 0;
-        if (scale < 1.05) resetZoom(true);   // no se queda "casi a 1" suelto
-        if (e.touches.length === 0 && e.changedTouches.length === 1) {
-          const now = Date.now();
-          if (now - lastTapTime < 280) {           // doble toque: alterna 1× / 2,5×
-            if (scale > 1) resetZoom(true);
-            else { scale = 2.5; applyTransform(true); }
-          }
-          lastTapTime = now;
+      zoom.addEventListener("pointerdown", (e) => {
+        if (e.target === closeBtn) return;
+        try { zoom.setPointerCapture(e.pointerId); } catch (err) {}   // no debe frenar el seguimiento del dedo
+        pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        gestureMoved = false;
+        if (pts.size === 1) {
+          panStart = { x: e.clientX, y: e.clientY, tx, ty };
+        } else if (pts.size === 2) {
+          panStart = null;
+          const [a, b] = [...pts.values()];
+          pinchPrevDist = dist(a, b); pinchPrevMid = mid(a, b);
         }
       });
-      $("photoZoomClose").addEventListener("click", closePhotoZoom);
-      zoom.addEventListener("click", (e) => { if (e.target === zoom) closePhotoZoom(); });
+      zoom.addEventListener("pointermove", (e) => {
+        if (!pts.has(e.pointerId)) return;
+        pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (pts.size === 2) {
+          const [a, b] = [...pts.values()];
+          const d = dist(a, b), m = mid(a, b);
+          if (pinchPrevDist) {
+            zoomAt(m.x, m.y, scale * (d / pinchPrevDist));   // pellizco anclado bajo los dedos
+            tx += m.x - pinchPrevMid.x; ty += m.y - pinchPrevMid.y;   // + el propio arrastre del centro
+          }
+          pinchPrevDist = d; pinchPrevMid = m;
+          gestureMoved = true;
+          applyTransform(false);
+        } else if (pts.size === 1 && panStart && scale > 1) {
+          tx = panStart.tx + (e.clientX - panStart.x);
+          ty = panStart.ty + (e.clientY - panStart.y);
+          if (Math.hypot(e.clientX - panStart.x, e.clientY - panStart.y) > 6) gestureMoved = true;
+          applyTransform(false);
+        }
+      });
+      function endPointer(e) {
+        pts.delete(e.pointerId);
+        pinchPrevDist = 0;
+        if (pts.size === 1) {
+          // sigue con un dedo puesto: retoma el arrastre sin saltar
+          const [[, p]] = [...pts.entries()];
+          panStart = { x: p.x, y: p.y, tx, ty };
+        } else if (pts.size === 0) {
+          panStart = null;
+          if (scale < 1.02) resetZoom(true);   // no se queda "casi a 1" suelto
+          if (!gestureMoved) {
+            const now = Date.now();
+            const nearLastTap = Math.hypot(e.clientX - lastTapX, e.clientY - lastTapY) < 40;
+            if (now - lastTapTime < 300 && nearLastTap) {
+              if (scale > 1.05) resetZoom(true);
+              else { zoomAt(e.clientX, e.clientY, 2.5); applyTransform(true); }
+              lastTapTime = 0;
+            } else {
+              lastTapTime = now; lastTapX = e.clientX; lastTapY = e.clientY;
+            }
+          }
+        }
+      }
+      zoom.addEventListener("pointerup", endPointer);
+      zoom.addEventListener("pointercancel", endPointer);
+
+      closeBtn.addEventListener("click", closePhotoZoom);
+      // Tocar el fondo (fuera de la foto) cierra; tocar la foto no (para poder
+      // pellizcarla/arrastrarla sin cerrar el visor sin querer).
+      zoom.addEventListener("click", (e) => { if (e.target === zoom && !gestureMoved) closePhotoZoom(); });
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.5";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.1";   // súbelo en cada cambio para confirmar que tienes la última
     $("drawerVersion").textContent = APP_VERSION;   // la versión vive en el cajón lateral
     loadPeople();          // personas + migración de datos a "José"
     loadPersonData();      // carga la persona activa (día de hoy)
