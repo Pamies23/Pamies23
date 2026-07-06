@@ -128,6 +128,67 @@ action link) then white list: icon + 17px medium label per row, generous
 row height (~88px), full-width hairlines BETWEEN rows, lime "Nuevo" pill
 inline where relevant. Footer: small social/link icons.
 
+## 3b. Food/recipe photos — the recipe-chicken pipeline
+
+`recipe-pollo-roquefort.png` is the reference: analyzed pixel-by-pixel
+(560×555, RGBA, ~5% of pixels semi-transparent at the silhouette edge,
+opaque bbox margin ~2px — i.e. the subject fills the canvas edge-to-edge).
+Every food/recipe photo added to the app must follow this SAME recipe, not
+just "a product photo":
+
+1. **Source**: a real photo of the dish/product, any background (a studio
+   white background is fine — it gets removed in step 2, it must NOT be
+   left in as a flat rectangle).
+2. **Cut out to true transparency (PNG, not JPEG)**. If the background is
+   a flat/near-white studio backdrop, a simple distance-to-white threshold
+   works (Pillow + numpy, no extra tools needed):
+   ```python
+   from PIL import Image, ImageFilter
+   import numpy as np
+   arr = np.array(Image.open(src).convert("RGB")).astype(int)
+   dist = np.sqrt(((arr - [255,255,255])**2).sum(axis=2))
+   lo, hi = 12, 55                      # feather band: tune per photo
+   alpha = np.clip((dist-lo)/(hi-lo), 0, 1) * 255
+   out = Image.fromarray(np.dstack([arr.astype("uint8"), alpha.astype("uint8")]), "RGBA")
+   out.putalpha(out.split()[3].filter(ImageFilter.GaussianBlur(1.2)))  # feather the edge
+   ```
+   For busy/non-white backgrounds this threshold won't work — say so and
+   ask before faking it with a hard rectangular cutout.
+3. **Crop tight** to the subject's opaque bbox + a small pad (~15–20px at
+   full photo res, or ~0 for an already-tight plated shot). Never ship
+   the full original canvas with the subject small in the middle.
+4. **Never leave a flat-color (especially white) rectangle behind the
+   subject** — that reads as "pasted sticker," not a product photo (this
+   was called out explicitly and is the #1 failure mode). Verify by
+   compositing the PNG over the app's beige `#EAE7D8` before shipping —
+   if you can see a rectangle, the cutout isn't done.
+5. **CSS pairing** — object-fit: contain + drop-shadow (never box-shadow,
+   it'd box the transparency), scaled to context:
+   - Detail hero (`.rv-img`, ~350px): `drop-shadow(0 14px 22px rgba(0,0,0,.30))`
+   - Recipe list card (`.rcard-photo`, ~186px): `drop-shadow(0 10px 16px rgba(0,0,0,.28))`
+   - Grid card (`.addf-photo`, 2-col grid): `drop-shadow(0 8px 14px rgba(0,0,0,.22))`
+   - Home log card (`.logf-photo`): `drop-shadow(0 6px 10px rgba(0,0,0,.18))`
+   All sit on the `#EAE7D8` beige canvas, never on white.
+6. Foods use a single shared helper, `foodMediaHTML(f, emojiClass,
+   photoClass)`, that renders `f.photo` as an `<img>` when present and
+   falls back to `f.emoji` otherwise — used identically in the picker
+   card, the add/edit modal, the home log row, and the shopping list, so
+   a food with a photo looks consistent everywhere it appears. Add new
+   photo foods via the `photo` field on the `FOODS` entry; nothing else
+   needs touching.
+
+### Tap-to-zoom viewer
+Any real photo (not emoji) in a "ficha" (the add/edit modal `.modal-emoji`,
+the recipe detail hero `.rv-photo`) is tappable to open `#photoZoom`: a
+fixed fullscreen lightbox (dark backdrop, image fades+scales in), with
+pinch-to-zoom (1×–4×), drag-to-pan once zoomed, double-tap to toggle
+1×/2.5×, and tap-backdrop or ✕ to close. Wiring: call the global
+`window.makeZoomable(container)` right after the container's innerHTML/img
+is set — it detects whether the container actually holds a *visible* `img`
+with a `src` (not the emoji fallback, even though the `<img>` tag stays in
+the DOM hidden) and toggles a `.zoomable` class + binds the click once
+(`dataset.zoomBound` guard). Do this for any new photo-bearing detail view.
+
 ## 4. Spacing rhythm
 
 - Screen gutter: 20px. Card grid gap: 12–16px.

@@ -1074,6 +1074,8 @@
       overflow: hidden;
     }
     .modal-emoji img { width: 82%; height: 82%; object-fit: contain; }
+    /* Las fotos reales (no emoji) se pueden ampliar a pantalla completa */
+    .modal-emoji.zoomable, .rv-photo.zoomable .rv-img { cursor: zoom-in; }
     .modal-title { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
     .modal-title h3 { font-family: var(--disp); font-weight: 800; font-size: 22px; line-height: 1.05; text-transform: uppercase; letter-spacing: 0.01em; color: var(--ink); }
     .modal-ref { font-size: 13px; color: var(--muted); margin-top: 6px; font-weight: 500; }
@@ -1438,6 +1440,31 @@
       /* Selector de alimentos (hoja): 4 columnas y un poco más ancho */
       .food-list { max-width: 1060px; }
       .food-list .addf { width: calc(25% - 9px); }
+    }
+
+    /* ---------- Visor de foto a pantalla completa ----------
+       Se abre al tocar una foto real (no emoji) de la ficha de un alimento
+       o receta. Pellizcar para ampliar/reducir, arrastrar para mover con
+       zoom, doble toque para alternar 1×/2,5×, tocar el fondo para cerrar. */
+    .photo-zoom {
+      position: fixed; inset: 0; z-index: 120;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(10,10,9,0); visibility: hidden;
+      transition: background 0.28s ease, visibility 0.28s ease;
+      touch-action: none;
+    }
+    .photo-zoom.open { visibility: visible; background: rgba(10,10,9,0.94); }
+    .photo-zoom-img {
+      max-width: 92vw; max-height: 82vh; object-fit: contain;
+      filter: drop-shadow(0 20px 40px rgba(0,0,0,0.5));
+      opacity: 0; transform: scale(0.92); transition: opacity 0.28s ease, transform 0.28s ease;
+      will-change: transform;
+    }
+    .photo-zoom.open .photo-zoom-img { opacity: 1; transform: scale(1); }
+    .photo-zoom-close {
+      position: absolute; top: calc(env(safe-area-inset-top) + 14px); right: 18px; z-index: 2;
+      width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer;
+      background: rgba(255,255,255,0.14); color: #fff; font-size: 20px; line-height: 1;
     }
   </style>
 </head>
@@ -1885,6 +1912,12 @@
       <button class="confirm" id="profileSave">Guardar</button>
     </div>
   </section>
+
+  <!-- ===================== Visor de foto a pantalla completa ===================== -->
+  <div class="photo-zoom" id="photoZoom" aria-hidden="true">
+    <button class="photo-zoom-close" id="photoZoomClose" aria-label="Cerrar">✕</button>
+    <img class="photo-zoom-img" id="photoZoomImg" alt="">
+  </div>
 
   <script>
     /* Detección modo app vs Safari */
@@ -3246,6 +3279,7 @@
         $("mDelete").hidden = !editing;
         $("mDelete").textContent = "Eliminar";
         $("mSave").textContent = editing ? "Guardar" : "Añadir";
+        window.makeZoomable($("mEmoji"));
       }
       syncMealPicker();
       updatePreview();
@@ -3300,6 +3334,7 @@
         $("rvImg").removeAttribute("src"); $("rvImg").style.display = "none";
         $("rvEmoji").style.display = ""; $("rvEmoji").textContent = r.emoji;
       }
+      window.makeZoomable(document.querySelector(".rv-photo"));
       $("rvName").textContent = r.name;
       $("rvDelete").hidden = !r.user;            // sólo recetas propias se pueden borrar
       $("rvGramPanel").classList.remove("open");
@@ -4030,8 +4065,89 @@
       root.addEventListener("touchend", () => { tracking = false; startY = null; });
     })();
 
+    /* =========================================================
+       VISOR DE FOTO A PANTALLA COMPLETA
+       Se abre al tocar una foto real (no emoji) de la ficha de un alimento
+       o receta. Pellizcar con dos dedos para ampliar/reducir (1×–4×),
+       arrastrar para mover con zoom, doble toque para alternar 1×/2,5×.
+       ========================================================= */
+    (function () {
+      const zoom = $("photoZoom"), img = $("photoZoomImg");
+      let scale = 1, tx = 0, ty = 0;
+      let pinchStartDist = 0, pinchStartScale = 1;
+      let dragging = false, dragStartX = 0, dragStartY = 0, dragOrigX = 0, dragOrigY = 0;
+      let lastTapTime = 0;
+
+      function applyTransform(animate) {
+        img.style.transition = animate ? "transform 0.25s cubic-bezier(.22,.61,.36,1)" : "none";
+        img.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+      }
+      function resetZoom(animate) { scale = 1; tx = 0; ty = 0; applyTransform(animate); }
+
+      function openPhotoZoom(src) {
+        img.src = src;
+        resetZoom(false);
+        zoom.classList.add("open");
+        zoom.setAttribute("aria-hidden", "false");
+        document.documentElement.classList.add("locked");
+      }
+      function closePhotoZoom() {
+        zoom.classList.remove("open");
+        zoom.setAttribute("aria-hidden", "true");
+        document.documentElement.classList.remove("locked");
+      }
+      // Hace zoomable la foto real de la ficha (no cuando se muestra el
+      // emoji de respaldo, aunque el <img> siga en el DOM oculto).
+      function makeZoomable(container) {
+        const el = container.querySelector("img");
+        const active = !!(el && el.style.display !== "none" && el.getAttribute("src"));
+        container.classList.toggle("zoomable", active);
+        if (!active || el.dataset.zoomBound) return;
+        el.dataset.zoomBound = "1";
+        el.addEventListener("click", (e) => { e.stopPropagation(); openPhotoZoom(el.src); });
+      }
+      window.makeZoomable = makeZoomable;   // usado tras pintar el modal / la receta
+
+      const dist = (t0, t1) => Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+
+      zoom.addEventListener("touchstart", (e) => {
+        if (e.touches.length === 2) {
+          pinchStartDist = dist(e.touches[0], e.touches[1]);
+          pinchStartScale = scale;
+        } else if (e.touches.length === 1) {
+          dragging = true;
+          dragStartX = e.touches[0].clientX; dragStartY = e.touches[0].clientY;
+          dragOrigX = tx; dragOrigY = ty;
+        }
+      }, { passive: true });
+      zoom.addEventListener("touchmove", (e) => {
+        if (e.touches.length === 2 && pinchStartDist) {
+          scale = Math.min(4, Math.max(1, pinchStartScale * dist(e.touches[0], e.touches[1]) / pinchStartDist));
+          applyTransform(false);
+        } else if (e.touches.length === 1 && dragging && scale > 1) {
+          tx = dragOrigX + (e.touches[0].clientX - dragStartX);
+          ty = dragOrigY + (e.touches[0].clientY - dragStartY);
+          applyTransform(false);
+        }
+      }, { passive: true });
+      zoom.addEventListener("touchend", (e) => {
+        dragging = false; pinchStartDist = 0;
+        if (scale < 1.05) resetZoom(true);   // no se queda "casi a 1" suelto
+        if (e.touches.length === 0 && e.changedTouches.length === 1) {
+          const now = Date.now();
+          if (now - lastTapTime < 280) {           // doble toque: alterna 1× / 2,5×
+            if (scale > 1) resetZoom(true);
+            else { scale = 2.5; applyTransform(true); }
+          }
+          lastTapTime = now;
+        }
+      });
+      $("photoZoomClose").addEventListener("click", closePhotoZoom);
+      zoom.addEventListener("click", (e) => { if (e.target === zoom) closePhotoZoom(); });
+    })();
+
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.3";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.4";   // súbelo en cada cambio para confirmar que tienes la última
     $("drawerVersion").textContent = APP_VERSION;   // la versión vive en el cajón lateral
     loadPeople();          // personas + migración de datos a "José"
     loadPersonData();      // carga la persona activa (día de hoy)
