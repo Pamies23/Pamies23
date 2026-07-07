@@ -1,0 +1,70 @@
+name: folio
+description: >-
+  Folio — lector de PDF con IA integrada (Claude / OpenAI).
+  App personal para Windows e iOS/iPadOS. Nombre provisional.
+publish_to: "none"
+version: 0.1.0
+
+environment:
+  sdk: ">=3.6.0 <4.0.0"
+  flutter: ">=3.27.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # PDF: visor (selección de texto, subrayado, búsqueda) + extracción de texto.
+  # Licencia Community de Syncfusion (gratuita para uso personal):
+  # https://www.syncfusion.com/products/communitylicense
+  syncfusion_flutter_pdfviewer: ">=30.1.0 <33.0.0"
+  syncfusion_flutter_pdf: ">=30.1.0 <33.0.0"
+
+  # Estado y datos
+  provider: ^6.1.2
+  sqflite: ^2.4.0
+  sqflite_common_ffi: ^2.3.3 # backend SQLite para Windows
+  shared_preferences: ^2.3.2
+  flutter_secure_storage: ^9.2.2 # API keys (DPAPI en Windows, Keychain en iOS)
+  path_provider: ^2.1.4
+  path: ^1.9.0
+
+  # Red (streaming SSE hacia Anthropic / OpenAI)
+  http: ^1.2.2
+
+  # UI
+  flutter_markdown_plus: ^1.0.0 # respuestas de la IA en Markdown
+  file_picker: ">=9.0.0 <11.0.0"
+  window_manager: ^0.4.0 # ventana y barra de título propia en Windows
+
+dev_dependencies:
+  flutter_lints: ">=5.0.0 <7.0.0"
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/fonts/
+
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
+    - family: Fraunces
+      fonts:
+        - asset: assets/fonts/Fraunces-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Fraunces-Bold.ttf
+          weight: 700
+    - family: JetBrainsMono
+      fonts:
+        - asset: assets/fonts/JetBrainsMono-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/JetBrainsMono-Medium.ttf
+          weight: 500
