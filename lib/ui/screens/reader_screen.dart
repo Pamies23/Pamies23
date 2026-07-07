@@ -34,6 +34,7 @@ class ReaderScreen extends StatefulWidget {
 
 class _ReaderScreenState extends State<ReaderScreen> {
   final _pdf = PdfViewerController();
+  final _viewerKey = GlobalKey<SfPdfViewerState>();
   final _pdfAreaKey = GlobalKey();
   final _pdfText = PdfTextService();
   final _chatFocus = FocusNode();
@@ -217,7 +218,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
   Future<void> _highlightSelection(Color color) async {
     final text = _selectionText;
     if (text == null) return;
-    final lines = _pdf.getSelectedTextLines();
+    final lines = _viewerKey.currentState?.getSelectedTextLines() ??
+        const <PdfTextLine>[];
     if (lines.isEmpty) {
       _clearSelection();
       return;
@@ -684,6 +686,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
             Positioned.fill(
               child: SfPdfViewer.file(
               File(widget.doc.path),
+              key: _viewerKey,
               controller: _pdf,
               interactionMode: desktop
                   ? PdfInteractionMode.selection
