@@ -17,6 +17,7 @@ class ChatPanel extends StatefulWidget {
     required this.inputFocusNode,
     required this.currentPage,
     this.onClose,
+    this.onJumpToPage,
   });
 
   final FocusNode inputFocusNode;
@@ -24,6 +25,9 @@ class ChatPanel extends StatefulWidget {
 
   /// En pantallas estrechas el panel es un overlay y puede cerrarse.
   final VoidCallback? onClose;
+
+  /// Salta a una página del PDF (al pulsar una cita de selección).
+  final void Function(int page)? onJumpToPage;
 
   @override
   State<ChatPanel> createState() => _ChatPanelState();
@@ -313,8 +317,12 @@ class _ChatPanelState extends State<ChatPanel> {
         }
         final message = chat.messages[index];
         return message.isUser
-            ? UserMessageBubble(message: message)
-            : AssistantMessageView(content: message.content);
+            ? UserMessageBubble(message: message, onJumpToPage: widget.onJumpToPage)
+            : AssistantMessageView(
+                content: message.content,
+                starred: message.starred,
+                onToggleStar: () => chat.toggleStar(message),
+              );
       },
     );
   }

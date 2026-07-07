@@ -5,6 +5,7 @@ import 'core/theme/app_theme.dart';
 import 'data/db/app_database.dart';
 import 'data/repositories/chat_repository.dart';
 import 'data/repositories/document_repository.dart';
+import 'data/repositories/folder_repository.dart';
 import 'data/repositories/highlight_repository.dart';
 import 'data/settings/settings_controller.dart';
 import 'state/library_controller.dart';
@@ -31,10 +32,15 @@ class FolioApp extends StatelessWidget {
         Provider<HighlightRepository>(
           create: (_) => HighlightRepository(db),
         ),
+        Provider<FolderRepository>(
+          create: (_) => FolderRepository(db),
+        ),
         ChangeNotifierProvider<SettingsController>.value(value: settings),
         ChangeNotifierProvider<LibraryController>(
-          create: (context) =>
-              LibraryController(context.read<DocumentRepository>()),
+          create: (context) => LibraryController(
+            context.read<DocumentRepository>(),
+            context.read<FolderRepository>(),
+          ),
         ),
       ],
       child: Consumer<SettingsController>(

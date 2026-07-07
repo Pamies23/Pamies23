@@ -8,13 +8,28 @@ class DocumentRepository {
 
   final AppDatabase _db;
 
-  Future<List<Doc>> recent({int limit = 40}) async {
+  /// [folderId] filtra por carpeta; pásalo como `-1` para "sin carpeta",
+  /// o déjalo en null para ver todos los documentos.
+  Future<List<Doc>> recent({int limit = 200, int? folderId}) async {
     final rows = await _db.db.query(
       'documents',
+      where: folderId == null
+          ? null
+          : (folderId == -1 ? 'folder_id IS NULL' : 'folder_id = ?'),
+      whereArgs: folderId == null || folderId == -1 ? null : [folderId],
       orderBy: 'last_opened_at DESC',
       limit: limit,
     );
     return rows.map(Doc.fromRow).toList();
+  }
+
+  Future<void> setFolder(int documentId, int? folderId) async {
+    await _db.db.update(
+      'documents',
+      {'folder_id': folderId},
+      where: 'id = ?',
+      whereArgs: [documentId],
+    );
   }
 
   /// Registra (o reactiva) un documento y devuelve su fila actual.

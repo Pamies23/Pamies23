@@ -123,6 +123,16 @@ class ChatController extends ChangeNotifier {
     _safeNotify();
   }
 
+  Future<void> toggleStar(ChatMessage message) async {
+    final newValue = !message.starred;
+    await _chatRepo.setStarred(message.id, newValue);
+    final index = messages.indexWhere((m) => m.id == message.id);
+    if (index != -1) {
+      messages[index] = messages[index].copyWith(starred: newValue);
+      _safeNotify();
+    }
+  }
+
   /// Envía una pregunta. [selection] llega desde "Preguntar a la IA" sobre
   /// texto seleccionado; [currentPage] es la página visible en el visor.
   Future<void> send(
@@ -310,13 +320,17 @@ class ChatController extends ChangeNotifier {
   String _systemPrompt() {
     final pages =
         pdfText.pageCount > 0 ? ' (${pdfText.pageCount} páginas)' : '';
-    return 'Eres el asistente de lectura integrado en Folio, un lector de PDF. '
+    final base = 'Eres el asistente de lectura integrado en Folio, un lector de PDF. '
         'El usuario está leyendo el documento «${document.title}»$pages. '
         'Responde siempre en el idioma en el que escribe el usuario. '
         'Sé claro y directo. Cuando uses información del contexto del documento, '
         'menciona la página de la que procede. Si el contexto proporcionado no '
         'basta para responder con seguridad, dilo explícitamente en lugar de inventar. '
         'Usa Markdown con moderación (listas y negritas cuando aporten claridad).';
+    final preset = _settings.activePreset;
+    if (preset == null || preset.instructions.trim().isEmpty) return base;
+    return '$base\n\nEstilo de respuesta preferido por el usuario ("${preset.name}"): '
+        '${preset.instructions.trim()}';
   }
 
   static String _titleFrom(String question) {

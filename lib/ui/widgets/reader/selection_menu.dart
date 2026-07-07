@@ -13,6 +13,7 @@ class SelectionMenu extends StatelessWidget {
     required this.onExplain,
     required this.onHighlight,
     required this.onCopy,
+    this.highlightColors = HighlightPalette.all,
   });
 
   /// Región seleccionada, en coordenadas locales del área del PDF.
@@ -26,7 +27,10 @@ class SelectionMenu extends StatelessWidget {
   final ValueChanged<Color> onHighlight;
   final VoidCallback onCopy;
 
-  static const _width = 342.0;
+  /// Colores de subrayado configurados por el usuario en Ajustes.
+  final List<Color> highlightColors;
+
+  static const _width = 404.0;
   static const _height = 44.0;
 
   @override
@@ -77,10 +81,10 @@ class SelectionMenu extends StatelessWidget {
                 onTap: onExplain,
               ),
               _divider(c),
-              for (final color in HighlightPalette.all)
+              for (final color in highlightColors)
                 _ColorDot(
                   color: color,
-                  tooltip: 'Subrayar en ${HighlightPalette.nameOf(color).toLowerCase()}',
+                  tooltip: 'Subrayar (espacio para repetir el último color)',
                   onTap: () => onHighlight(color),
                 ),
               _divider(c),

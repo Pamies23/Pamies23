@@ -79,6 +79,25 @@ class SettingsScreen extends StatelessWidget {
                           style: AppText.secondary(c),
                         ),
                         const SizedBox(height: 30),
+                        const SectionLabel('Contexto'),
+                        const SizedBox(height: 10),
+                        _ContextToggle(settings: settings),
+                        const SizedBox(height: 30),
+                        const SectionLabel('Estilo de respuesta'),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Guarda hasta 3 formas distintas de instruir a la IA y '
+                          'activa la que quieras usar. Se añade al system prompt '
+                          'de cada pregunta.',
+                          style: AppText.secondary(c),
+                        ),
+                        const SizedBox(height: 12),
+                        _ResponsePresets(settings: settings),
+                        const SizedBox(height: 30),
+                        const SectionLabel('Colores de subrayado'),
+                        const SizedBox(height: 10),
+                        _HighlightColorSettings(settings: settings),
+                        const SizedBox(height: 30),
                         const SectionLabel('Acerca de'),
                         const SizedBox(height: 10),
                         Text(
@@ -450,6 +469,280 @@ class _ModelPill extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Toggle de si se adjunta el texto de la página visible como contexto.
+class _ContextToggle extends StatelessWidget {
+  const _ContextToggle({required this.settings});
+
+  final SettingsController settings;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: c.border),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Incluir la página visible como contexto',
+                    style: AppText.body(c)),
+                const SizedBox(height: 3),
+                Text(
+                  'Envía el texto de la página que estás viendo junto a cada '
+                  'pregunta. Puedes desactivarlo también desde el chip del chat.',
+                  style: AppText.secondary(c),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Switch(
+            value: settings.includePageContext,
+            activeThumbColor: c.accent,
+            onChanged: settings.setIncludePageContext,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Editor de los 3 presets de estilo de respuesta guardados.
+class _ResponsePresets extends StatelessWidget {
+  const _ResponsePresets({required this.settings});
+
+  final SettingsController settings;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (var i = 0; i < settings.presets.length; i++) ...[
+          if (i > 0) const SizedBox(height: 10),
+          _PresetCard(settings: settings, index: i),
+        ],
+      ],
+    );
+  }
+}
+
+class _PresetCard extends StatefulWidget {
+  const _PresetCard({required this.settings, required this.index});
+
+  final SettingsController settings;
+  final int index;
+
+  @override
+  State<_PresetCard> createState() => _PresetCardState();
+}
+
+class _PresetCardState extends State<_PresetCard> {
+  late final _nameController =
+      TextEditingController(text: widget.settings.presets[widget.index].name);
+  late final _textController = TextEditingController(
+      text: widget.settings.presets[widget.index].instructions);
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _textController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final settings = widget.settings;
+    final active = settings.activePresetIndex == widget.index;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: active ? c.accent : c.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _nameController,
+                  style: AppText.bodyStrong(c),
+                  decoration: folioInputDecoration(context, hint: 'Nombre'),
+                  onSubmitted: (value) => settings.setPreset(widget.index,
+                      name: value.trim().isEmpty ? 'Preset' : value.trim()),
+                  onTapOutside: (_) => settings.setPreset(widget.index,
+                      name: _nameController.text.trim().isEmpty
+                          ? 'Preset'
+                          : _nameController.text.trim()),
+                ),
+              ),
+              const SizedBox(width: 10),
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () =>
+                      settings.setActivePreset(active ? -1 : widget.index),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        active
+                            ? Icons.check_circle
+                            : Icons.radio_button_off,
+                        size: 16,
+                        color: active ? c.accent : c.inkFaint,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        active ? 'Activo' : 'Activar',
+                        style: AppText.secondary(c).copyWith(
+                          color: active ? c.accent : c.inkSecondary,
+                          fontWeight:
+                              active ? FontWeight.w600 : FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _textController,
+            maxLines: 3,
+            minLines: 2,
+            style: AppText.body(c),
+            decoration: folioInputDecoration(context,
+                hint: 'Instrucciones para la IA…'),
+            onSubmitted: (value) =>
+                settings.setPreset(widget.index, instructions: value),
+            onTapOutside: (_) => settings.setPreset(widget.index,
+                instructions: _textController.text),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 4 colores de subrayado configurables, con un selector de paleta propio
+/// (sin dependencias nuevas).
+class _HighlightColorSettings extends StatelessWidget {
+  const _HighlightColorSettings({required this.settings});
+
+  final SettingsController settings;
+
+  static const _palette = [
+    Color(0xFFF5C842), Color(0xFFF2A93B), Color(0xFFEE7D4F), Color(0xFFE0604F),
+    Color(0xFFD65B8A), Color(0xFFB56BD6), Color(0xFF7C6BE0), Color(0xFF5E8FE0),
+    Color(0xFF7AB8F5), Color(0xFF5BC2C2), Color(0xFF6FC28A), Color(0xFF8CCB7E),
+    Color(0xFFBFD666), Color(0xFFA3A3A3), Color(0xFF7A6A58), Color(0xFFF08FB5),
+  ];
+
+  Future<void> _pickColor(BuildContext context, int index) async {
+    final chosen = await showFolioDialog<Color>(
+      context,
+      maxWidth: 320,
+      child: Builder(builder: (context) {
+        final c = context.colors;
+        return Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Elegir color', style: AppText.title(c)),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  for (final color in _palette)
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () => Navigator.of(context).pop(color),
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                                color: Colors.black.withValues(alpha: 0.15)),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        );
+      }),
+    );
+    if (chosen != null) {
+      await settings.setHighlightColor(index, chosen);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final colors = settings.highlightColors;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: c.border),
+      ),
+      child: Row(
+        children: [
+          for (var i = 0; i < colors.length; i++) ...[
+            if (i > 0) const SizedBox(width: 14),
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: () => _pickColor(context, i),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: colors[i],
+                        shape: BoxShape.circle,
+                        border: Border.all(color: c.border),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Icon(Icons.edit, size: 11, color: c.inkFaint),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          const Spacer(),
+          Text('Toca un color para cambiarlo', style: AppText.secondary(c)),
+        ],
       ),
     );
   }

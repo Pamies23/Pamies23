@@ -124,4 +124,43 @@ class ChatRepository {
   Future<void> deleteMessage(int messageId) async {
     await _db.db.delete('messages', where: 'id = ?', whereArgs: [messageId]);
   }
+
+  Future<void> setStarred(int messageId, bool starred) async {
+    await _db.db.update(
+      'messages',
+      {'starred': starred ? 1 : 0},
+      where: 'id = ?',
+      whereArgs: [messageId],
+    );
+  }
+
+  /// Todas las respuestas de la IA marcadas con estrella, con la pregunta
+  /// que las originó y el documento/chat al que pertenecen.
+  Future<List<StarredAnswer>> starredAnswers() async {
+    final rows = await _db.db.rawQuery('''
+      SELECT m.*,
+             c.title AS chat_title,
+             c.document_id AS document_id,
+             d.title AS doc_title,
+             (SELECT content FROM messages um
+              WHERE um.chat_id = m.chat_id AND um.role = 'user' AND um.id < m.id
+              ORDER BY um.id DESC LIMIT 1) AS question
+      FROM messages m
+      JOIN chats c ON c.id = m.chat_id
+      LEFT JOIN documents d ON d.id = c.document_id
+      WHERE m.starred = 1 AND m.role = 'assistant'
+      ORDER BY m.created_at DESC
+    ''');
+    return [
+      for (final row in rows)
+        StarredAnswer(
+          message: ChatMessage.fromRow(row),
+          question: row['question'] as String?,
+          chatId: row['chat_id'] as int,
+          chatTitle: row['chat_title'] as String,
+          documentId: row['document_id'] as int?,
+          documentTitle: row['doc_title'] as String?,
+        ),
+    ];
+  }
 }

@@ -6,10 +6,15 @@ import 'package:http/http.dart' as http;
 import 'ai_provider.dart';
 import 'sse.dart';
 
-/// Cliente de la API Chat Completions de OpenAI (streaming SSE).
-/// Referencia: POST https://api.openai.com/v1/chat/completions
+/// Cliente de la Responses API de OpenAI (streaming SSE).
+/// Referencia: POST https://api.openai.com/v1/responses
+///
+/// A diferencia de la antigua Chat Completions API, el system prompt va en
+/// el campo `instructions` (no dentro de `input`), y los eventos de
+/// streaming traen su tipo en `type` (`response.output_text.delta`,
+/// `response.completed`, `response.failed`, ...).
 class OpenAiClient implements AiClient {
-  static const _endpoint = 'https://api.openai.com/v1/chat/completions';
+  static const _endpoint = 'https://api.openai.com/v1/responses';
 
   @override
   AiStream send(AiRequest request, {required String apiKey}) {
@@ -22,9 +27,10 @@ class OpenAiClient implements AiClient {
         final body = <String, Object?>{
           'model': request.model,
           'stream': true,
-          'messages': [
-            if (request.system != null && request.system!.isNotEmpty)
-              {'role': 'system', 'content': request.system},
+          'max_output_tokens': request.maxTokens,
+          if (request.system != null && request.system!.isNotEmpty)
+            'instructions': request.system,
+          'input': [
             for (final t in request.turns)
               {'role': t.role, 'content': t.content},
           ],
@@ -47,29 +53,37 @@ class OpenAiClient implements AiClient {
           );
         }
 
-        String? finishReason;
+        String? stopReason;
         await for (final data in sseDataLines(response.stream)) {
           if (cancelled) break;
-          if (data == '[DONE]') break;
           final Map<String, dynamic> event;
           try {
             event = jsonDecode(data) as Map<String, dynamic>;
           } catch (_) {
             continue;
           }
-          final choices = event['choices'] as List<dynamic>?;
-          if (choices == null || choices.isEmpty) continue;
-          final choice = choices.first as Map<String, dynamic>;
-          final delta = choice['delta'] as Map<String, dynamic>?;
-          final content = delta?['content'];
-          if (content is String && content.isNotEmpty) {
-            controller.add(AiTextDelta(content));
+          switch (event['type']) {
+            case 'response.output_text.delta':
+              final delta = event['delta'] as String?;
+              if (delta != null && delta.isNotEmpty) {
+                controller.add(AiTextDelta(delta));
+              }
+            case 'response.completed':
+              stopReason = 'stop';
+            case 'response.incomplete':
+              stopReason = 'incomplete';
+            case 'response.failed':
+            case 'error':
+              final err = event['response'] is Map
+                  ? (event['response'] as Map)['error']
+                  : event['error'];
+              final message = err is Map ? err['message'] as String? : null;
+              throw AiException(
+                  message ?? 'Error de la Responses API de OpenAI');
           }
-          finishReason =
-              choice['finish_reason'] as String? ?? finishReason;
         }
 
-        if (!cancelled) controller.add(AiDone(finishReason));
+        if (!cancelled) controller.add(AiDone(stopReason));
       } catch (e) {
         if (!cancelled && !controller.isClosed) {
           controller.addError(e is AiException

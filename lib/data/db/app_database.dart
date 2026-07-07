@@ -26,6 +26,13 @@ class AppDatabase {
       },
       onCreate: (db, version) async {
         await db.execute('''
+          CREATE TABLE folders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            created_at INTEGER NOT NULL
+          )
+        ''');
+        await db.execute('''
           CREATE TABLE documents (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             path TEXT NOT NULL UNIQUE,
@@ -33,7 +40,8 @@ class AppDatabase {
             added_at INTEGER NOT NULL,
             last_opened_at INTEGER NOT NULL,
             last_page INTEGER NOT NULL DEFAULT 1,
-            page_count INTEGER
+            page_count INTEGER,
+            folder_id INTEGER REFERENCES folders(id) ON DELETE SET NULL
           )
         ''');
         await db.execute('''
@@ -55,7 +63,8 @@ class AppDatabase {
             content TEXT NOT NULL,
             created_at INTEGER NOT NULL,
             selection TEXT,
-            page INTEGER
+            page INTEGER,
+            starred INTEGER NOT NULL DEFAULT 0
           )
         ''');
         await db.execute('''
@@ -75,6 +84,10 @@ class AppDatabase {
             'CREATE INDEX idx_messages_chat ON messages(chat_id, created_at)');
         await db.execute(
             'CREATE INDEX idx_highlights_document ON highlights(document_id, page)');
+        await db.execute(
+            'CREATE INDEX idx_documents_folder ON documents(folder_id)');
+        await db.execute(
+            'CREATE INDEX idx_messages_starred ON messages(starred)');
       },
     );
     return AppDatabase._(database);

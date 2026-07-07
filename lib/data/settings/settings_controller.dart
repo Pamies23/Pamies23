@@ -2,7 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../services/ai/ai_catalog.dart';
+
+/// Preset de estilo de respuesta: instrucciones adicionales que se añaden
+/// al system prompt de la IA. El usuario guarda hasta 3 y activa una.
+class ResponsePreset {
+  const ResponsePreset({required this.name, required this.instructions});
+
+  final String name;
+  final String instructions;
+
+  ResponsePreset copyWith({String? name, String? instructions}) =>
+      ResponsePreset(
+        name: name ?? this.name,
+        instructions: instructions ?? this.instructions,
+      );
+}
 
 /// Preferencias de la app. Las API keys van al almacén seguro del sistema
 /// (DPAPI en Windows, Keychain en iOS); el resto a SharedPreferences.
@@ -19,6 +35,29 @@ class SettingsController extends ChangeNotifier {
   static const _kIncludePage = 'includePageContext';
   static const _kAnthropicKey = 'apiKey.anthropic';
   static const _kOpenaiKey = 'apiKey.openai';
+  static const _kHighlightColorPrefix = 'highlightColor.';
+  static const _kLastHighlightColor = 'lastHighlightColor';
+  static const _kPresetNamePrefix = 'preset.name.';
+  static const _kPresetTextPrefix = 'preset.text.';
+  static const _kActivePreset = 'preset.active';
+
+  static const _defaultPresets = [
+    ResponsePreset(
+      name: 'Conciso',
+      instructions: 'Responde de forma breve y directa, sin rodeos. '
+          'Usa como máximo un par de frases salvo que se pida detalle.',
+    ),
+    ResponsePreset(
+      name: 'Detallado',
+      instructions: 'Responde con explicaciones completas y bien '
+          'estructuradas, usando ejemplos cuando ayuden a entender mejor.',
+    ),
+    ResponsePreset(
+      name: 'Técnico',
+      instructions: 'Responde con precisión técnica, usando la terminología '
+          'propia del campo del documento sin simplificar en exceso.',
+    ),
+  ];
 
   final SharedPreferences _prefs;
 
@@ -31,6 +70,14 @@ class SettingsController extends ChangeNotifier {
 
   String? _anthropicKey;
   String? _openaiKey;
+
+  List<Color> _highlightColors = List.of(HighlightPalette.all);
+  Color? _lastHighlightColor;
+
+  List<ResponsePreset> _presets = List.of(_defaultPresets);
+
+  /// -1 = sin preset activo (comportamiento por defecto).
+  int _activePreset = -1;
 
   static Future<SettingsController> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -46,6 +93,27 @@ class SettingsController extends ChangeNotifier {
     c._openaiModel = prefs.getString(_kModelOpenai) ?? c._openaiModel;
     c._maxTokens = prefs.getInt(_kMaxTokens) ?? c._maxTokens;
     c._includePageContext = prefs.getBool(_kIncludePage) ?? true;
+
+    c._highlightColors = [
+      for (var i = 0; i < HighlightPalette.all.length; i++)
+        Color(prefs.getInt('$_kHighlightColorPrefix$i') ??
+            HighlightPalette.all[i].toARGB32()),
+    ];
+    final lastColorValue = prefs.getInt(_kLastHighlightColor);
+    c._lastHighlightColor =
+        lastColorValue == null ? null : Color(lastColorValue);
+
+    c._presets = [
+      for (var i = 0; i < _defaultPresets.length; i++)
+        ResponsePreset(
+          name: prefs.getString('$_kPresetNamePrefix$i') ??
+              _defaultPresets[i].name,
+          instructions: prefs.getString('$_kPresetTextPrefix$i') ??
+              _defaultPresets[i].instructions,
+        ),
+    ];
+    c._activePreset = prefs.getInt(_kActivePreset) ?? -1;
+
     try {
       c._anthropicKey = await _storage.read(key: _kAnthropicKey);
       c._openaiKey = await _storage.read(key: _kOpenaiKey);
@@ -60,6 +128,14 @@ class SettingsController extends ChangeNotifier {
   AiProviderId get provider => _provider;
   int get maxTokens => _maxTokens;
   bool get includePageContext => _includePageContext;
+  List<Color> get highlightColors => List.unmodifiable(_highlightColors);
+  Color? get lastHighlightColor => _lastHighlightColor;
+  List<ResponsePreset> get presets => List.unmodifiable(_presets);
+  int get activePresetIndex => _activePreset;
+  ResponsePreset? get activePreset =>
+      (_activePreset >= 0 && _activePreset < _presets.length)
+          ? _presets[_activePreset]
+          : null;
 
   String modelFor(AiProviderId provider) => switch (provider) {
         AiProviderId.anthropic => _anthropicModel,
@@ -135,6 +211,43 @@ class SettingsController extends ChangeNotifier {
     } catch (_) {
       // Sin almacén seguro la clave vive solo en memoria durante la sesión.
     }
+    notifyListeners();
+  }
+
+  Future<void> setHighlightColor(int index, Color color) async {
+    if (index < 0 || index >= _highlightColors.length) return;
+    _highlightColors = List.of(_highlightColors);
+    _highlightColors[index] = color;
+    await _prefs.setInt('$_kHighlightColorPrefix$index', color.toARGB32());
+    notifyListeners();
+  }
+
+  Future<void> setLastHighlightColor(Color color) async {
+    _lastHighlightColor = color;
+    await _prefs.setInt(_kLastHighlightColor, color.toARGB32());
+    notifyListeners();
+  }
+
+  Future<void> setPreset(int index, {String? name, String? instructions}) async {
+    if (index < 0 || index >= _presets.length) return;
+    _presets = List.of(_presets);
+    _presets[index] = _presets[index].copyWith(
+      name: name,
+      instructions: instructions,
+    );
+    if (name != null) {
+      await _prefs.setString('$_kPresetNamePrefix$index', name);
+    }
+    if (instructions != null) {
+      await _prefs.setString('$_kPresetTextPrefix$index', instructions);
+    }
+    notifyListeners();
+  }
+
+  /// Activa el preset [index], o -1 para no aplicar ninguno.
+  Future<void> setActivePreset(int index) async {
+    _activePreset = index;
+    await _prefs.setInt(_kActivePreset, index);
     notifyListeners();
   }
 }

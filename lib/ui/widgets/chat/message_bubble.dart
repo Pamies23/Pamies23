@@ -4,18 +4,25 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/chat.dart';
+import '../common/ui.dart';
 
 /// Mensaje del usuario: burbuja alineada a la derecha, con la selección del
 /// PDF citada encima si la hubo.
 class UserMessageBubble extends StatelessWidget {
-  const UserMessageBubble({super.key, required this.message});
+  const UserMessageBubble({super.key, required this.message, this.onJumpToPage});
 
   final ChatMessage message;
+
+  /// Si se indica, la cita de selección se puede pulsar para saltar a esa
+  /// página del PDF.
+  final void Function(int page)? onJumpToPage;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     final selection = message.selection;
+    final hasQuote = selection != null && selection.trim().isNotEmpty;
+    final canJump = hasQuote && message.page != null && onJumpToPage != null;
     return Align(
       alignment: Alignment.centerRight,
       child: ConstrainedBox(
@@ -23,35 +30,55 @@ class UserMessageBubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            if (selection != null && selection.isNotEmpty) ...[
-              Container(
-                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                decoration: BoxDecoration(
-                  color: c.accentSoft.withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border(
-                    left: BorderSide(color: c.accent, width: 3),
-                    top: BorderSide(color: c.border),
-                    right: BorderSide(color: c.border),
-                    bottom: BorderSide(color: c.border),
+            if (hasQuote) ...[
+              MouseRegion(
+                cursor: canJump
+                    ? SystemMouseCursors.click
+                    : MouseCursor.defer,
+                child: GestureDetector(
+                  onTap: canJump
+                      ? () => onJumpToPage!(message.page!)
+                      : null,
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                    decoration: BoxDecoration(
+                      color: c.accentSoft.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border(
+                        left: BorderSide(color: c.accent, width: 3),
+                        top: BorderSide(color: c.border),
+                        right: BorderSide(color: c.border),
+                        bottom: BorderSide(color: c.border),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              message.page != null
+                                  ? 'SELECCIÓN · PÁG. ${message.page}'
+                                  : 'SELECCIÓN',
+                              style:
+                                  AppText.label(c).copyWith(color: c.accent),
+                            ),
+                            if (canJump) ...[
+                              const SizedBox(width: 5),
+                              Icon(Icons.north_east,
+                                  size: 10, color: c.accent),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _truncate(selection, 280),
+                          style: AppText.secondary(c)
+                              .copyWith(fontStyle: FontStyle.italic),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      message.page != null
-                          ? 'SELECCIÓN · PÁG. ${message.page}'
-                          : 'SELECCIÓN',
-                      style: AppText.label(c).copyWith(color: c.accent),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _truncate(selection, 280),
-                      style: AppText.secondary(c)
-                          .copyWith(fontStyle: FontStyle.italic),
-                    ),
-                  ],
                 ),
               ),
               const SizedBox(height: 6),
@@ -88,10 +115,16 @@ class AssistantMessageView extends StatefulWidget {
     super.key,
     required this.content,
     this.streaming = false,
+    this.starred = false,
+    this.onToggleStar,
   });
 
   final String content;
   final bool streaming;
+  final bool starred;
+
+  /// Si se indica, aparece un botón de estrella para destacar la respuesta.
+  final VoidCallback? onToggleStar;
 
   @override
   State<AssistantMessageView> createState() => _AssistantMessageViewState();
@@ -112,27 +145,22 @@ class _AssistantMessageViewState extends State<AssistantMessageView> {
         children: [
           Row(
             children: [
-              Container(
-                width: 18,
-                height: 18,
-                decoration: BoxDecoration(
-                  color: c.accent,
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  'F',
-                  style: TextStyle(
-                    fontFamily: kFontDisplay,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: c.onAccent,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 7),
-              Text('Asistente', style: AppText.label(c)),
+              Icon(Icons.auto_awesome, size: 15, color: c.accent),
+              const SizedBox(width: 6),
+              Text('AI', style: AppText.label(c)),
               const Spacer(),
+              if (widget.onToggleStar != null &&
+                  (_hover || widget.starred) &&
+                  widget.content.isNotEmpty)
+                FolioIconButton(
+                  icon: widget.starred ? Icons.star : Icons.star_border,
+                  size: 15,
+                  active: widget.starred,
+                  tooltip: widget.starred
+                      ? 'Quitar de destacadas'
+                      : 'Destacar respuesta',
+                  onPressed: widget.onToggleStar,
+                ),
               if (_hover && !widget.streaming && widget.content.isNotEmpty)
                 _CopyButton(
                   copied: _copied,

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -40,6 +41,10 @@ class _ReaderScreenState extends State<ReaderScreen> {
   final _chatFocus = FocusNode();
   final _searchFieldFocus = FocusNode();
 
+  /// Evita que los atajos sin modificador (1, 2, espacio) actúen mientras
+  /// el usuario escribe en el chat o en el buscador.
+  bool get _isTypingSomewhere => _chatFocus.hasFocus || _searchFieldFocus.hasFocus;
+
   late final ChatController _chat;
   late final HighlightRepository _highlightRepo;
 
@@ -53,6 +58,23 @@ class _ReaderScreenState extends State<ReaderScreen> {
   int _currentPage = 1;
   int _pageCount = 0;
   Timer? _progressTimer;
+
+  // Zoom. _zoomTarget es la fuente de verdad (0.5-4.0); por debajo de 1.0
+  // Syncfusion no lo soporta de forma nativa, así que se simula con un
+  // Transform.scale sobre el visor (ver _visualScale).
+  double _zoomTarget = 1.0;
+  double get _visualScale => _zoomTarget < 1.0 ? _zoomTarget : 1.0;
+
+  // Indicador de página: visible unos segundos tras cambiar de página o al
+  // pasar el ratón por encima, luego se desvanece.
+  bool _pageIndicatorVisible = true;
+  Timer? _pageIndicatorHideTimer;
+
+  // Autoscroll con el botón central del ratón (estilo Chrome).
+  bool _autoScrolling = false;
+  Offset? _autoScrollOrigin;
+  Offset? _autoScrollCurrent;
+  Timer? _autoScrollTicker;
 
   // Selección activa en el visor.
   String? _selectionText;
@@ -86,6 +108,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
   @override
   void dispose() {
     _progressTimer?.cancel();
+    _pageIndicatorHideTimer?.cancel();
+    _autoScrollTicker?.cancel();
     _searchResult?.clear();
     _searchController.dispose();
     _chatFocus.dispose();
@@ -106,6 +130,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
       _pdf.jumpToPage(widget.doc.lastPage);
     }
     _restoreHighlights();
+    _showPageIndicatorBriefly();
     setState(() => _documentReady = true);
   }
 
@@ -118,7 +143,18 @@ class _ReaderScreenState extends State<ReaderScreen> {
           .read<LibraryController>()
           .saveProgress(widget.doc.id, lastPage: _currentPage);
     });
+    _showPageIndicatorBriefly();
     setState(() {});
+  }
+
+  /// Muestra el indicador de página y reinicia el temporizador para
+  /// ocultarlo tras unos segundos de inactividad.
+  void _showPageIndicatorBriefly() {
+    _pageIndicatorHideTimer?.cancel();
+    if (!_pageIndicatorVisible) setState(() => _pageIndicatorVisible = true);
+    _pageIndicatorHideTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _pageIndicatorVisible = false);
+    });
   }
 
   // ── Selección ──────────────────────────────────────────────────────────
@@ -238,10 +274,21 @@ class _ReaderScreenState extends State<ReaderScreen> {
       );
       _annotationsById[saved.id] = annotation;
       _highlights.add(saved);
+      if (mounted) {
+        context.read<SettingsController>().setLastHighlightColor(color);
+      }
     } catch (_) {
       // Ignorado: la anotación no pudo crearse.
     }
     _clearSelection();
+  }
+
+  /// Subraya la selección activa con el último color usado (atajo: espacio).
+  void _highlightWithLastColor() {
+    if (_selectionText == null) return;
+    final settings = context.read<SettingsController>();
+    final color = settings.lastHighlightColor ?? settings.highlightColors.first;
+    _highlightSelection(color);
   }
 
   Future<void> _removeHighlight(Highlight h) async {
@@ -387,12 +434,72 @@ class _ReaderScreenState extends State<ReaderScreen> {
   }
 
   // ── Zoom y navegación ──────────────────────────────────────────────────
+  //
+  // Syncfusion solo soporta zoomLevel entre 1.0 y el maxZoomLevel configurado
+  // (no existe un mínimo por debajo del 100%). Para permitir alejar hasta un
+  // 50% simulamos el zoom reducido con un Transform.scale sobre el visor
+  // (ver _visualScale) y dejamos el controlador nativo fijo en 1.0 mientras
+  // tanto. Es una solución alternativa: si notas comportamientos raros de
+  // scroll/selección por debajo del 100%, es la parte más "experimental".
 
   void _zoomBy(double delta) {
-    _pdf.zoomLevel = (_pdf.zoomLevel + delta).clamp(1.0, 4.0).toDouble();
+    setState(() {
+      _zoomTarget = (_zoomTarget + delta).clamp(0.5, 4.0).toDouble();
+      _pdf.zoomLevel = _zoomTarget < 1.0 ? 1.0 : _zoomTarget;
+    });
   }
 
-  void _zoomReset() => _pdf.zoomLevel = 1.0;
+  void _zoomReset() {
+    setState(() {
+      _zoomTarget = 1.0;
+      _pdf.zoomLevel = 1.0;
+    });
+  }
+
+  // ── Autoscroll con el botón central ───────────────────────────────────
+
+  void _startAutoScroll(Offset position) {
+    _autoScrollTicker?.cancel();
+    setState(() {
+      _autoScrolling = true;
+      _autoScrollOrigin = position;
+      _autoScrollCurrent = position;
+    });
+    _autoScrollTicker =
+        Timer.periodic(const Duration(milliseconds: 16), (_) {
+      final origin = _autoScrollOrigin;
+      final current = _autoScrollCurrent;
+      if (origin == null || current == null) return;
+      const deadZone = 14.0;
+      const maxSpeed = 26.0;
+      final deltaY = current.dy - origin.dy;
+      if (deltaY.abs() <= deadZone) return;
+      final beyond = deltaY.abs() - deadZone;
+      final speed =
+          (beyond / 4).clamp(0.0, maxSpeed).toDouble() * deltaY.sign;
+      final offset = _pdf.scrollOffset;
+      _pdf.jumpTo(
+        xOffset: offset.dx,
+        yOffset: (offset.dy + speed).clamp(0.0, double.infinity).toDouble(),
+      );
+    });
+  }
+
+  void _updateAutoScroll(Offset position) {
+    if (!_autoScrolling) return;
+    _autoScrollCurrent = position;
+  }
+
+  void _stopAutoScroll() {
+    if (!_autoScrolling) return;
+    _autoScrollTicker?.cancel();
+    _autoScrollTicker = null;
+    setState(() {
+      _autoScrolling = false;
+      _autoScrollOrigin = null;
+      _autoScrollCurrent = null;
+    });
+  }
 
   Future<void> _openAnotherPdf() async {
     final library = context.read<LibraryController>();
@@ -428,9 +535,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
         const SingleActivator(LogicalKeyboardKey.comma, control: true):
             _openSettings,
         const SingleActivator(LogicalKeyboardKey.equal, control: true): () =>
-            _zoomBy(0.25),
+            _zoomBy(0.1),
         const SingleActivator(LogicalKeyboardKey.minus, control: true): () =>
-            _zoomBy(-0.25),
+            _zoomBy(-0.1),
         const SingleActivator(LogicalKeyboardKey.digit0, control: true):
             _zoomReset,
         const SingleActivator(LogicalKeyboardKey.arrowRight, control: true):
@@ -440,8 +547,25 @@ class _ReaderScreenState extends State<ReaderScreen> {
         const SingleActivator(LogicalKeyboardKey.arrowLeft, control: true): () {
           if (_currentPage > 1) _pdf.jumpToPage(_currentPage - 1);
         },
+        const SingleActivator(LogicalKeyboardKey.digit1): () {
+          if (_selectionText != null && !_isTypingSomewhere) {
+            _askAboutSelection();
+          }
+        },
+        const SingleActivator(LogicalKeyboardKey.digit2): () {
+          if (_selectionText != null && !_isTypingSomewhere) {
+            _explainSelection();
+          }
+        },
+        const SingleActivator(LogicalKeyboardKey.space): () {
+          if (_selectionText != null && !_isTypingSomewhere) {
+            _highlightWithLastColor();
+          }
+        },
         const SingleActivator(LogicalKeyboardKey.escape): () {
-          if (_selectionText != null) {
+          if (_autoScrolling) {
+            _stopAutoScroll();
+          } else if (_selectionText != null) {
             _clearSelection();
           } else if (_searchOpen) {
             _toggleSearch();
@@ -508,6 +632,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                                     currentPage: () => _pdf.pageNumber,
                                     onClose: () =>
                                         setState(() => _chatVisible = false),
+                                    onJumpToPage: (page) => _pdf.jumpToPage(page),
                                   ),
                                 ),
                               ),
@@ -536,6 +661,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                               child: ChatPanel(
                                 inputFocusNode: _chatFocus,
                                 currentPage: () => _pdf.pageNumber,
+                                onJumpToPage: (page) => _pdf.jumpToPage(page),
                               ),
                             ),
                           ],
@@ -584,21 +710,31 @@ class _ReaderScreenState extends State<ReaderScreen> {
           ),
           const Spacer(),
           if (_documentReady) ...[
-            _PageIndicator(
-              current: _currentPage,
-              total: _pageCount,
-              onJump: (page) => _pdf.jumpToPage(page),
+            MouseRegion(
+              onEnter: (_) => _showPageIndicatorBriefly(),
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 350),
+                opacity: _pageIndicatorVisible ? 1.0 : 0.0,
+                child: IgnorePointer(
+                  ignoring: !_pageIndicatorVisible,
+                  child: _PageIndicator(
+                    current: _currentPage,
+                    total: _pageCount,
+                    onJump: (page) => _pdf.jumpToPage(page),
+                  ),
+                ),
+              ),
             ),
             const SizedBox(width: 6),
             FolioIconButton(
               icon: Icons.remove,
               tooltip: 'Reducir (Ctrl+-)',
-              onPressed: () => _zoomBy(-0.25),
+              onPressed: () => _zoomBy(-0.1),
             ),
             FolioIconButton(
               icon: Icons.add,
               tooltip: 'Ampliar (Ctrl++)',
-              onPressed: () => _zoomBy(0.25),
+              onPressed: () => _zoomBy(0.1),
             ),
             Container(
               width: 1,
@@ -676,55 +812,103 @@ class _ReaderScreenState extends State<ReaderScreen> {
     final desktop =
         Platform.isWindows || Platform.isLinux || Platform.isMacOS;
 
+    final highlightColors = context.watch<SettingsController>().highlightColors;
+
     return Container(
       color: c.pdfBackdrop,
       child: LayoutBuilder(builder: (context, constraints) {
         final areaSize = Size(constraints.maxWidth, constraints.maxHeight);
-        return Stack(
-          key: _pdfAreaKey,
-          children: [
-            Positioned.fill(
-              child: SfPdfViewer.file(
-              File(widget.doc.path),
-              key: _viewerKey,
-              controller: _pdf,
-              interactionMode: desktop
-                  ? PdfInteractionMode.selection
-                  : PdfInteractionMode.pan,
-              pageLayoutMode: PdfPageLayoutMode.continuous,
-              canShowTextSelectionMenu: false,
-              canShowScrollHead: false,
-              maxZoomLevel: 4,
-              onDocumentLoaded: _onDocumentLoaded,
-              onDocumentLoadFailed: (details) {
-                setState(() => _loadError = details.description);
-              },
-              onPageChanged: _onPageChanged,
-              onTextSelectionChanged: _onTextSelectionChanged,
-            ),
+        return Listener(
+          onPointerDown: (event) {
+            if (event.kind == PointerDeviceKind.mouse &&
+                event.buttons == kMiddleMouseButton) {
+              if (_autoScrolling) {
+                _stopAutoScroll();
+              } else {
+                _startAutoScroll(event.localPosition);
+              }
+            } else if (_autoScrolling) {
+              // Cualquier otro clic mientras se hace autoscroll lo detiene.
+              _stopAutoScroll();
+            }
+          },
+          onPointerMove: (event) => _updateAutoScroll(event.localPosition),
+          onPointerHover: (event) => _updateAutoScroll(event.localPosition),
+          child: Stack(
+            key: _pdfAreaKey,
+            children: [
+              Positioned.fill(
+                child: Transform.scale(
+                  scale: _visualScale,
+                  alignment: Alignment.topCenter,
+                  child: SfPdfViewer.file(
+                    File(widget.doc.path),
+                    key: _viewerKey,
+                    controller: _pdf,
+                    interactionMode: desktop
+                        ? PdfInteractionMode.selection
+                        : PdfInteractionMode.pan,
+                    pageLayoutMode: PdfPageLayoutMode.continuous,
+                    canShowTextSelectionMenu: false,
+                    canShowScrollHead: false,
+                    maxZoomLevel: 4,
+                    onDocumentLoaded: _onDocumentLoaded,
+                    onDocumentLoadFailed: (details) {
+                      setState(() => _loadError = details.description);
+                    },
+                    onPageChanged: _onPageChanged,
+                    onTextSelectionChanged: _onTextSelectionChanged,
+                  ),
+                ),
+              ),
+              if (_searchOpen)
+                Positioned(
+                  top: 10,
+                  right: 14,
+                  child: _SearchBar(
+                    controller: _searchController,
+                    focusNode: _searchFieldFocus,
+                    result: _searchResult,
+                    onSearch: _runSearch,
+                    onClose: _toggleSearch,
+                  ),
+                ),
+              if (_selectionText != null && _selectionRegion != null)
+                SelectionMenu(
+                  anchor: _selectionRegion!,
+                  areaSize: areaSize,
+                  onAsk: _askAboutSelection,
+                  onExplain: _explainSelection,
+                  onHighlight: _highlightSelection,
+                  onCopy: _copySelection,
+                  highlightColors: highlightColors,
+                ),
+              if (_autoScrolling && _autoScrollOrigin != null)
+                Positioned(
+                  left: _autoScrollOrigin!.dx - 14,
+                  top: _autoScrollOrigin!.dy - 14,
+                  child: IgnorePointer(
+                    child: Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: c.raised.withValues(alpha: 0.9),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: c.border),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.25),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                      child: Icon(Icons.swap_vert,
+                          size: 16, color: c.inkSecondary),
+                    ),
+                  ),
+                ),
+            ],
           ),
-          if (_searchOpen)
-            Positioned(
-              top: 10,
-              right: 14,
-              child: _SearchBar(
-                controller: _searchController,
-                focusNode: _searchFieldFocus,
-                result: _searchResult,
-                onSearch: _runSearch,
-                onClose: _toggleSearch,
-              ),
-            ),
-            if (_selectionText != null && _selectionRegion != null)
-              SelectionMenu(
-                anchor: _selectionRegion!,
-                areaSize: areaSize,
-                onAsk: _askAboutSelection,
-                onExplain: _explainSelection,
-                onHighlight: _highlightSelection,
-                onCopy: _copySelection,
-              ),
-          ],
         );
       }),
     );

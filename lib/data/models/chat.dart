@@ -41,6 +41,7 @@ class ChatMessage {
     required this.createdAt,
     this.selection,
     this.page,
+    this.starred = false,
   });
 
   final int id;
@@ -55,7 +56,21 @@ class ChatMessage {
   /// Página del documento asociada a la pregunta (si la hubo).
   final int? page;
 
+  /// Si la respuesta se ha marcado como destacada.
+  final bool starred;
+
   bool get isUser => role == 'user';
+
+  ChatMessage copyWith({bool? starred}) => ChatMessage(
+        id: id,
+        chatId: chatId,
+        role: role,
+        content: content,
+        createdAt: createdAt,
+        selection: selection,
+        page: page,
+        starred: starred ?? this.starred,
+      );
 
   factory ChatMessage.fromRow(Map<String, Object?> row) => ChatMessage(
         id: row['id'] as int,
@@ -66,6 +81,7 @@ class ChatMessage {
             DateTime.fromMillisecondsSinceEpoch(row['created_at'] as int),
         selection: row['selection'] as String?,
         page: row['page'] as int?,
+        starred: (row['starred'] as int? ?? 0) != 0,
       );
 }
 
@@ -76,4 +92,23 @@ class ChatWithDocument {
   final ChatSession chat;
   final String? documentTitle;
   final String? documentPath;
+}
+
+/// Una respuesta destacada (con la pregunta que la originó y el documento).
+class StarredAnswer {
+  const StarredAnswer({
+    required this.message,
+    required this.question,
+    required this.chatId,
+    required this.chatTitle,
+    this.documentId,
+    this.documentTitle,
+  });
+
+  final ChatMessage message; // el mensaje 'assistant' marcado con estrella
+  final String? question; // el mensaje 'user' inmediatamente anterior
+  final int chatId;
+  final String chatTitle;
+  final int? documentId;
+  final String? documentTitle;
 }
