@@ -172,7 +172,7 @@
     /* ---------- CTA inferior compartida (Home y detalle de receta) ----------
        Píldora negra fina y baja, texto grande desde la izquierda (como el
        "Ver pedido · 4,50€" de HG). Solo aparece al llegar al fondo del scroll. */
-    .add-cta, .rv-cta {
+    .add-cta, .rv-cta, .wo-cta {
       position: fixed; left: 20px; right: 20px; z-index: 40;
       bottom: max(calc(env(safe-area-inset-bottom) - 10px), 8px);
       display: flex; align-items: center; justify-content: space-between; gap: 12px;
@@ -184,9 +184,9 @@
       transform: translateY(130px); pointer-events: none;
       transition: transform 0.4s cubic-bezier(.22,.61,.36,1);
     }
-    .add-cta.show, .rv-cta.show { transform: none; pointer-events: auto; }
-    .add-cta.show:active, .rv-cta.show:active { transform: scale(0.98); }
-    .add-cta.hidden, .rv-cta.hidden { display: none; }
+    .add-cta.show, .rv-cta.show, .wo-cta.show { transform: none; pointer-events: auto; }
+    .add-cta.show:active, .rv-cta.show:active, .wo-cta.show:active { transform: scale(0.98); }
+    .add-cta.hidden, .rv-cta.hidden, .wo-cta.hidden { display: none; }
     /* Altura mínima de la fila aunque no haya píldora de kcal (Home) */
     .add-cta::after { content: ""; width: 0; height: 40px; }
     .rv-cta-kcal {
@@ -584,13 +584,178 @@
        tarjeta. El rebote SUPERIOR lo cubre el beige de la foto (ver .rv-photo::before). */
     html.recipe-open, html.recipe-open body { background: #fff; }
 
+    /* ---------- Portada (elige Menú o Entrenamiento) ---------- */
+    .landing { min-height: 100vh; display: flex; flex-direction: column; background: #fff; position: relative; }
+    /* Rebote superior: continúa el color de las palmeras (mismo relleno que el splash) */
+    .landing::before {
+      content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
+      height: 100vh; background: #79908B;
+    }
+    .landing-photo {
+      flex: 1; min-height: 56vh; position: relative;
+      background-color: #79908B; background-image: url("palms.jpg");
+      background-size: cover; background-position: center;
+      display: flex; flex-direction: column; justify-content: flex-end;
+      padding: 0 26px 30px;
+    }
+    .landing-photo::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0) 40%, rgba(0,0,0,0.45));
+    }
+    .landing-title {
+      position: relative; z-index: 1; font-family: var(--exp); font-weight: 900;
+      font-size: 54px; line-height: 0.9; letter-spacing: -0.02em;
+      text-transform: uppercase; color: #fff;
+    }
+    .landing-sub { position: relative; z-index: 1; margin-top: 12px; font-size: 15px; font-weight: 500; color: rgba(255,255,255,0.9); }
+    .landing-menu { background: #fff; padding: 6px 24px calc(env(safe-area-inset-bottom) + 26px); }
+    .landing-row {
+      display: flex; align-items: center; gap: 16px; width: 100%;
+      border: none; background: none; cursor: pointer; padding: 24px 0; text-align: left;
+      font-family: var(--exp); font-weight: 800; font-size: 20px;
+      letter-spacing: -0.01em; color: var(--ink);
+      transition: opacity 0.12s ease;
+    }
+    .landing-row:active { opacity: 0.55; }
+    .landing-row + .landing-row { border-top: 1px solid rgba(0,0,0,0.08); }
+    .landing-ico { font-size: 24px; }
+    .landing-arrow { margin-left: auto; font-family: var(--sans); font-weight: 400; font-size: 22px; }
+
+    /* ---------- Entrenamiento (registro de ejercicios) ---------- */
+    .workout-page { min-height: 100%; background: #F8F9F4; position: relative; }
+    .wo-body { padding: 16px 18px calc(env(safe-area-inset-bottom) + 120px); }
+    /* Resumen del día: cajetín negro con la dificultad en grande (como el hero) */
+    .wo-summary {
+      background: var(--ink); border-radius: var(--r-lg); color: #fff;
+      padding: 18px 20px; display: flex; align-items: center; gap: 16px;
+      margin-bottom: 14px;
+    }
+    .wo-score {
+      font-family: var(--exp); font-weight: 900; font-size: 44px; line-height: 0.9;
+      letter-spacing: -0.02em; color: var(--lime);
+    }
+    .wo-score span { font-family: var(--disp); font-size: 17px; font-weight: 800; color: rgba(255,255,255,0.45); }
+    .wo-score-label {
+      font-family: var(--disp); font-size: 11px; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.55);
+      margin-top: 6px;
+    }
+    .wo-meta { margin-left: auto; display: flex; flex-direction: column; gap: 9px; align-items: flex-end; }
+    .wo-meta-line { font-size: 12.5px; font-weight: 500; color: rgba(255,255,255,0.7); }
+    .wo-dur { display: flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.14); border-radius: 99px; padding: 7px 13px; }
+    .wo-dur input {
+      width: 44px; border: none; background: none; outline: none; text-align: right;
+      font-family: var(--disp); font-weight: 800; font-size: 15px; color: #fff;
+      -webkit-appearance: none; -moz-appearance: textfield;
+    }
+    .wo-dur input::-webkit-outer-spin-button, .wo-dur input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .wo-dur span { font-family: var(--disp); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: rgba(255,255,255,0.6); }
+
+    /* Tarjetas blancas de la vista (mismo lenguaje que los pasillos de Compra) */
+    .wo-card {
+      background: #fff; border-radius: 20px; padding: 14px 16px;
+      box-shadow: 0 2px 10px rgba(40,46,54,0.05); margin-bottom: 14px;
+    }
+    .wo-card-h {
+      display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+      font-family: var(--exp); font-weight: 800; font-size: 16px;
+      text-transform: uppercase; letter-spacing: -0.01em; color: var(--ink);
+      margin: 2px 0 10px;
+    }
+    .wo-card-h span { font-family: var(--disp); font-size: 12px; font-weight: 700; color: var(--muted); text-transform: none; letter-spacing: 0; }
+
+    /* Chips de plantillas (contorno tinta; la última cargada, rellena;
+       "Guardar plantilla" en lima, como Limpiar filtros) */
+    .wo-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 2px 16px 6px; }
+    .wo-chips::-webkit-scrollbar { display: none; }
+    .wo-chip {
+      flex: 0 0 auto; border: none; background: none; cursor: pointer;
+      box-shadow: inset 0 0 0 2px var(--ink); color: var(--ink);
+      border-radius: 99px; padding: 11px 16px;
+      font-family: var(--disp); font-size: 12px; font-weight: 700;
+      letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .wo-chip:active { transform: scale(0.94); }
+    .wo-chip.active { background: var(--ink); color: #fff; }
+    .wo-chip.lime { box-shadow: none; background: var(--lime); color: var(--ink); }
+
+    /* Filas de ejercicios: hairlines + steppers de círculos blancos (como gramos) */
+    .wo-ex { padding: 12px 0; }
+    .wo-ex + .wo-ex { border-top: 1px solid rgba(0,0,0,0.07); }
+    .wo-ex-top { display: flex; align-items: baseline; gap: 10px; }
+    .wo-ex-name { flex: 1; min-width: 0; font-family: var(--sans); font-weight: 600; font-size: 15px; color: var(--ink); }
+    .wo-ex-del { border: none; background: none; cursor: pointer; color: var(--muted); font-size: 15px; padding: 2px 4px; }
+    .wo-ex-controls { display: flex; align-items: center; gap: 9px; margin-top: 10px; flex-wrap: wrap; }
+    .wo-step { display: flex; align-items: center; gap: 6px; }
+    .wo-step button {
+      width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
+      border: 1px solid rgba(0,0,0,0.04); background: #fff;
+      box-shadow: 0 1px 1px rgba(0,0,0,0.04), 0 3px 8px rgba(0,0,0,0.10);
+      color: var(--ink); font-size: 17px; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      touch-action: manipulation; -webkit-user-select: none; user-select: none;
+    }
+    .wo-step button:active { transform: scale(0.9); }
+    .wo-step b { min-width: 28px; text-align: center; font-family: var(--disp); font-weight: 800; font-size: 14px; white-space: nowrap; }
+    .wo-unit { font-family: var(--disp); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+    .wo-rest { margin-left: auto; font-family: var(--disp); font-size: 12px; font-weight: 700; color: var(--muted); background: var(--card); border-radius: 99px; padding: 6px 11px; white-space: nowrap; }
+
+    /* Añadir ejercicio: inputs beige (como el buscador) */
+    .wo-add-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 8px; }
+    .wo-field.full { grid-column: 1 / -1; }
+    .wo-field label {
+      display: block; font-family: var(--disp); font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 6px 2px;
+    }
+    .wo-field input, .wo-field select {
+      width: 100%; border: none; background: var(--card); border-radius: 12px;
+      padding: 12px; font-family: var(--sans); font-size: 15px; color: var(--ink);
+      outline: none; -webkit-appearance: none;
+    }
+    .wo-field input:focus, .wo-field select:focus { box-shadow: inset 0 0 0 2px var(--ink); }
+    .wo-add-btn {
+      width: 100%; border: none; background: var(--ink); color: #fff;
+      border-radius: 99px; padding: 14px; cursor: pointer; margin-top: 6px;
+      font-family: var(--disp); font-size: 13px; font-weight: 700;
+      letter-spacing: 0.03em; text-transform: uppercase;
+      transition: transform 0.12s ease;
+    }
+    .wo-add-btn:active { transform: scale(0.98); }
+
+    /* Historial */
+    .wo-hist { padding: 12px 0; display: flex; align-items: center; gap: 12px; }
+    .wo-hist + .wo-hist { border-top: 1px solid rgba(0,0,0,0.07); }
+    .wo-hist-date { font-family: var(--disp); font-weight: 800; font-size: 15px; color: var(--ink); white-space: nowrap; }
+    .wo-hist-meta { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 500; color: var(--muted); }
+    .wo-hist-score { font-family: var(--disp); font-weight: 800; font-size: 14px; white-space: nowrap; }
+    .wo-hist-view {
+      border: none; background: none; cursor: pointer;
+      box-shadow: inset 0 0 0 2px var(--ink); color: var(--ink);
+      border-radius: 99px; padding: 8px 13px;
+      font-family: var(--disp); font-size: 11px; font-weight: 700; text-transform: uppercase;
+    }
+    .wo-empty { text-align: center; padding: 26px 10px; color: var(--muted); font-size: 14px; font-weight: 500; }
+    .wo-empty .ico { font-size: 30px; margin-bottom: 6px; }
+
+    /* Toast (aviso flotante): píldora de tinta sobre la CTA */
+    .toast {
+      position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 78px);
+      transform: translateX(-50%) translateY(110px);
+      background: var(--ink); color: #fff; padding: 11px 20px; border-radius: 99px;
+      font-family: var(--disp); font-size: 13px; font-weight: 700;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.25); z-index: 130; white-space: nowrap;
+      transition: transform 0.35s cubic-bezier(.22,.61,.36,1); pointer-events: none;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
     /* ---------- Rebotes (overscroll) consistentes: patrón de la RECETA ----------
        El detalle de receta es la referencia que funciona en iOS: un extensor
        ::before (bottom:100%, 100vh) del color de la cabecera cubre el rebote
        SUPERIOR, y el tinte del documento (html.<vista>-open) pone el color
        del rebote INFERIOR. Nunca extensores por debajo (amplían el scroll). */
     #sheet, .shop-page, .sim-pick, .profile-page { position: relative; }
-    #sheet::before, .shop-page::before {
+    #sheet::before, .shop-page::before, .workout-page::before {
       content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
       height: 100vh; background: #000;               /* cabeceras negras */
     }
@@ -1546,6 +1711,7 @@
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
+    <button class="drawer-settings" id="drawerWorkout">🏋️ Entrenamiento</button>
     <div class="drawer-foot"><span id="drawerVersion">V.5</span></div>
   </aside>
 
@@ -1912,6 +2078,97 @@
       <button class="confirm" id="profileSave">Guardar</button>
     </div>
   </section>
+
+  <!-- ===================== Portada (Menú o Entrenamiento) ===================== -->
+  <section class="page landing" id="landing" aria-hidden="true" style="display:none">
+    <div class="landing-photo">
+      <h1 class="landing-title">Real<br>Food.</h1>
+      <p class="landing-sub">Tu menú y tu entrenamiento, en un solo sitio.</p>
+    </div>
+    <div class="landing-menu">
+      <button class="landing-row" data-go="app"><span class="landing-ico">🍽️</span> Menú <span class="landing-arrow">→</span></button>
+      <button class="landing-row" data-go="workout"><span class="landing-ico">🏋️</span> Entrenamiento <span class="landing-arrow">→</span></button>
+    </div>
+  </section>
+
+  <!-- ===================== Entrenamiento ===================== -->
+  <section class="page workout-page" id="workout" aria-hidden="true" style="display:none">
+    <div class="shop-head-sticky">
+      <div class="shop-head">
+        <button class="rv-back" id="woBack" aria-label="Volver">←</button>
+        <h2 class="shop-title">Entrenamiento</h2>
+        <span class="shop-count" id="woScoreChip">0/100</span>
+      </div>
+      <div class="shop-days" id="woDays"></div>
+    </div>
+
+    <div class="wo-body">
+      <!-- Resumen del día: dificultad + duración -->
+      <div class="wo-summary">
+        <div>
+          <div class="wo-score" id="woScore">0<span>/100</span></div>
+          <div class="wo-score-label" id="woScoreLabel">Sin ejercicios</div>
+        </div>
+        <div class="wo-meta">
+          <span class="wo-meta-line" id="woMeta">0 ejercicios · 0 series</span>
+          <label class="wo-dur"><input id="woDur" type="number" inputmode="numeric" min="1" max="600" placeholder="—"><span>min</span></label>
+        </div>
+      </div>
+
+      <!-- Plantillas -->
+      <div class="wo-card">
+        <div class="wo-card-h">Plantillas<span>toca para cargar</span></div>
+        <div class="wo-chips" id="woTemplates">
+          <button class="wo-chip" data-tpl="A">💪 A · Tracción/Empuje</button>
+          <button class="wo-chip" data-tpl="B">🦵 B · Piernas/Core</button>
+          <button class="wo-chip" data-tpl="C">🔄 C · Upper variante</button>
+          <button class="wo-chip lime" id="woSaveTpl">📌 Guardar plantilla</button>
+        </div>
+      </div>
+
+      <!-- Ejercicios del día -->
+      <div class="wo-card">
+        <div class="wo-card-h">Ejercicios<span id="woCount"></span></div>
+        <div id="woList"></div>
+      </div>
+
+      <!-- Añadir ejercicio -->
+      <div class="wo-card">
+        <div class="wo-card-h">Añadir ejercicio</div>
+        <div class="wo-add-grid">
+          <div class="wo-field full"><label>Ejercicio</label><input id="woNombre" type="text" placeholder="ej. Dominadas pronación" autocomplete="off" autocorrect="off"></div>
+          <div class="wo-field"><label>Series</label><input id="woSeries" type="number" inputmode="numeric" min="1" max="20" placeholder="4"></div>
+          <div class="wo-field"><label>Reps</label><input id="woReps" type="text" placeholder="8" autocomplete="off"></div>
+          <div class="wo-field"><label>Descanso</label>
+            <select id="woDescanso">
+              <option value="30s">30 s</option>
+              <option value="45s">45 s</option>
+              <option value="60s" selected>60 s</option>
+              <option value="90s">90 s</option>
+              <option value="120s">2 min</option>
+              <option value="180s">3 min</option>
+            </select>
+          </div>
+        </div>
+        <button class="wo-add-btn" id="woAdd">＋ Añadir ejercicio</button>
+      </div>
+
+      <!-- Historial -->
+      <div class="wo-card">
+        <div class="wo-card-h">Historial<span>últimos 12</span></div>
+        <div id="woHistory"></div>
+      </div>
+    </div>
+
+    <!-- CTA inferior fija: guardar el entrenamiento del día -->
+    <button class="wo-cta" id="wSaveCta" aria-label="Guardar entrenamiento">
+      <span id="wCtaText">Guardar entrenamiento</span>
+      <span class="rv-cta-kcal" id="wCtaScore">0/100</span>
+    </button>
+  </section>
+
+  <!-- Aviso flotante (toast) -->
+  <div class="toast" id="toast"></div>
 
   <!-- ===================== Visor de foto a pantalla completa ===================== -->
   <div class="photo-zoom" id="photoZoom" aria-hidden="true">
@@ -2631,8 +2888,9 @@
        no da para desplazar, se muestran directamente. */
     function updateBottomCta() {
       const cta = currentView === "app" ? $("addBtn")
-                : currentView === "recipeView" ? $("rvSave") : null;
-      [$("addBtn"), $("rvSave")].forEach(b => { if (b !== cta) b.classList.remove("show"); });
+                : currentView === "recipeView" ? $("rvSave")
+                : currentView === "workout" ? $("wSaveCta") : null;
+      [$("addBtn"), $("rvSave"), $("wSaveCta")].forEach(b => { if (b !== cta) b.classList.remove("show"); });
       if (!cta) return;
       const atBottom = window.innerHeight + window.scrollY
         >= document.documentElement.scrollHeight - 60;
@@ -2726,7 +2984,7 @@
 
     // Solo una "página" visible a la vez, con transición de entrada/salida fluida.
     // "" (sin display inline) deja mandar al CSS → la Home puede ser grid en iPad.
-    const VIEWS = ["app", "sheet", "shopPage", "recipeView", "sim", "simPick", "profile"];
+    const VIEWS = ["app", "sheet", "shopPage", "recipeView", "sim", "simPick", "profile", "landing", "workout"];
     let currentView = "app";
     function showView(id) {
       if (id === currentView) { window.scrollTo(0, 0); return; }
@@ -4066,6 +4324,345 @@
     })();
 
     /* =========================================================
+       PORTADA + ENTRENAMIENTO
+       La portada elige entre Menú (la app de comida) y Entrenamiento.
+       El registro de ejercicios conserva la lógica original (plantillas
+       A/B/C, dificultad 0-100 por pesos, historial, localStorage
+       'ejercicios_v1') con la estética de la app.
+       ========================================================= */
+
+    // ── Portada ──
+    $("landing").addEventListener("click", (e) => {
+      const row = e.target.closest(".landing-row[data-go]"); if (!row) return;
+      if (row.dataset.go === "workout") openWorkout();
+      else { setDocTint(null); showView("app"); }
+    });
+
+    // ── Almacenamiento (mismo esquema que el original) ──
+    const WO_LS_KEY = "ejercicios_v1";
+    let woWorkouts       = {};     // { "2025-01-15": { exercises:[...], duracion } }
+    let woTemplateA      = null;   // plantillas personalizadas (null = usar la de serie)
+    let woTemplateB      = null;
+    let woTemplateC      = null;
+    function woCacheWrite() {
+      try {
+        localStorage.setItem(WO_LS_KEY, JSON.stringify({
+          workouts: woWorkouts, template: woTemplateA, templateB: woTemplateB, templateC: woTemplateC
+        }));
+      } catch (e) {}
+    }
+    function woLoadFromCache() {
+      let c = null;
+      try { c = JSON.parse(localStorage.getItem(WO_LS_KEY)); } catch (e) {}
+      if (!c) return;
+      woWorkouts  = (typeof c.workouts === "object" && c.workouts) ? c.workouts : {};
+      woTemplateA = Array.isArray(c.template)  ? c.template  : null;
+      woTemplateB = Array.isArray(c.templateB) ? c.templateB : null;
+      woTemplateC = Array.isArray(c.templateC) ? c.templateC : null;
+    }
+
+    // ── Pesos de dificultad por ejercicio (0–1) y puntuación 0-100 ──
+    const WO_WEIGHTS = [
+      { keys: ["dominadas"],                       w: 1.00 },
+      { keys: ["chin-up", "chinup"],               w: 0.92 },
+      { keys: ["arqueras"],                        w: 0.78 },
+      { keys: ["fondos"],                          w: 0.75 },
+      { keys: ["búlgara", "bulgara"],              w: 0.75 },
+      { keys: ["burpee"],                          w: 0.80 },
+      { keys: ["leg raise", "leg-raise", "leg raises"], w: 0.68 },
+      { keys: ["remo", "invertido", "row"],        w: 0.62 },
+      { keys: ["diamante"],                        w: 0.58 },
+      { keys: ["zancada"],                         w: 0.55 },
+      { keys: ["sentadilla", "squat"],             w: 0.55 },
+      { keys: ["pike"],                            w: 0.52 },
+      { keys: ["declinadas", "declined"],          w: 0.52 },
+      { keys: ["hip thrust"],                      w: 0.50 },
+      { keys: ["palmada", "explosiv"],             w: 0.55 },
+      { keys: ["flexion", "flexiones", "push"],    w: 0.45 },
+      { keys: ["plancha", "plank"],                w: 0.40 },
+      { keys: ["superman"],                        w: 0.38 },
+      { keys: ["extensión", "extension", "tric"],  w: 0.38 },
+      { keys: ["crunch", "bicicleta"],             w: 0.35 },
+      { keys: ["gemelo", "calf"],                  w: 0.30 }
+    ];
+    const WO_DEFAULT_WEIGHT   = 0.55;
+    const WO_REFERENCE_POINTS = 152.65;   // puntos de la plantilla A completa
+    const WO_REFERENCE_SCORE  = 65;       // score asociado a esos puntos
+    function woWeight(nombre) {
+      const lower = (nombre || "").toLowerCase();
+      for (const { keys, w } of WO_WEIGHTS) if (keys.some(k => lower.includes(k))) return w;
+      return WO_DEFAULT_WEIGHT;
+    }
+    function woParseReps(reps) {
+      const str = String(reps || "1");
+      const range = str.match(/^(\d+)-(\d+)/);
+      if (range) return Math.round((+range[1] + +range[2]) / 2);
+      const num = str.match(/^(\d+)/);
+      return num ? +num[1] : 1;
+    }
+    function woDifficulty(exercises) {
+      if (!exercises.length) return 0;
+      let total = 0;
+      exercises.forEach(ex => { total += woWeight(ex.nombre) * (ex.series || 1) * woParseReps(ex.reps); });
+      return Math.min(100, Math.round(total * WO_REFERENCE_SCORE / WO_REFERENCE_POINTS));
+    }
+    // Colores de la paleta de la app: lima (bajo), ámbar (medio), rojo (alto).
+    // Sobre negro el lima puro luce; sobre blanco se usa el lima apagado.
+    function woColor(score, onDark) {
+      if (score < 35) return onDark ? "var(--lime)" : "var(--lime-dim)";
+      if (score < 65) return "#E8A13D";
+      return "var(--red)";
+    }
+    function woLabel(score) {
+      if (score < 20) return "Ligero";
+      if (score < 40) return "Moderado";
+      if (score < 60) return "Exigente";
+      if (score < 80) return "Intenso";
+      return "Brutal";
+    }
+
+    // ── Plantillas de serie ──
+    const WO_TPL_A = [
+      { nombre: "Dominadas pronación",   series: 4, reps: "7",        descanso: "90s" },
+      { nombre: "Fondos en sillas",      series: 4, reps: "9",        descanso: "90s" },
+      { nombre: "Chin-ups (supinación)", series: 3, reps: "9",        descanso: "90s" },
+      { nombre: "Flexiones arqueras",    series: 3, reps: "9 c/lado", descanso: "60s" },
+      { nombre: "Flexiones diamante",    series: 3, reps: "11",       descanso: "60s" },
+      { nombre: "Flexiones pike",        series: 3, reps: "11",       descanso: "60s" },
+      { nombre: "Leg raises colgado",    series: 3, reps: "11",       descanso: "45s" }
+    ];
+    const WO_TPL_B = [
+      { nombre: "Sentadillas",        series: 4, reps: "15",        descanso: "60s" },
+      { nombre: "Sentadilla búlgara", series: 3, reps: "9 c/lado",  descanso: "90s" },
+      { nombre: "Zancadas",           series: 3, reps: "10 c/lado", descanso: "60s" },
+      { nombre: "Hip thrust",         series: 4, reps: "15",        descanso: "45s" },
+      { nombre: "Gemelos de pie",     series: 3, reps: "20",        descanso: "45s" },
+      { nombre: "Crunch bicicleta",   series: 3, reps: "20 c/lado", descanso: "45s" },
+      { nombre: "Superman",           series: 3, reps: "12",        descanso: "45s" }
+    ];
+    const WO_TPL_C = [
+      { nombre: "Dominadas agarre ancho",    series: 4, reps: "6",         descanso: "90s" },
+      { nombre: "Plancha estática",          series: 3, reps: "45s",       descanso: "45s" },
+      { nombre: "Flexiones declinadas",      series: 4, reps: "12",        descanso: "60s" },
+      { nombre: "Fondos estrecho (tríceps)", series: 3, reps: "12",        descanso: "90s" },
+      { nombre: "Flexiones con palmada",     series: 3, reps: "8",         descanso: "60s" },
+      { nombre: "Extensión tríceps silla",   series: 3, reps: "12",        descanso: "45s" },
+      { nombre: "Toque hombro en plancha",   series: 3, reps: "10 c/lado", descanso: "45s" }
+    ];
+    const WO_TPL_LABELS = { A: "A · Tracción/Empuje", B: "B · Piernas/Core", C: "C · Upper variante" };
+
+    // ── Estado en edición ──
+    let woExercises = [];          // ejercicios del día en edición
+    let woLastTpl   = "A";         // última plantilla cargada (la que actualiza "Guardar plantilla")
+    let woDate      = woToday();   // día seleccionado (AAAA-MM-DD)
+
+    function woKeyOf(d) {
+      return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    }
+    function woToday() { return woKeyOf(new Date()); }
+    function woFmtDate(k) { const [y, m, d] = k.split("-"); return d + "/" + m + "/" + y; }
+
+    function showToast(msg) {
+      const t = $("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => t.classList.remove("show"), 2500);
+    }
+
+    // Compatibilidad hacia atrás (días guardados como array simple)
+    function woDataOf(date) {
+      const d = woWorkouts[date];
+      if (!d) return { exercises: [], duracion: null };
+      if (Array.isArray(d)) return { exercises: d, duracion: null };
+      return { exercises: Array.isArray(d.exercises) ? d.exercises : [], duracion: d.duracion || null };
+    }
+
+    function openWorkout() {
+      woLoadDate(woDate);
+      setDocTint("sheet-open");
+      showView("workout");
+    }
+    $("woBack").addEventListener("click", () => { setDocTint(null); showView("landing"); });
+    $("drawerWorkout").addEventListener("click", () => { closeDrawer(); openWorkout(); });
+
+    // Cambiar de día carga lo guardado de ese día (descarta lo no guardado)
+    function woLoadDate(date) {
+      woDate = date;
+      const wd = woDataOf(date);
+      woExercises = JSON.parse(JSON.stringify(wd.exercises));
+      $("woDur").value = wd.duracion || "";
+      woRenderAll();
+    }
+
+    // ── Días marcables en la cabecera (misma ventana que el resto de la app) ──
+    function woRenderDays() {
+      const tKey = woToday();
+      const days = [];
+      for (let n = -3; n <= 6; n++) { const d = new Date(); d.setDate(d.getDate() + n); days.push(woKeyOf(d)); }
+      $("woDays").innerHTML = days.map(key => {
+        const d = new Date(key + "T12:00");
+        const wd = d.toLocaleDateString("es-ES", { weekday: "short" }).replace(".", "");
+        return `<button class="shop-day${key === woDate ? " sel" : ""}${key === tKey ? " today" : ""}" data-wodate="${key}">
+          <span class="sd-wd">${wd}</span><span class="sd-num">${d.getDate()}</span></button>`;
+      }).join("");
+    }
+    $("woDays").addEventListener("click", (e) => {
+      const b = e.target.closest(".shop-day[data-wodate]"); if (!b) return;
+      woLoadDate(b.dataset.wodate);
+    });
+
+    // ── Plantillas ──
+    $("woTemplates").addEventListener("click", (e) => {
+      const save = e.target.closest("#woSaveTpl");
+      if (save) {
+        if (!woExercises.length) { showToast("❗ No hay ejercicios para guardar como plantilla"); return; }
+        if      (woLastTpl === "C") woTemplateC = JSON.parse(JSON.stringify(woExercises));
+        else if (woLastTpl === "B") woTemplateB = JSON.parse(JSON.stringify(woExercises));
+        else                        woTemplateA = JSON.parse(JSON.stringify(woExercises));
+        woCacheWrite();
+        showToast(`📌 Plantilla ${woLastTpl} actualizada`);
+        return;
+      }
+      const chip = e.target.closest(".wo-chip[data-tpl]"); if (!chip) return;
+      const which = chip.dataset.tpl;
+      woLastTpl = ["A", "B", "C"].includes(which) ? which : "A";
+      const src = which === "C" ? (woTemplateC || WO_TPL_C)
+                : which === "B" ? (woTemplateB || WO_TPL_B)
+                :                 (woTemplateA || WO_TPL_A);
+      woExercises = JSON.parse(JSON.stringify(src));
+      woRenderAll();
+      showToast(`📋 Plantilla ${WO_TPL_LABELS[woLastTpl]} cargada — ajusta y guarda`);
+    });
+
+    // ── Ajustar series / reps (respeta rangos "8-10" y sufijos "c/lado") ──
+    function woAdjustSeries(idx, delta) {
+      woExercises[idx].series = Math.max(1, (woExercises[idx].series || 1) + delta);
+      woRenderAll();
+    }
+    function woAdjustReps(idx, delta) {
+      const str = String(woExercises[idx].reps || "1");
+      const rangeMatch = str.match(/^(\d+)-(\d+)(.*)$/);
+      if (rangeMatch) {
+        const avg = Math.round((parseInt(rangeMatch[1]) + parseInt(rangeMatch[2])) / 2);
+        woExercises[idx].reps = `${Math.max(1, avg + delta)}${rangeMatch[3] || ""}`;
+      } else {
+        const simpleMatch = str.match(/^(\d+)(.*)$/);
+        if (simpleMatch) woExercises[idx].reps = `${Math.max(1, parseInt(simpleMatch[1]) + delta)}${simpleMatch[2] || ""}`;
+      }
+      woRenderAll();
+    }
+
+    // ── Añadir / quitar ejercicio ──
+    $("woAdd").addEventListener("click", () => {
+      const nombre   = $("woNombre").value.trim();
+      const series   = parseInt($("woSeries").value) || 3;
+      const reps     = $("woReps").value.trim() || "10";
+      const descanso = $("woDescanso").value;
+      if (!nombre) { showToast("❗ Escribe el nombre del ejercicio"); return; }
+      woExercises.push({ nombre, series, reps, descanso });
+      $("woNombre").value = "";
+      woRenderAll();
+    });
+
+    $("woList").addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-act]"); if (!btn) return;
+      const i = +btn.dataset.i;
+      const act = btn.dataset.act;
+      if (act === "del")      { woExercises.splice(i, 1); woRenderAll(); }
+      else if (act === "s-")  woAdjustSeries(i, -1);
+      else if (act === "s+")  woAdjustSeries(i, 1);
+      else if (act === "r-")  woAdjustReps(i, -1);
+      else if (act === "r+")  woAdjustReps(i, 1);
+    });
+
+    // ── Pintar todo (lista, resumen, cabecera, historial, CTA) ──
+    function woRenderAll() {
+      woRenderDays();
+
+      const list = $("woList");
+      if (!woExercises.length) {
+        list.innerHTML = `<div class="wo-empty"><div class="ico">🏋️</div>No hay ejercicios para este día.<br>Añade uno abajo o carga una plantilla.</div>`;
+        $("woCount").textContent = "";
+      } else {
+        list.innerHTML = woExercises.map((ex, i) => `
+          <div class="wo-ex">
+            <div class="wo-ex-top">
+              <span class="wo-ex-name">${ex.nombre}</span>
+              <button class="wo-ex-del" data-act="del" data-i="${i}" aria-label="Eliminar">✕</button>
+            </div>
+            <div class="wo-ex-controls">
+              <div class="wo-step"><button data-act="s-" data-i="${i}">−</button><b>${ex.series}</b><button data-act="s+" data-i="${i}">+</button></div>
+              <span class="wo-unit">series</span>
+              <div class="wo-step"><button data-act="r-" data-i="${i}">−</button><b>${ex.reps}</b><button data-act="r+" data-i="${i}">+</button></div>
+              <span class="wo-unit">reps</span>
+              <span class="wo-rest">${ex.descanso}</span>
+            </div>
+          </div>`).join("");
+        const totalSeries = woExercises.reduce((s2, e) => s2 + (e.series || 0), 0);
+        $("woCount").textContent = `${woExercises.length} ejercicios · ${totalSeries} series`;
+      }
+
+      const pts = woDifficulty(woExercises);
+      const totalSeries = woExercises.reduce((s2, e) => s2 + (e.series || 0), 0);
+      $("woScore").innerHTML = `${pts}<span>/100</span>`;
+      $("woScore").style.color = pts ? woColor(pts, true) : "rgba(255,255,255,0.35)";
+      $("woScoreLabel").textContent = pts ? woLabel(pts) : "Sin ejercicios";
+      $("woMeta").textContent = `${woExercises.length} ejercicios · ${totalSeries} series`;
+      $("woScoreChip").textContent = `${pts}/100`;
+      $("wCtaScore").textContent = `${pts}/100`;
+
+      woRenderHistory();
+      requestAnimationFrame(updateBottomCta);   // el alto de la vista cambia
+    }
+
+    // ── Guardar el entrenamiento del día ──
+    function woSave() {
+      const duracion = parseInt($("woDur").value) || null;
+      if (woExercises.length > 0 || duracion) {
+        woWorkouts[woDate] = { exercises: JSON.parse(JSON.stringify(woExercises)), duracion };
+      } else {
+        delete woWorkouts[woDate];
+      }
+      woCacheWrite();
+      const t = $("wCtaText"), orig = "Guardar entrenamiento";
+      t.textContent = "✓ Guardado";
+      setTimeout(() => { t.textContent = orig; }, 1500);
+      woRenderHistory();
+      showToast("💾 Entrenamiento guardado");
+    }
+    bindInstantTap($("wSaveCta"), woSave);
+
+    // ── Historial (últimos 12) ──
+    function woRenderHistory() {
+      const el = $("woHistory");
+      const dates = Object.keys(woWorkouts).sort((a, b) => b.localeCompare(a)).slice(0, 12);
+      if (!dates.length) {
+        el.innerHTML = `<div class="wo-empty"><div class="ico">📅</div>Aún no hay entrenamientos guardados.</div>`;
+        return;
+      }
+      el.innerHTML = dates.map(d => {
+        const wd = woDataOf(d);
+        const total = wd.exercises.reduce((s2, e) => s2 + (e.series || 0), 0);
+        const pts = woDifficulty(wd.exercises);
+        const dur = wd.duracion ? ` · ${wd.duracion} min` : "";
+        return `<div class="wo-hist">
+          <span class="wo-hist-date">${woFmtDate(d)}</span>
+          <span class="wo-hist-meta">${wd.exercises.length} ej · ${total} series${dur}</span>
+          ${pts > 0 ? `<span class="wo-hist-score" style="color:${woColor(pts, false)}">${pts}/100</span>` : ""}
+          <button class="wo-hist-view" data-view-date="${d}">Ver</button>
+        </div>`;
+      }).join("");
+    }
+    $("woHistory").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-view-date]"); if (!b) return;
+      woLoadDate(b.dataset.viewDate);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    woLoadFromCache();
+
+    /* =========================================================
        VISOR DE FOTO A PANTALLA COMPLETA — gestos "de iPhone" de verdad
        Se abre al tocar una foto real (no emoji) de la ficha de un alimento
        o receta. Pellizcar ancla el zoom exactamente bajo los dedos (como
@@ -4208,7 +4805,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.1";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.2";   // súbelo en cada cambio para confirmar que tienes la última
     $("drawerVersion").textContent = APP_VERSION;   // la versión vive en el cajón lateral
     loadPeople();          // personas + migración de datos a "José"
     loadPersonData();      // carga la persona activa (día de hoy)
@@ -4216,6 +4813,7 @@
     updateMenuAvatar();    // inicial de la persona activa en el botón
     renderDayStrip();      // prepara la tira de días
     render();
+    showView("landing");   // al entrar se elige entre Menú y Entrenamiento
   </script>
 </body>
 </html>

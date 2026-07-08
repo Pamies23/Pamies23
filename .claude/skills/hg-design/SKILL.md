@@ -122,6 +122,22 @@ toggles; outline red for destructive. Uppercase 12px display font. The
 row hides entirely when no chip is visible (`:has`), so it never leaves a
 dead gap above the grid.
 
+### Landing (portada) & Entrenamiento
+The app opens on `#landing`: full-bleed palms photo (same as splash, so the
+splash melts into it) with display-caps title bottom-left + a WHITE panel
+of hairline-separated nav rows (emoji + bold 20px label + → arrow) choosing
+Menú vs Entrenamiento. `#workout` reuses the Compra chrome verbatim (black
+sticky header + `.shop-day` chips, single-select date) over #F8F9F4 with:
+black summary card (big colored difficulty score /100 + label + duration
+pill input), white `.wo-card`s (template chips = ink outline, last-loaded
+filled, save-template lime; exercise rows with hairlines + white-circle
+steppers like the grams field; beige inputs; history rows) and the shared
+bottom CTA ("Guardar entrenamiento" + score pill). Workout logic/storage
+(`ejercicios_v1`, plantillas A/B/C, difficulty weights) is preserved from
+the user's artifact — restyle, never rewrite the math. Toast = ink pill
+above the CTA. Drawer has a shortcut to Entrenamiento; ← returns to the
+landing.
+
 ### Side drawer
 Black header block (photo avatar + UPPERCASE bold white name + gray
 action link) then white list: icon + 17px medium label per row, generous
