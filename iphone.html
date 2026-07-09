@@ -172,7 +172,7 @@
     /* ---------- CTA inferior compartida (Home y detalle de receta) ----------
        Píldora negra fina y baja, texto grande desde la izquierda (como el
        "Ver pedido · 4,50€" de HG). Solo aparece al llegar al fondo del scroll. */
-    .add-cta, .rv-cta, .wo-cta {
+    .add-cta, .rv-cta {
       position: fixed; left: 20px; right: 20px; z-index: 40;
       bottom: max(calc(env(safe-area-inset-bottom) - 10px), 8px);
       display: flex; align-items: center; justify-content: space-between; gap: 12px;
@@ -184,9 +184,9 @@
       transform: translateY(130px); pointer-events: none;
       transition: transform 0.4s cubic-bezier(.22,.61,.36,1);
     }
-    .add-cta.show, .rv-cta.show, .wo-cta.show { transform: none; pointer-events: auto; }
-    .add-cta.show:active, .rv-cta.show:active, .wo-cta.show:active { transform: scale(0.98); }
-    .add-cta.hidden, .rv-cta.hidden, .wo-cta.hidden { display: none; }
+    .add-cta.show, .rv-cta.show { transform: none; pointer-events: auto; }
+    .add-cta.show:active, .rv-cta.show:active { transform: scale(0.98); }
+    .add-cta.hidden, .rv-cta.hidden { display: none; }
     /* Altura mínima de la fila aunque no haya píldora de kcal (Home) */
     .add-cta::after { content: ""; width: 0; height: 40px; }
     .rv-cta-kcal {
@@ -642,10 +642,10 @@
     }
     .wo-meta { margin-left: auto; display: flex; flex-direction: column; gap: 9px; align-items: flex-end; }
     .wo-meta-line { font-size: 12.5px; font-weight: 500; color: rgba(255,255,255,0.7); }
-    .wo-dur { display: flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.14); border-radius: 99px; padding: 7px 13px; }
+    .wo-dur { display: flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.14); border-radius: 99px; padding: 10px 15px; }
     .wo-dur input {
-      width: 44px; border: none; background: none; outline: none; text-align: right;
-      font-family: var(--disp); font-weight: 800; font-size: 15px; color: #fff;
+      width: 48px; border: none; background: none; outline: none; text-align: right;
+      font-family: var(--disp); font-weight: 800; font-size: 16px; color: #fff;
       -webkit-appearance: none; -moz-appearance: textfield;
     }
     .wo-dur input::-webkit-outer-spin-button, .wo-dur input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -664,42 +664,43 @@
     }
     .wo-card-h span { font-family: var(--disp); font-size: 12px; font-weight: 700; color: var(--muted); text-transform: none; letter-spacing: 0; }
 
-    /* Chips de plantillas (contorno tinta; la última cargada, rellena;
-       "Guardar plantilla" en lima, como Limpiar filtros) */
-    .wo-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 2px 16px 6px; }
-    .wo-chips::-webkit-scrollbar { display: none; }
+    /* Plantillas: tres botones grandes a lo ancho (la última cargada, rellena);
+       "Guardar plantilla" en lima debajo, a lo ancho */
+    .wo-chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
     .wo-chip {
-      flex: 0 0 auto; border: none; background: none; cursor: pointer;
+      border: none; background: none; cursor: pointer;
       box-shadow: inset 0 0 0 2px var(--ink); color: var(--ink);
-      border-radius: 99px; padding: 11px 16px;
-      font-family: var(--disp); font-size: 12px; font-weight: 700;
-      letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap;
+      border-radius: 99px; padding: 14px 6px; text-align: center;
+      font-family: var(--disp); font-size: 13px; font-weight: 700;
+      letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap;
       transition: all 0.15s ease;
     }
-    .wo-chip:active { transform: scale(0.94); }
-    .wo-chip.active { background: var(--ink); color: #fff; }
-    .wo-chip.lime { box-shadow: none; background: var(--lime); color: var(--ink); }
+    .wo-chip:active { transform: scale(0.96); }
+    .wo-chip.active { background: var(--ink); color: #fff; box-shadow: inset 0 0 0 2px var(--ink); }
+    .wo-chip.lime { grid-column: 1 / -1; box-shadow: none; background: var(--lime); color: var(--ink); }
 
-    /* Filas de ejercicios: hairlines + steppers de círculos blancos (como gramos) */
-    .wo-ex { padding: 12px 0; }
+    /* Filas de ejercicios: hairlines + steppers GRANDES de círculos blancos
+       (mismo tamaño que los de gramos: hechos para el pulgar) */
+    .wo-ex { padding: 15px 0; }
     .wo-ex + .wo-ex { border-top: 1px solid rgba(0,0,0,0.07); }
-    .wo-ex-top { display: flex; align-items: baseline; gap: 10px; }
-    .wo-ex-name { flex: 1; min-width: 0; font-family: var(--sans); font-weight: 600; font-size: 15px; color: var(--ink); }
-    .wo-ex-del { border: none; background: none; cursor: pointer; color: var(--muted); font-size: 15px; padding: 2px 4px; }
-    .wo-ex-controls { display: flex; align-items: center; gap: 9px; margin-top: 10px; flex-wrap: wrap; }
-    .wo-step { display: flex; align-items: center; gap: 6px; }
+    .wo-ex-top { display: flex; align-items: center; gap: 10px; }
+    .wo-ex-name { flex: 1; min-width: 0; font-family: var(--sans); font-weight: 600; font-size: 16px; color: var(--ink); }
+    .wo-rest { font-family: var(--disp); font-size: 12px; font-weight: 700; color: var(--muted); background: var(--card); border-radius: 99px; padding: 6px 11px; white-space: nowrap; }
+    .wo-ex-del { border: none; background: none; cursor: pointer; color: var(--muted); font-size: 17px; padding: 6px 2px 6px 8px; }
+    .wo-ex-controls { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; margin-top: 12px; }
+    .wo-ctrl { display: flex; align-items: center; gap: 12px; }
+    .wo-step { display: flex; align-items: center; gap: 8px; }
     .wo-step button {
-      width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
+      width: 42px; height: 42px; border-radius: 50%; cursor: pointer;
       border: 1px solid rgba(0,0,0,0.04); background: #fff;
-      box-shadow: 0 1px 1px rgba(0,0,0,0.04), 0 3px 8px rgba(0,0,0,0.10);
-      color: var(--ink); font-size: 17px; line-height: 1;
+      box-shadow: 0 1px 1px rgba(0,0,0,0.04), 0 4px 10px rgba(0,0,0,0.10);
+      color: var(--ink); font-size: 22px; line-height: 1;
       display: flex; align-items: center; justify-content: center;
       touch-action: manipulation; -webkit-user-select: none; user-select: none;
     }
     .wo-step button:active { transform: scale(0.9); }
-    .wo-step b { min-width: 28px; text-align: center; font-family: var(--disp); font-weight: 800; font-size: 14px; white-space: nowrap; }
+    .wo-step b { min-width: 34px; text-align: center; font-family: var(--disp); font-weight: 800; font-size: 17px; white-space: nowrap; }
     .wo-unit { font-family: var(--disp); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-    .wo-rest { margin-left: auto; font-family: var(--disp); font-size: 12px; font-weight: 700; color: var(--muted); background: var(--card); border-radius: 99px; padding: 6px 11px; white-space: nowrap; }
 
     /* Añadir ejercicio: inputs beige (como el buscador) */
     .wo-add-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 8px; }
@@ -709,38 +710,38 @@
       text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 6px 2px;
     }
     .wo-field input, .wo-field select {
-      width: 100%; border: none; background: var(--card); border-radius: 12px;
-      padding: 12px; font-family: var(--sans); font-size: 15px; color: var(--ink);
+      width: 100%; border: none; background: var(--card); border-radius: 14px;
+      padding: 14px; font-family: var(--sans); font-size: 16px; color: var(--ink);
       outline: none; -webkit-appearance: none;
     }
     .wo-field input:focus, .wo-field select:focus { box-shadow: inset 0 0 0 2px var(--ink); }
     .wo-add-btn {
       width: 100%; border: none; background: var(--ink); color: #fff;
-      border-radius: 99px; padding: 14px; cursor: pointer; margin-top: 6px;
-      font-family: var(--disp); font-size: 13px; font-weight: 700;
+      border-radius: 99px; padding: 16px; cursor: pointer; margin-top: 6px;
+      font-family: var(--disp); font-size: 14px; font-weight: 700;
       letter-spacing: 0.03em; text-transform: uppercase;
       transition: transform 0.12s ease;
     }
     .wo-add-btn:active { transform: scale(0.98); }
 
-    /* Historial */
-    .wo-hist { padding: 12px 0; display: flex; align-items: center; gap: 12px; }
-    .wo-hist + .wo-hist { border-top: 1px solid rgba(0,0,0,0.07); }
-    .wo-hist-date { font-family: var(--disp); font-weight: 800; font-size: 15px; color: var(--ink); white-space: nowrap; }
-    .wo-hist-meta { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 500; color: var(--muted); }
-    .wo-hist-score { font-family: var(--disp); font-weight: 800; font-size: 14px; white-space: nowrap; }
-    .wo-hist-view {
-      border: none; background: none; cursor: pointer;
-      box-shadow: inset 0 0 0 2px var(--ink); color: var(--ink);
-      border-radius: 99px; padding: 8px 13px;
-      font-family: var(--disp); font-size: 11px; font-weight: 700; text-transform: uppercase;
+    /* Historial: cada fila entera es tocable (carga ese día) */
+    .wo-hist {
+      width: 100%; border: none; background: none; cursor: pointer; text-align: left;
+      padding: 15px 0; display: flex; align-items: center; gap: 12px;
+      transition: opacity 0.12s ease;
     }
+    .wo-hist:active { opacity: 0.55; }
+    .wo-hist + .wo-hist { border-top: 1px solid rgba(0,0,0,0.07); }
+    .wo-hist-date { font-family: var(--disp); font-weight: 800; font-size: 16px; color: var(--ink); white-space: nowrap; }
+    .wo-hist-meta { flex: 1; min-width: 0; font-size: 13px; font-weight: 500; color: var(--muted); }
+    .wo-hist-score { font-family: var(--disp); font-weight: 800; font-size: 15px; white-space: nowrap; }
+    .wo-hist-arrow { font-family: var(--sans); font-size: 18px; color: var(--muted); }
     .wo-empty { text-align: center; padding: 26px 10px; color: var(--muted); font-size: 14px; font-weight: 500; }
     .wo-empty .ico { font-size: 30px; margin-bottom: 6px; }
 
     /* Toast (aviso flotante): píldora de tinta sobre la CTA */
     .toast {
-      position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 78px);
+      position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 24px);
       transform: translateX(-50%) translateY(110px);
       background: var(--ink); color: #fff; padding: 11px 20px; border-radius: 99px;
       font-family: var(--disp); font-size: 13px; font-weight: 700;
@@ -2119,10 +2120,10 @@
       <div class="wo-card">
         <div class="wo-card-h">Plantillas<span>toca para cargar</span></div>
         <div class="wo-chips" id="woTemplates">
-          <button class="wo-chip" data-tpl="A">💪 A · Tracción/Empuje</button>
-          <button class="wo-chip" data-tpl="B">🦵 B · Piernas/Core</button>
-          <button class="wo-chip" data-tpl="C">🔄 C · Upper variante</button>
-          <button class="wo-chip lime" id="woSaveTpl">📌 Guardar plantilla</button>
+          <button class="wo-chip" data-tpl="A">💪 Tracción</button>
+          <button class="wo-chip" data-tpl="B">🦵 Piernas</button>
+          <button class="wo-chip" data-tpl="C">🔄 Variante</button>
+          <button class="wo-chip lime" id="woSaveTpl">📌 Guardar estos ejercicios como plantilla</button>
         </div>
       </div>
 
@@ -2160,11 +2161,6 @@
       </div>
     </div>
 
-    <!-- CTA inferior fija: guardar el entrenamiento del día -->
-    <button class="wo-cta" id="wSaveCta" aria-label="Guardar entrenamiento">
-      <span id="wCtaText">Guardar entrenamiento</span>
-      <span class="rv-cta-kcal" id="wCtaScore">0/100</span>
-    </button>
   </section>
 
   <!-- Aviso flotante (toast) -->
@@ -2888,9 +2884,8 @@
        no da para desplazar, se muestran directamente. */
     function updateBottomCta() {
       const cta = currentView === "app" ? $("addBtn")
-                : currentView === "recipeView" ? $("rvSave")
-                : currentView === "workout" ? $("wSaveCta") : null;
-      [$("addBtn"), $("rvSave"), $("wSaveCta")].forEach(b => { if (b !== cta) b.classList.remove("show"); });
+                : currentView === "recipeView" ? $("rvSave") : null;
+      [$("addBtn"), $("rvSave")].forEach(b => { if (b !== cta) b.classList.remove("show"); });
       if (!cta) return;
       const atBottom = window.innerHeight + window.scrollY
         >= document.documentElement.scrollHeight - 60;
@@ -4478,6 +4473,18 @@
       return { exercises: Array.isArray(d.exercises) ? d.exercises : [], duracion: d.duracion || null };
     }
 
+    // Autoguardado: cada cambio persiste al momento (sin botón de guardar).
+    // Si el día queda sin ejercicios ni duración, se borra su entrada.
+    function woPersist() {
+      const duracion = parseInt($("woDur").value) || null;
+      if (woExercises.length > 0 || duracion) {
+        woWorkouts[woDate] = { exercises: JSON.parse(JSON.stringify(woExercises)), duracion };
+      } else {
+        delete woWorkouts[woDate];
+      }
+      woCacheWrite();
+    }
+
     function openWorkout() {
       woLoadDate(woDate);
       setDocTint("sheet-open");
@@ -4507,6 +4514,8 @@
           <span class="sd-wd">${wd}</span><span class="sd-num">${d.getDate()}</span></button>`;
       }).join("");
     }
+    $("woDur").addEventListener("input", () => { woPersist(); woRenderHistory(); });
+
     $("woDays").addEventListener("click", (e) => {
       const b = e.target.closest(".shop-day[data-wodate]"); if (!b) return;
       woLoadDate(b.dataset.wodate);
@@ -4531,13 +4540,15 @@
                 : which === "B" ? (woTemplateB || WO_TPL_B)
                 :                 (woTemplateA || WO_TPL_A);
       woExercises = JSON.parse(JSON.stringify(src));
+      woPersist();
       woRenderAll();
-      showToast(`📋 Plantilla ${WO_TPL_LABELS[woLastTpl]} cargada — ajusta y guarda`);
+      showToast(`📋 Plantilla ${WO_TPL_LABELS[woLastTpl]} cargada`);
     });
 
     // ── Ajustar series / reps (respeta rangos "8-10" y sufijos "c/lado") ──
     function woAdjustSeries(idx, delta) {
       woExercises[idx].series = Math.max(1, (woExercises[idx].series || 1) + delta);
+      woPersist();
       woRenderAll();
     }
     function woAdjustReps(idx, delta) {
@@ -4550,6 +4561,7 @@
         const simpleMatch = str.match(/^(\d+)(.*)$/);
         if (simpleMatch) woExercises[idx].reps = `${Math.max(1, parseInt(simpleMatch[1]) + delta)}${simpleMatch[2] || ""}`;
       }
+      woPersist();
       woRenderAll();
     }
 
@@ -4562,6 +4574,7 @@
       if (!nombre) { showToast("❗ Escribe el nombre del ejercicio"); return; }
       woExercises.push({ nombre, series, reps, descanso });
       $("woNombre").value = "";
+      woPersist();
       woRenderAll();
     });
 
@@ -4569,7 +4582,7 @@
       const btn = e.target.closest("button[data-act]"); if (!btn) return;
       const i = +btn.dataset.i;
       const act = btn.dataset.act;
-      if (act === "del")      { woExercises.splice(i, 1); woRenderAll(); }
+      if (act === "del")      { woExercises.splice(i, 1); woPersist(); woRenderAll(); }
       else if (act === "s-")  woAdjustSeries(i, -1);
       else if (act === "s+")  woAdjustSeries(i, 1);
       else if (act === "r-")  woAdjustReps(i, -1);
@@ -4589,14 +4602,12 @@
           <div class="wo-ex">
             <div class="wo-ex-top">
               <span class="wo-ex-name">${ex.nombre}</span>
+              <span class="wo-rest">${ex.descanso}</span>
               <button class="wo-ex-del" data-act="del" data-i="${i}" aria-label="Eliminar">✕</button>
             </div>
             <div class="wo-ex-controls">
-              <div class="wo-step"><button data-act="s-" data-i="${i}">−</button><b>${ex.series}</b><button data-act="s+" data-i="${i}">+</button></div>
-              <span class="wo-unit">series</span>
-              <div class="wo-step"><button data-act="r-" data-i="${i}">−</button><b>${ex.reps}</b><button data-act="r+" data-i="${i}">+</button></div>
-              <span class="wo-unit">reps</span>
-              <span class="wo-rest">${ex.descanso}</span>
+              <div class="wo-ctrl"><div class="wo-step"><button data-act="s-" data-i="${i}">−</button><b>${ex.series}</b><button data-act="s+" data-i="${i}">+</button></div><span class="wo-unit">series</span></div>
+              <div class="wo-ctrl"><div class="wo-step"><button data-act="r-" data-i="${i}">−</button><b>${ex.reps}</b><button data-act="r+" data-i="${i}">+</button></div><span class="wo-unit">reps</span></div>
             </div>
           </div>`).join("");
         const totalSeries = woExercises.reduce((s2, e) => s2 + (e.series || 0), 0);
@@ -4610,28 +4621,9 @@
       $("woScoreLabel").textContent = pts ? woLabel(pts) : "Sin ejercicios";
       $("woMeta").textContent = `${woExercises.length} ejercicios · ${totalSeries} series`;
       $("woScoreChip").textContent = `${pts}/100`;
-      $("wCtaScore").textContent = `${pts}/100`;
 
       woRenderHistory();
-      requestAnimationFrame(updateBottomCta);   // el alto de la vista cambia
     }
-
-    // ── Guardar el entrenamiento del día ──
-    function woSave() {
-      const duracion = parseInt($("woDur").value) || null;
-      if (woExercises.length > 0 || duracion) {
-        woWorkouts[woDate] = { exercises: JSON.parse(JSON.stringify(woExercises)), duracion };
-      } else {
-        delete woWorkouts[woDate];
-      }
-      woCacheWrite();
-      const t = $("wCtaText"), orig = "Guardar entrenamiento";
-      t.textContent = "✓ Guardado";
-      setTimeout(() => { t.textContent = orig; }, 1500);
-      woRenderHistory();
-      showToast("💾 Entrenamiento guardado");
-    }
-    bindInstantTap($("wSaveCta"), woSave);
 
     // ── Historial (últimos 12) ──
     function woRenderHistory() {
@@ -4646,12 +4638,12 @@
         const total = wd.exercises.reduce((s2, e) => s2 + (e.series || 0), 0);
         const pts = woDifficulty(wd.exercises);
         const dur = wd.duracion ? ` · ${wd.duracion} min` : "";
-        return `<div class="wo-hist">
+        return `<button class="wo-hist" data-view-date="${d}">
           <span class="wo-hist-date">${woFmtDate(d)}</span>
           <span class="wo-hist-meta">${wd.exercises.length} ej · ${total} series${dur}</span>
           ${pts > 0 ? `<span class="wo-hist-score" style="color:${woColor(pts, false)}">${pts}/100</span>` : ""}
-          <button class="wo-hist-view" data-view-date="${d}">Ver</button>
-        </div>`;
+          <span class="wo-hist-arrow">→</span>
+        </button>`;
       }).join("");
     }
     $("woHistory").addEventListener("click", (e) => {
@@ -4805,7 +4797,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.2";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.3";   // súbelo en cada cambio para confirmar que tienes la última
     $("drawerVersion").textContent = APP_VERSION;   // la versión vive en el cajón lateral
     loadPeople();          // personas + migración de datos a "José"
     loadPersonData();      // carga la persona activa (día de hoy)
