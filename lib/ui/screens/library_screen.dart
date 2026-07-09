@@ -38,8 +38,16 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   Future<void> _pickPdf() async {
-    final doc = await context.read<LibraryController>().pickPdf();
-    if (doc != null && mounted) await _openDoc(doc);
+    try {
+      final doc = await context.read<LibraryController>().pickPdf();
+      if (doc != null && mounted) await _openDoc(doc);
+    } on PickPdfException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
+    }
   }
 
   Future<void> _openHistory() async {

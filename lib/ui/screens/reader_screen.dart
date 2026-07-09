@@ -160,9 +160,10 @@ class _ReaderScreenState extends State<ReaderScreen> {
   // ── Selección ──────────────────────────────────────────────────────────
 
   void _onTextSelectionChanged(PdfTextSelectionChangedDetails details) {
-    final text = details.selectedText;
     final region = details.globalSelectedRegion;
-    if (text == null || text.trim().isEmpty || region == null) {
+    final raw = details.selectedText;
+    final text = raw == null ? '' : _cleanSelection(raw);
+    if (text.isEmpty || region == null) {
       if (_selectionText != null) {
         setState(() {
           _selectionText = null;
@@ -184,6 +185,20 @@ class _ReaderScreenState extends State<ReaderScreen> {
       _selectionRegion = local;
       _selectionPage = _pdf.pageNumber;
     });
+  }
+
+  /// Quita caracteres de ancho cero / no imprimibles que algunos PDF (con
+  /// fuentes CID) devuelven al seleccionar y que se veían como una cita en
+  /// blanco en el chat. Deja saltos de línea y tabuladores normales.
+  static String _cleanSelection(String raw) {
+    final stripped = raw.replaceAll(
+      RegExp(
+        r'[\u0000-\u0008\u000B\u000C\u000E-\u001F'
+        r'\u00AD\u200B-\u200F\u2028\u2029\u202A-\u202E\u2060\uFEFF]',
+      ),
+      '',
+    );
+    return stripped.trim();
   }
 
   void _clearSelection() {
@@ -503,11 +518,19 @@ class _ReaderScreenState extends State<ReaderScreen> {
 
   Future<void> _openAnotherPdf() async {
     final library = context.read<LibraryController>();
-    final doc = await library.pickPdf();
-    if (doc != null && mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => ReaderScreen(doc: doc)),
-      );
+    try {
+      final doc = await library.pickPdf();
+      if (doc != null && mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => ReaderScreen(doc: doc)),
+        );
+      }
+    } on PickPdfException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
     }
   }
 
@@ -841,23 +864,34 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 child: Transform.scale(
                   scale: _visualScale,
                   alignment: Alignment.topCenter,
-                  child: SfPdfViewer.file(
-                    File(widget.doc.path),
-                    key: _viewerKey,
-                    controller: _pdf,
-                    interactionMode: desktop
-                        ? PdfInteractionMode.selection
-                        : PdfInteractionMode.pan,
-                    pageLayoutMode: PdfPageLayoutMode.continuous,
-                    canShowTextSelectionMenu: false,
-                    canShowScrollHead: false,
-                    maxZoomLevel: 4,
-                    onDocumentLoaded: _onDocumentLoaded,
-                    onDocumentLoadFailed: (details) {
-                      setState(() => _loadError = details.description);
-                    },
-                    onPageChanged: _onPageChanged,
-                    onTextSelectionChanged: _onTextSelectionChanged,
+                  // Al alejar por debajo del 100% le damos al visor un área
+                  // lógica más grande (área ÷ escala) y luego la encogemos con
+                  // el Transform: así renderiza y muestra MÁS contenido en
+                  // pantalla, en vez de limitarse a encoger lo que ya cabía.
+                  child: OverflowBox(
+                    alignment: Alignment.topCenter,
+                    minWidth: areaSize.width / _visualScale,
+                    maxWidth: areaSize.width / _visualScale,
+                    minHeight: areaSize.height / _visualScale,
+                    maxHeight: areaSize.height / _visualScale,
+                    child: SfPdfViewer.file(
+                      File(widget.doc.path),
+                      key: _viewerKey,
+                      controller: _pdf,
+                      interactionMode: desktop
+                          ? PdfInteractionMode.selection
+                          : PdfInteractionMode.pan,
+                      pageLayoutMode: PdfPageLayoutMode.continuous,
+                      canShowTextSelectionMenu: false,
+                      canShowScrollHead: false,
+                      maxZoomLevel: 4,
+                      onDocumentLoaded: _onDocumentLoaded,
+                      onDocumentLoadFailed: (details) {
+                        setState(() => _loadError = details.description);
+                      },
+                      onPageChanged: _onPageChanged,
+                      onTextSelectionChanged: _onTextSelectionChanged,
+                    ),
                   ),
                 ),
               ),

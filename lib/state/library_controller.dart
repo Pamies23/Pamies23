@@ -12,6 +12,14 @@ const int kAllDocsFolder = 0;
 /// Carpeta especial: solo documentos sin carpeta asignada.
 const int kNoFolder = -1;
 
+/// Error al abrir el selector de archivos del sistema.
+class PickPdfException implements Exception {
+  PickPdfException(this.message);
+  final String message;
+  @override
+  String toString() => message;
+}
+
 class LibraryController extends ChangeNotifier {
   LibraryController(this._docs, this._folders);
 
@@ -62,15 +70,26 @@ class LibraryController extends ChangeNotifier {
   }
 
   /// Abre el diálogo de sistema para elegir un PDF. Devuelve el documento
-  /// registrado, o null si el usuario canceló.
+  /// registrado, o null si el usuario canceló. Lanza [PickPdfException] si
+  /// el selector de archivos falla.
   Future<Doc?> pickPdf() async {
-    final result = await FilePicker.platform.pickFiles(
-      dialogTitle: 'Abrir PDF',
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-    );
-    final path = result?.files.single.path;
-    if (path == null) return null;
+    FilePickerResult? result;
+    try {
+      result = await FilePicker.platform.pickFiles(
+        dialogTitle: 'Abrir PDF',
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+        // En Windows evita que el diálogo se abra detrás de la ventana.
+        lockParentWindow: true,
+      );
+    } catch (e) {
+      throw PickPdfException('No se pudo abrir el selector de archivos: $e');
+    }
+    if (result == null || result.files.isEmpty) return null; // cancelado
+    final path = result.files.first.path;
+    if (path == null) {
+      throw PickPdfException('El archivo elegido no tiene una ruta válida.');
+    }
     return openPath(path);
   }
 
