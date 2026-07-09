@@ -1,0 +1,310 @@
+---
+name: hg-design
+description: Honest Greens design system distilled from real app screenshots — the aesthetic target for Real Food (iphone.html). Use whenever restyling or adding UI to the app, choosing colors/typography/spacing, or designing a new component or interaction, so everything stays coherent with the HG look. Covers palette, type, component recipes, spacing rhythm, and motion rules, plus the semantic mapping (HG sells food; we track a menu).
+---
+
+# Honest Greens → Real Food design system
+
+Distilled from 6 real HG app screenshots (menu grid, product detail ×2,
+filter overlay, side drawer, detail-with-extras). This is the aesthetic
+contract: every new or restyled piece of UI in `iphone.html` should be
+derivable from these rules.
+
+## 1. Palette
+
+| Token | Value | Use |
+|---|---|---|
+| Page off-white | `#F8F9F4` | List/grid screen background (never pure white behind cards) — exact hex from the HG app |
+| Photo beige | `#EAE7D8` | Product image canvases: card tops, detail hero, thumbnails — exact hex from the HG app |
+| Card white | `#FFFFFF` | Info zones of cards, detail body, sheet bodies |
+| Ink | `#131311` (app `--ink`) | Text, CTA pills, active states, filled icons |
+| Lime accent | `--lime` (#C7F23E) | ONE small accent at a time: "new" badge, active filter chip, highlight. Never large surfaces |
+| Muted gray | `--muted` | Descriptions, metadata (allergens, units), inactive tabs |
+| Black overlay | `#000` | Full-bleed headers, the FILTRAR expanding panel, drawer header block |
+| Intense red | `--red` (#D90429) | Over-goal numbers, destructive actions (user rejected orange-ish reds) |
+| Warning amber | `#E8A13D`-ish | Only for state notices ("cocina cerrada") |
+
+Rule: color hierarchy is **black on white on beige on off-white**, with lime
+as a scarce reward. HG never uses borders to separate surfaces — it uses
+background-color changes and hairlines (`rgba(0,0,0,0.08)`).
+
+## 2. Typography
+
+- **Display**: very heavy grotesque (app: Archivo 800/900), UPPERCASE,
+  tight line-height (~1.02), slight negative tracking. Used for: product
+  names, section headers ("ESCOGE TUS EXTRAS", "TOTAL", "FILTRAR"),
+  prices/kcal figures.
+- **Body**: regular humanist sans (app: Inter 400–600), sentence case,
+  relaxed line-height (~1.5). Descriptions, list rows.
+- **Metadata**: same body font, gray, smaller ("Alérgenos: …").
+- Category tabs are **sentence case** ("Bebidas", "Salsas"), bold when
+  active, gray when not.
+- Numbers (prices → for us kcal/grams) are display-bold, comma decimals.
+
+## 3. Component recipes
+
+### Product card (2-col grid)
+Radius ~20–24. Top: beige canvas, product floats centered with soft
+drop-shadow, ~1:1 ratio. Optional lime circular badge top-left (28px, icon
+inside). Bottom: white, UPPERCASE bold name (16–18px), then price/kcal
+bold after a **large gap** (name top-anchored, figure bottom-anchored —
+cards in a row keep figures aligned).
+
+### Detail screen
+Full-bleed beige hero (~45vh) with plain `←` top-left (no circle). White
+body: UPPERCASE title (26px) → bold figure (price/kcal) → gray description
+→ gray metadata line → outline tag chips. Hairline divider before the
+TOTAL/summary block.
+
+### Bottom CTA (shared: home + detail; `.add-cta` / `.rv-cta`)
+**Black pill, full width, THIN and LOW** (padding 8px + nested pill,
+bottom safe-area+10, side 20): big 19px bold label starting from the LEFT,
+optional **nested darker pill on the right** with the figure
+(`rgba(255,255,255,0.16)`). Both CTAs identical. They appear ONLY when the
+user reaches the bottom of the scroll, sliding up SOLID — no opacity fade
+(user rule); 0.4s spring, bottom max(safe-area − 10px, 8px). If the view
+doesn't scroll, they show immediately. Never keep them fixed
+while browsing — they'd steal content space (user rule).
+
+### Tag chips (diet/allergen style)
+Rounded-square OUTLINE, 2px ink border, radius ~10, ~44px, bold 2-letter
+code inside ("PB", "VE"). On black surfaces: white border/text, gray when
+inactive.
+
+### Quantity stepper
+`⊖  [01]  ⊕` — outline circles (minus gray, plus ink) + boxed 2-digit
+count (2px ink border, radius 10).
+
+### Extras row ("ESCOGE TUS EXTRAS")
+Section header in display caps. Horizontal scroll of plain items (no card
+chrome): circular photo (~84px, beige bg), centered 2-line name (12px),
+`+ 2,75€` bold beneath (for us: `+ NN kcal`). Selection = ink ring/check.
+
+### FILTRAR panel
+Expands **from the top, black, full-width**, pushing/overlaying under the
+status bar. White display-caps title + ✕ right. Gray explainer paragraph.
+Grid of outline chips (tag style + label). "🗑 Resetear filtros" as quiet
+gray text-button. Content below (category tabs + list) stays visible.
+
+### Category tab bar
+White bg, horizontal scroll, sentence-case bold text; active = ink +
+2–3px ink underline flush with a hairline that spans the full bar width.
+
+### Macro bars (home)
+The ORIGINAL stacked white macro cards on the water region (user tried
+Apple-Watch rings twice and reverted): each card = name caps left, bold
+value + gray goal right, and a 12px pill track (`rgba(19,19,17,0.14)`)
+with TWO segments — lime `.seg` (focused part: selected food or filtered
+view) + lime-dim `.seg.rest` (rest of that view). Widths set in rAF after
+render so the CSS transition draws them. Tap card = macro filter (card
+turns ink). The home date above is display caps in INK over the water
+(coral and lime were tried and rejected).
+The meal-filter row below the water is a BLACK full-bleed sticky strip
+styled EXACTLY like the Alimentos|Recetas header: bold display text tabs
+(20px, no boxes/borders), muted gray `rgba(255,255,255,0.42)` at rest and
+LIME when selected; symmetric 13px vertical padding. When pinned, the
+notch fills BLACK (wrapper ::before) so it melts into the strip — the
+outline-chip version with a white notch was tried and replaced by this.
+"Limpiar filtros" chip is lime.
+
+### Aisle cards (Compra)
+Off-white page; black sticky header holds title + lime `n/m` counter,
+lime progress bar, gray meta line and the day chips (dark outline, lime
+when selected). Each pending category = white rounded card ("aisle") with
+caps header + group total, hairline-separated rows (beige emoji circle,
+name, bold grams, check ring → lime when got). Got items live in a final
+**black** card "En el carro", struck through; tap returns them. All done →
+"🎉 ¡Compra lista!" display banner.
+
+### Action chips (home)
+Ink pills (solid) for primary actions; outline (2px inset ring) for
+toggles; outline red for destructive. Uppercase 12px display font. The
+row hides entirely when no chip is visible (`:has`), so it never leaves a
+dead gap above the grid.
+
+### Landing (portada) & Entrenamiento
+The app opens on `#landing`: full-bleed palms photo (same as splash, so the
+splash melts into it) with display-caps title bottom-left + a WHITE panel
+of hairline-separated nav rows (emoji + bold 20px label + → arrow) choosing
+Menú vs Entrenamiento. `#workout` reuses the Compra chrome verbatim (black
+sticky header + `.shop-day` chips, single-select date) over #F8F9F4 with:
+black summary card (big colored difficulty score /100 + label + duration
+pill input), white `.wo-card`s (template chips = ink outline, last-loaded
+filled, save-template lime; exercise rows with hairlines + white-circle
+steppers like the grams field; beige inputs; history rows) and the shared
+bottom CTA ("Guardar entrenamiento" + score pill). Workout logic/storage
+(`ejercicios_v1`, plantillas A/B/C, difficulty weights) is preserved from
+the user's artifact — restyle, never rewrite the math. Toast = ink pill
+above the CTA. Drawer has a shortcut to Entrenamiento; ← returns to the
+landing.
+
+### Side drawer
+Black header block (photo avatar + UPPERCASE bold white name + gray
+action link) then white list: icon + 17px medium label per row, generous
+row height (~88px), full-width hairlines BETWEEN rows, lime "Nuevo" pill
+inline where relevant. Footer: small social/link icons.
+
+## 3b. Food/recipe photos — the recipe-chicken pipeline
+
+`recipe-pollo-roquefort.png` is the reference: analyzed pixel-by-pixel
+(560×555, RGBA, ~5% of pixels semi-transparent at the silhouette edge,
+opaque bbox margin ~2px — i.e. the subject fills the canvas edge-to-edge).
+Every food/recipe photo added to the app must follow this SAME recipe, not
+just "a product photo":
+
+1. **Source**: a real photo of the dish/product, any background (a studio
+   white background is fine — it gets removed in step 2, it must NOT be
+   left in as a flat rectangle).
+2. **Cut out to true transparency (PNG, not JPEG)**. If the background is
+   a flat/near-white studio backdrop, a simple distance-to-white threshold
+   works (Pillow + numpy, no extra tools needed):
+   ```python
+   from PIL import Image, ImageFilter
+   import numpy as np
+   arr = np.array(Image.open(src).convert("RGB")).astype(int)
+   dist = np.sqrt(((arr - [255,255,255])**2).sum(axis=2))
+   lo, hi = 12, 55                      # feather band: tune per photo
+   alpha = np.clip((dist-lo)/(hi-lo), 0, 1) * 255
+   out = Image.fromarray(np.dstack([arr.astype("uint8"), alpha.astype("uint8")]), "RGBA")
+   out.putalpha(out.split()[3].filter(ImageFilter.GaussianBlur(1.2)))  # feather the edge
+   ```
+   For busy/non-white backgrounds this threshold won't work — say so and
+   ask before faking it with a hard rectangular cutout.
+3. **Crop tight** to the subject's opaque bbox + a small pad (~15–20px at
+   full photo res, or ~0 for an already-tight plated shot). Never ship
+   the full original canvas with the subject small in the middle.
+4. **Never leave a flat-color (especially white) rectangle behind the
+   subject** — that reads as "pasted sticker," not a product photo (this
+   was called out explicitly and is the #1 failure mode). Verify by
+   compositing the PNG over the app's beige `#EAE7D8` before shipping —
+   if you can see a rectangle, the cutout isn't done.
+5. **CSS pairing** — object-fit: contain + drop-shadow (never box-shadow,
+   it'd box the transparency), scaled to context:
+   - Detail hero (`.rv-img`, ~350px): `drop-shadow(0 14px 22px rgba(0,0,0,.30))`
+   - Recipe list card (`.rcard-photo`, ~186px): `drop-shadow(0 10px 16px rgba(0,0,0,.28))`
+   - Grid card (`.addf-photo`, 2-col grid): `drop-shadow(0 8px 14px rgba(0,0,0,.22))`
+   - Home log card (`.logf-photo`): `drop-shadow(0 6px 10px rgba(0,0,0,.18))`
+   All sit on the `#EAE7D8` beige canvas, never on white.
+6. Foods use a single shared helper, `foodMediaHTML(f, emojiClass,
+   photoClass)`, that renders `f.photo` as an `<img>` when present and
+   falls back to `f.emoji` otherwise — used identically in the picker
+   card, the add/edit modal, the home log row, and the shopping list, so
+   a food with a photo looks consistent everywhere it appears. Add new
+   photo foods via the `photo` field on the `FOODS` entry; nothing else
+   needs touching.
+
+### Tap-to-zoom viewer
+Any real photo (not emoji) in a "ficha" (the add/edit modal `.modal-emoji`,
+the recipe detail hero `.rv-photo`) is tappable to open `#photoZoom`: a
+fixed fullscreen lightbox (dark backdrop, image fades+scales in), with
+pinch-to-zoom (1×–4×), drag-to-pan once zoomed, double-tap to toggle
+1×/2.5×, and tap-backdrop or ✕ to close. Wiring: call the global
+`window.makeZoomable(container)` right after the container's innerHTML/img
+is set — it detects whether the container actually holds a *visible* `img`
+with a `src` (not the emoji fallback, even though the `<img>` tag stays in
+the DOM hidden) and toggles a `.zoomable` class + binds the click once
+(`dataset.zoomBound` guard). Do this for any new photo-bearing detail view.
+
+## 4. Spacing rhythm
+
+- Screen gutter: 20px. Card grid gap: 12–16px.
+- **Group breaks read ~3× the in-group gap**: when the category of items
+  changes mid-list, insert extra vertical air (in-app: `.cat-gap` spacer li).
+- Section headers get big top margins (~24–28px) and modest bottoms (~14px).
+- Hairlines (`1px rgba(0,0,0,0.08–0.14)`) separate stacked rows; never
+  boxed borders.
+
+## 5. Motion & mechanics (the "fluid" feel)
+
+The user loves the ORDENAR panel's fluidity — these are the EXACT recipes
+that produce it. Reuse them verbatim for anything new.
+
+### 5a. Collapsible panel (the one the user loves)
+Animates open/closed with dynamic content height, no JS measuring:
+```css
+.panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.36s cubic-bezier(.22,.61,.36,1); }
+.panel.open { grid-template-rows: 1fr; }
+.panel-inner { overflow: hidden; min-height: 0; }   /* direct child; content inside */
+```
+Standardized at **0.36s + cubic-bezier(.22,.61,.36,1)** app-wide (day
+picker, gram panel, ORDENAR). Any new expanding UI uses this.
+
+### 5b. Hide-on-scroll header
+Slide with `transform` (NEVER margins/height: layout changes feed back
+into scroll events and the bar oscillates). Fade the bar too, and paint
+the sticky wrapper white so content never shows through the notch strip:
+```css
+.sticky-head { position: sticky; top: 0; transition: transform 0.34s cubic-bezier(.4,0,.2,1), background-color 0.28s ease; }
+.sticky-head.bar-hidden { transform: translateY(calc((var(--tabsH) - env(safe-area-inset-top)) * -1)); background: #fff; }
+.sticky-head.bar-hidden .black-bar { opacity: 0; pointer-events: none; }
+```
+JS: compare `scrollY` deltas (>4px) per direction; always show near top
+(`y <= 24`); set `--tabsH` from `offsetHeight` on open/resize.
+
+### 5c. Staggered card entrance
+```css
+@keyframes cardIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+.list.reveal .card { animation: cardIn 0.42s cubic-bezier(.22,.61,.36,1) both; }
+/* nth-child delays 0.04s steps, cap at n+8 */
+```
+Add `.reveal` on open, remove after ~750ms so re-renders don't replay.
+Respect `prefers-reduced-motion`.
+
+### 5d. Chip/button appearance
+```css
+@keyframes chipIn { from { opacity: 0; transform: translateY(6px) scale(0.95); } to { opacity: 1; transform: none; } }
+.chip:not(.hidden) { animation: chipIn 0.3s cubic-bezier(.22,.61,.36,1); }
+```
+(`classList.toggle(c, force)` doesn't mutate when state is unchanged, so
+this only replays when a chip actually appears.)
+
+### 5e. Gotchas that break fluidity (learned the hard way)
+- **View-enter animations that use `transform` with `fill: both` keep the
+  view as a containing block** → `position: fixed` children (bottom CTAs)
+  get positioned against the view, not the viewport. Remove the animation
+  class on `animationend` (guard `e.target === viewEl`).
+- `overflow-x: auto` on a bar clips pseudo-elements hanging above it
+  (`bottom: 100%`) — put notch covers on the non-scrolling wrapper.
+- Progress fills (rings/bars) rebuild with value 0 in markup, then set the
+  real value inside `requestAnimationFrame` so the CSS transition draws it.
+
+### 5f. Overscroll (rubber-band) consistency
+Bounce strips must always continue the adjacent content color. The proven
+pattern on the user's iPhone is the RECIPE VIEW's (verified by them):
+- TOP bounce: in-page `::before` extender on the view's top block —
+  `position: absolute; left/right: 0; bottom: 100%; height: 100vh;
+  background: <header color>` (parent `position: relative`). Upward
+  absolute overflow does NOT extend document scroll, so it's safe.
+- BOTTOM bounce: the DOCUMENT tint — `html.<vista>-open, body { background:
+  <page bg> }` set via `setDocTint()` in the open/close functions (and the
+  class listed in setDocTint's removal set). sheet/shop → #F8F9F4,
+  recipe/sim/pick → #fff, profile → #B0E1C0, home → default #fff.
+Approaches tried and FAILED — do not reintroduce:
+- `::after` extenders below the page (`top: 100%`): downward abs overflow
+  EXTENDS the document scroll → artificially scrollable blank screen.
+- Fixed covers parked at ±100vh expecting iOS to drag fixed elements with
+  the rubber band: they never entered the revealed strip on the user's iOS.
+For photo regions, sample the RENDERED edge color of the cover-cropped
+image (not the raw file's edge row): water top #569897, profile
+#89B6A4/#B0E1C0, sim-top #BCDFDB.
+
+### 5g. Other rules
+- Tab underline **slides** between tabs (never jumps).
+- Sheets/modals slide from bottom, dismissible by pull-down that follows
+  the finger.
+- Every tappable thing compresses on `:active` (scale 0.94–0.98).
+
+## 6. Semantic mapping HG → Real Food
+
+| Honest Greens | Real Food |
+|---|---|
+| Product / dish | Food / recipe |
+| Price ("4,25€") | kcal (and grams where relevant) |
+| "+ Añadir al carrito" | "+ Añadir al menú" |
+| Extras with `+price` | Extra foods with `+kcal` added into the recipe |
+| Diet filter (Keto/PB…) | Sort/filter by macro (proteínas, carbs, grasas, kcal) |
+| "Cocina cerrada" notice | (n/a — no ordering) |
+| Cart | Compra (shopping list) |
+
+Keep the HG *shape* of each element but never fake commerce: no prices,
+no stock states. Figures shown are always nutrition.
