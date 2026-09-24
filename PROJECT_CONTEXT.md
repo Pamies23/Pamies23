@@ -125,3 +125,9 @@ El Excel se llama `Banco_alimentos_piloto.xlsx` e incluye las cinco imágenes in
 ## Primera tarea recomendada
 
 Auditar y corregir la franja blanca superior sin rediseñar todavía el resto de la aplicación. La tarea debe comprobar el comportamiento en navegador móvil y, si es posible, en modo añadido a pantalla de inicio/standalone.
+
+## Proyecto paralelo: Repaso (flashcards)
+
+- Carpeta `flashcards/`, app web independiente de Real Food (septiembre 2026). Rama: `claude/iphone-flashcards-glass-design-zs2l2z`.
+- Diseño “liquid glass” estilo iOS, bancos de preguntas (CFA, English, B&H…), repetición espaciada con 4 botones, estadísticas, importación de texto/CSV y copia de seguridad JSON.
+- No toca `iphone.html`. Detalles en `flashcards/README.md`.
