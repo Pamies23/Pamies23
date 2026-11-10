@@ -1,6 +1,6 @@
 # Real Food — Contexto permanente del proyecto
 
-Última actualización: 5 de septiembre de 2026.
+Última actualización: 10 de noviembre de 2026.
 
 ## Objetivo
 
@@ -135,3 +135,15 @@ Rama de trabajo `codex/real-food-iphone-quality`, basada en V3. Se preservan las
 - Portada flexible a altura dinámica, perfiles y regreso visibles, botón de añadir accesible durante el scroll, contraste y tamaños táctiles, ajustes para pantallas estrechas y tablet, movimiento reducido.
 - Se añaden manifiesto standalone, acceso raíz e instrucciones de hosting estático Vercel sin dependencias nuevas. El icono original es PNG 1024×1024.
 - Véase `QA.md` para pruebas y límites. Pendiente comprobar Safari y pantalla de inicio en un iPhone físico. Los datos son locales por origen; cambiar de dominio no migra registros.
+
+## Corrección de bordes y categorías · V3.2
+
+Rama `codex/iphone-edge-category-fix`, continuación de V3.1 sin fusionar las ramas de integración o histórica. El usuario autorizó actualizar la app. Se mantiene `https://real-food-iphone.vercel.app/iphone.html` y la protección existente del proyecto Vercel.
+
+- Las capturas del iPhone muestran un sombreado de sistema en la cabecera, saltos desalineados y una franja verde al pie de la pantalla de arranque. La comprobación anterior con Chromium no bastó para detectar estos problemas.
+- Se elimina el splash fijo duplicado. La portada con sus accesos aparece directamente; su fondo inferior y el manifiesto usan el mismo tono claro.
+- Cabecera del catálogo opaca, clara y estable. Se elimina su ocultación mediante transformaciones y la opción obsoleta `black-translucent`; se conserva scroll natural y `viewport-fit=cover`.
+- Los saltos calculan el inicio de la categoría con la altura actual de la cabecera, ajustan el espacio final y verifican la posición tras la animación. Un gesto del usuario cancela el ajuste pendiente.
+- `data-backup.js` añade exportación/importación JSON en el menú lateral. Valida toda la copia antes de guardar, limita a claves conocidas, pide confirmación al importar y restaura los valores anteriores si falla una escritura. No hay sincronización ni backend.
+- iOS puede conservar el modo de barra de estado usado al instalar un icono. No borrar la app instalada sin exportar los datos y verificar su importación en el nuevo acceso. Safari y la app instalada pueden usar almacenes distintos.
+- La validación de escritorio con WebKit no certifica el sombreado del sistema ni la instalación de un iPhone físico. Fuentes: WebKit bugs 317153 y 316008; https://webkit.org/blog/14787/webkit-features-in-safari-17-2/.

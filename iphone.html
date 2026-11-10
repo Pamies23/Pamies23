@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="es" class="splashing">
+<html lang="es" data-view="landing">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Real Food">
-  <meta name="theme-color" content="#79908B">
+  <meta name="theme-color" content="#F8F9F4">
+  <meta name="color-scheme" content="light">
   <meta name="description" content="Tu alimentación y entrenamiento, día a día. Registra comidas, prepara recetas y organiza tu compra.">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icon.png">
@@ -17,8 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Precarga de las imágenes de los paneles para que los colores estén listos al
-       entrar (sin "pop-in"): el splash y la cabecera del agua se pintan a la primera. -->
+  <!-- Las imágenes de portada y resumen se cargan desde el inicio. -->
   <link rel="preload" as="image" href="palms.jpg">
   <link rel="preload" as="image" href="water.jpg">
 
@@ -58,13 +57,10 @@
     }
     /* Pero los campos de texto sí deben permitir selección/edición */
     input, textarea { -webkit-user-select: text; user-select: text; }
-    /* El color de fondo va en <html> (es el que se ve en el overscroll y en la
-       franja inferior del área segura en standalone). Blanco en la app; durante
-       el splash, html+body pasan a color palmera para que esa franja nunca sea blanca. */
+    /* El fondo del documento coincide con la superficie inferior de cada vista. */
     html, body { height: 100%; }
-    html { background: var(--bg); }
+    html { background: var(--bg); color-scheme: light; }
     body { background: var(--bg); min-height: 100%; overflow-x: hidden; overscroll-behavior-y: none; }
-    html.splashing, html.splashing body { background: #79908B; }
     /* Con un panel abierto (sheet/simulador/modal) se bloquea el scroll del fondo
        para que no aparezca la barra ni se mueva la Home por detrás. */
     html.locked, html.locked body { overflow: hidden; height: 100%; }
@@ -104,28 +100,6 @@
       margin-top: calc((env(safe-area-inset-top) + 20px) * -1);
       padding-top: calc(env(safe-area-inset-top) + 24px);
     }
-
-    /* ---------- Splash de entrada (palmeras) ---------- */
-    .splash {
-      position: fixed; inset: 0; z-index: 200;
-      background-color: #79908B;                 /* color de las palmeras (relleno) */
-      background-image: url("palms.jpg");
-      background-size: cover; background-position: center;
-      display: flex; flex-direction: column; justify-content: flex-end;
-      padding: 0 30px calc(env(safe-area-inset-bottom) + 60px);
-      opacity: 1; transition: opacity 0.65s ease;
-    }
-    .splash::before {
-      content: ""; position: absolute; inset: 0;
-      background: linear-gradient(to bottom, rgba(0,0,0,0) 45%, rgba(0,0,0,0.5));
-    }
-    .splash.hide { opacity: 0; pointer-events: none; }
-    .splash-title {
-      position: relative; font-family: var(--exp); font-weight: 900;
-      font-size: 58px; line-height: 0.9; letter-spacing: -0.02em;
-      text-transform: uppercase; color: #fff;
-    }
-    .splash-sub { position: relative; margin-top: 12px; font-size: 16px; font-weight: 500; color: rgba(255,255,255,0.9); }
 
     /* ---------- Cabecera: la fecha completa, en coral ---------- */
     .topbar {
@@ -588,7 +562,7 @@
 
     /* ---------- Portada (elige Menú o Entrenamiento) ---------- */
     .landing { min-height: 100vh; display: flex; flex-direction: column; background: #fff; position: relative; }
-    /* Rebote superior: continúa el color de las palmeras (mismo relleno que el splash) */
+    /* Rebote superior: continúa el color de las palmeras. */
     .landing::before {
       content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
       height: 100vh; background: #79908B;
@@ -776,10 +750,10 @@
     .v-out {
       position: fixed; inset: 0; z-index: 70; overflow: hidden;
       animation: viewOut 0.26s cubic-bezier(.4,0,1,1) both;
-      will-change: opacity, transform;
+      will-change: opacity;
     }
-    @keyframes viewIn  { from { opacity: 0; transform: translateY(12px) scale(0.992); } to { opacity: 1; transform: none; } }
-    @keyframes viewOut { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(8px) scale(0.99); } }
+    @keyframes viewIn  { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes viewOut { from { opacity: 1; } to { opacity: 0; } }
     @media (prefers-reduced-motion: reduce) {
       .v-in, .v-out { animation-duration: 0.01ms; }
     }
@@ -792,36 +766,15 @@
     .sheet-close { background: none; border: none; color: var(--ink); font-family: var(--disp); font-size: 14px; font-weight: 700; cursor: pointer; padding: 4px 0; }
     .sheet-spacer { width: 48px; }
 
-    /* Cabecera fija Alimentos | Recetas. Negro puro, alta y cubriendo el notch:
-       la franja superior (incluida la barra de estado) queda negra al desplazar.
-       Sticky en el WRAPPER (una sola fuente de verdad): así la cabecera negra y la
-       barra de categorías se mueven siempre juntas, sin desincronizarse cuando
-       Safari colapsa/expande la barra de direcciones al desplazar. */
+    /* Una sola cabecera estable. Su altura no cambia durante un salto de categoría. */
     #sheet { padding-top: 0; }
-    /* La cabecera negra se esconde al bajar y reaparece al subir (HG): se desliza
-       con transform (no cambia el layout → el scroll no se realimenta) dejando la
-       barra de categorías arriba. El propio wrapper se pinta de blanco al
-       esconderse: su caja cubre exactamente desde el notch hasta la barra de
-       categorías, así el contenido nunca asoma por encima. */
-    .sheet-head-sticky {
-      position: sticky; top: 0; z-index: 5; background: transparent;
-      transition: transform 0.34s cubic-bezier(.4,0,.2,1), background-color 0.28s ease;
-    }
-    .sheet-head-sticky.bar-hidden {
-      transform: translateY(calc((var(--tabsH, 110px) - env(safe-area-inset-top)) * -1));
-      background: #fff;
-    }
+    .sheet-head-sticky { position: sticky; top: 0; z-index: 5; background: #000; }
     .sheet-tabs {
       position: relative;             /* para el ::before del notch */
       display: flex; align-items: flex-end; gap: 26px;
       background: #000;
       padding: calc(env(safe-area-inset-top) + 16px) 18px 18px; margin: 0;
     }
-    /* Al esconderse, la barra negra ADEMÁS se desvanece: en pantallas con notch
-       su franja inferior seguía asomando por la zona de la barra de estado
-       (esa franja nunca lleva contenido de la app; queda en blanco). */
-    .sheet-tabs { transition: opacity 0.28s ease; }
-    .sheet-head-sticky.bar-hidden .sheet-tabs { opacity: 0; pointer-events: none; }
     .sheet-tab {
       border: none; background: none; cursor: pointer; padding: 0;
       font-family: var(--exp); font-weight: 800; font-size: 22px;
@@ -834,7 +787,8 @@
     /* Filtros a la misma distancia de la línea negra que los títulos (12px),
        y a esa misma distancia de los alimentos por debajo */
     #catTabs { padding-top: 12px; padding-bottom: 0; }
-    #foodList { padding-top: 12px; }
+    #foodList { padding-top: 12px; padding-bottom: max(calc(env(safe-area-inset-bottom) + 96px), var(--category-tail-space, 0px)); }
+    #sheet .rcat-tabs { background: #F8F9F4; }
 
     /* Buscador flotante tipo "Liquid Glass" (Apple). Siempre visible, abajo a la
        derecha (zona del pulgar). Al tocar se expande en barra de búsqueda. */
@@ -979,7 +933,7 @@
       padding: 8px 2px 2px;
     }
     /* Entrada escalonada de las tarjetas al abrir el listado (fluidez HG) */
-    @keyframes cardIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+    @keyframes cardIn { from { opacity: 0; } to { opacity: 1; } }
     .food-list.reveal .addf, .food-list.reveal .rcard {
       animation: cardIn 0.42s cubic-bezier(.22,.61,.36,1) both;
     }
@@ -1679,11 +1633,23 @@
       #app .hero-actions { margin-left: 0; margin-right: 0; }
       #app .home-head-sticky { min-width: 0; margin: 0; padding: 0; }
     }
+    /* Una superficie continua en el catálogo, incluida la zona del sistema iOS. */
+    #sheet::before, #sheet .sheet-head-sticky, #sheet .sheet-tabs, #sheet .sheet-back-link { background: #F8F9F4; }
+    #sheet .sheet-back-link { color: #36551b; }
+    #sheet .sheet-tab { color: #6a6a61; }
+    #sheet .sheet-tab.active { color: #17210f; }
+    #sheet .sheet-tab.active::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: #c7f23e; border-radius: 3px; }
+    #sheet .sheet-filter, #sheet .sheet-cart { color: #25291f; }
+    #sheet .sheet-filter.on { color: #41651e; }
+    #sheet .sheet-filter svg circle { fill: #F8F9F4; }
+    #sheet .rcat-tabs { border-bottom-color: #e2e5da; }
+    .landing, .landing-menu { background: #F8F9F4; }
+    html[data-view="landing"], html[data-view="landing"] body { background: #F8F9F4; }
   </style>
 </head>
 <body>
 
- <div class="app" id="app">
+ <div class="app" id="app" aria-hidden="true" style="display:none">
 
   <div class="top-region">
     <header class="topbar">
@@ -1748,7 +1714,7 @@
   </div>
 
   <!-- CTA inferior fija (estilo "Pide ya" de HG) -->
-  <button class="add-cta" id="addBtn">＋ Añadir comida</button>
+  <button class="add-cta hidden" id="addBtn">＋ Añadir comida</button>
 
  </div><!-- /.app -->
 
@@ -1766,12 +1732,6 @@
     <p class="local-note">Tus datos se guardan en este navegador.</p>
     <div class="drawer-foot"><span id="drawerVersion">V.5</span></div>
   </aside>
-
-  <!-- ===================== Splash de entrada ===================== -->
-  <div class="splash" id="splash">
-    <div class="splash-title">Real Food</div>
-    <div class="splash-sub">Para cumplir tus objetivos</div>
-  </div>
 
   <!-- ===================== Pantalla Añadir comida ===================== -->
   <section class="page sheet" id="sheet" aria-hidden="true" style="display:none">
@@ -2133,7 +2093,7 @@
   </section>
 
   <!-- ===================== Portada (Menú o Entrenamiento) ===================== -->
-  <section class="page landing" id="landing" aria-hidden="true" style="display:none">
+  <section class="page landing shown" id="landing" aria-hidden="false">
     <div class="landing-photo">
       <h1 class="landing-title">Real<br>Food.</h1>
       <p class="landing-sub">Tu menú y tu entrenamiento, en un solo sitio.</p>
@@ -2237,29 +2197,6 @@
     /* Precarga el resto de imágenes de fondo en segundo plano (selector / recetas /
        perfil) para que al abrir esas vistas el fondo ya esté listo, sin parpadeo. */
     ["recipe-bg.jpg", "profile-bg.jpg", "recipe-pollo-roquefort.png"].forEach(src => { const im = new Image(); im.src = src; });
-
-    /* Splash de entrada: se oculta sola tras un momento (o al tocar) */
-    (function () {
-      const splash = document.getElementById('splash');
-      if (!splash) return;
-      let gone = false;
-      const dismiss = () => {
-        if (gone) return; gone = true;
-        splash.classList.add('hide');
-        setTimeout(() => {
-          splash.remove();
-          document.documentElement.classList.remove('splashing'); // fondo blanco tras el splash
-          replayStatsAnimation();                                 // anima barras y anillo al entrar
-        }, 650);
-      };
-      // Se va cuando ha pasado un mínimo Y las fuentes están listas (así la Home
-      // aparece ya con su tipografía, sin reflujo). Tope máximo por si algo tarda.
-      const minTime = new Promise(r => setTimeout(r, 1000));
-      const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
-      Promise.all([minTime, fontsReady]).then(dismiss);
-      setTimeout(dismiss, 2600);                 // tope de seguridad
-      splash.addEventListener('click', dismiss); // o al tocar
-    })();
 
     /* =========================================================
        DATOS  —  estructura lista para rellenar con Vitrubio.
@@ -3036,8 +2973,9 @@
     // Solo una "página" visible a la vez, con transición de entrada/salida fluida.
     // "" (sin display inline) deja mandar al CSS → la Home puede ser grid en iPad.
     const VIEWS = ["app", "sheet", "shopPage", "recipeView", "sim", "simPick", "profile", "landing", "workout"];
-    let currentView = "app";
+    let currentView = "landing";
     function showView(id) {
+      cancelCategoryJump();
       if (id === currentView) { window.scrollTo(0, 0); return; }
       const outId = currentView, inEl = $(id), outEl = $(outId);
 
@@ -3057,9 +2995,8 @@
       if (id !== "app") inEl.classList.add("shown");
       inEl.setAttribute("aria-hidden", "false");
       inEl.classList.remove("v-in"); void inEl.offsetWidth; inEl.classList.add("v-in");
-      // Al acabar, retira la clase: una animación de transform "rellena" (fill both)
-      // convierte la vista en containing block y descoloca los elementos fixed
-      // (las CTA inferiores). e.target === inEl ignora animaciones de hijos.
+      // Retira la clase al terminar. Solo animamos opacidad para no desplazar
+      // la cabecera, los puntos de scroll ni los controles fijos.
       const clearIn = (e) => {
         if (e.target !== inEl) return;
         inEl.classList.remove("v-in");
@@ -3090,7 +3027,8 @@
       if (id !== "sheet") $("glassSearch").classList.remove("open");
       window.scrollTo(0, 0);
       currentView = id;
-      const tint = ({app:"#569897",landing:"#79908B",sheet:"#000000",shopPage:"#000000",workout:"#000000",profile:"#89B6A4",recipeView:"#EAE7D8"})[id] || "#FFFFFF";
+      document.documentElement.dataset.view = id;
+      const tint = ({app:"#569897",landing:"#F8F9F4",sheet:"#F8F9F4",shopPage:"#000000",workout:"#000000",profile:"#89B6A4",recipeView:"#EAE7D8"})[id] || "#FFFFFF";
       document.querySelector('meta[name="theme-color"]').content = tint;
     }
 
@@ -3114,15 +3052,14 @@
       $("glassSearch").classList.remove("open");
       syncSheetTabs();
       renderFoodList();
-      setBarHidden(false);
       showView("sheet");
-      // El documento en negro: el rebote/overscroll superior se ve negro como la cabecera.
+      // El documento mantiene el mismo fondo claro que el catálogo.
       setDocTint("sheet-open");
       // Entrada escalonada de las tarjetas (fluidez HG); la clase se retira sola.
       const fl = $("foodList");
       fl.classList.add("reveal");
       setTimeout(() => fl.classList.remove("reveal"), 750);
-      requestAnimationFrame(() => { positionTypeUnderline(); measureTabsH(); });
+      requestAnimationFrame(() => { positionTypeUnderline(); buildCatAnchors(); updateSpy(); });
     }
 
     /* ---- Panel ORDENAR (negro, estilo FILTRAR de HG) ---- */
@@ -3130,7 +3067,6 @@
     function setFilterOpen(open) {
       filterOpen = open;
       $("filterPanel").classList.toggle("open", open);
-      if (open) setBarHidden(false);   // con el panel abierto la cabecera no se esconde
     }
     function syncFilterUI() {
       $("fpChips").querySelectorAll(".fp-chip").forEach(b =>
@@ -3150,28 +3086,6 @@
       setFilterOpen(false);
     });
 
-    /* ---- La barra negra se esconde al bajar y reaparece al subir (HG) ---- */
-    function measureTabsH() {
-      $("sheetHeadSticky").style.setProperty("--tabsH", ($("typeTabs").offsetHeight + $("sheetBack").offsetHeight) + "px");
-    }
-    let lastScrollY = 0, barHidden = false;
-    function setBarHidden(h) {
-      if (h === barHidden) return;
-      barHidden = h;
-      $("sheetHeadSticky").classList.toggle("bar-hidden", h);
-    }
-    window.addEventListener("scroll", () => {
-      if (currentView !== "sheet" || filterOpen) { lastScrollY = window.scrollY; return; }
-      const y = window.scrollY;
-      // Con un orden activo no hay barra de categorías que tome el relevo:
-      // la cabecera negra se queda siempre a la vista.
-      if (sortBy) { setBarHidden(false); lastScrollY = y; return; }
-      if (y <= 24) setBarHidden(false);            // arriba del todo: siempre visible
-      else if (y - lastScrollY > 4) setBarHidden(true);
-      else if (lastScrollY - y > 4) setBarHidden(false);
-      lastScrollY = y;
-    }, { passive: true });
-    window.addEventListener("resize", () => { if (currentView === "sheet") measureTabsH(); });
     // Tinta del documento por vista (para que el overscroll superior no asome blanco)
     function setDocTint(cls) {
       const h = document.documentElement;
@@ -3244,24 +3158,28 @@
       u.style.width = active.offsetWidth + "px";
     }
 
-    // --- Scroll-spy sin reflow por fotograma ---
-    // Precalculamos, una sola vez tras pintar la lista, la posición (en coordenadas
-    // del documento) del primer elemento de cada categoría y la línea de la cabecera.
-    // Durante el scroll solo comparamos números (cero lecturas de layout), así que
-    // ni hay reflow ni la barra "vibra".
-    let catAnchors = [];        // [{ cat, top }]
-    let headerLine = 0;         // borde inferior de la cabecera pegajosa (viewport)
-    let spyLocked = false, spyIdleTimer = null;
-
+    // Posiciones naturales de las categorías; la cabecera nunca cambia de altura al desplazar.
+    let catAnchors = [];
+    let spyLocked = false, spyIdleTimer = null, categoryJump = null;
+    const catalogHeaderHeight = () => $("sheetHeadSticky").offsetHeight;
+    function categoryCard(cat) {
+      return $("foodList").querySelector('.addf[data-cat="' + cat + '"], .rcard[data-cat="' + cat + '"]');
+    }
     function buildCatAnchors() {
-      const cards = $("foodList").querySelectorAll(".addf[data-cat], .rcard[data-cat]");
+      if (currentView !== "sheet") return;
+      const list = $("foodList"), seen = new Set();
       catAnchors = [];
-      const seen = new Set();
-      cards.forEach(card => {
-        const c = card.dataset.cat;
-        if (!seen.has(c)) { seen.add(c); catAnchors.push({ cat: c, top: card.getBoundingClientRect().top + window.scrollY }); }
+      list.querySelectorAll(".addf[data-cat], .rcard[data-cat]").forEach(card => {
+        const cat = card.dataset.cat;
+        if (!seen.has(cat)) { seen.add(cat); catAnchors.push({ cat, top: card.getBoundingClientRect().top + window.scrollY }); }
       });
-      headerLine = $("recipeCats").getBoundingClientRect().bottom;   // constante mientras está pegajosa
+      const last = catAnchors[catAnchors.length - 1];
+      if (last) {
+        const bottom = list.getBoundingClientRect().bottom + window.scrollY;
+        const contentTail = bottom - parseFloat(getComputedStyle(list).paddingBottom) - last.top;
+        const room = Math.max(0, window.innerHeight - catalogHeaderHeight() - 8 - contentTail);
+        list.style.setProperty("--category-tail-space", Math.ceil(room) + "px");
+      } else list.style.removeProperty("--category-tail-space");
     }
 
     // Marca 'cat' como activa: subrayado (transición CSS suave) y, si procede,
@@ -3276,25 +3194,37 @@
 
     function updateSpy() {
       if (currentView !== "sheet" || spyLocked || !catAnchors.length) return;
-      const line = window.scrollY + headerLine + 12;
+      const line = window.scrollY + catalogHeaderHeight() + 14;
       let current = catAnchors[0].cat;
       for (let i = 0; i < catAnchors.length; i++) {
         if (catAnchors[i].top <= line) current = catAnchors[i].cat; else break;
       }
-      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4)
+      if (window.scrollY > 0 && window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4)
         current = catAnchors[catAnchors.length - 1].cat;
       if (current !== recipeActiveCat) applyActiveCat(current, true);
     }
 
-    // Bloquea el scroll-spy mientras dura una animación de salto (al tocar una
-    // categoría): así el subrayado va DIRECTO al destino sin pasar por las
-    // categorías intermedias (lo que se sentía como un tirón/parón). Se desbloquea
-    // cuando el scroll deja de moverse.
-    function lockSpy() {
-      spyLocked = true;
-      clearTimeout(spyIdleTimer);
-      spyIdleTimer = setTimeout(() => { spyLocked = false; }, 600);
+    function categoryTarget(cat) {
+      const card = categoryCard(cat);
+      return card ? Math.max(0, card.getBoundingClientRect().top + window.scrollY - catalogHeaderHeight() - 8) : null;
     }
+    function finishCategoryJump() {
+      clearTimeout(spyIdleTimer);
+      if (categoryJump) {
+        const target = categoryTarget(categoryJump);
+        if (target !== null && Math.abs(window.scrollY - target) > 1) window.scrollTo({ top: target, behavior: "instant" });
+      }
+      categoryJump = null; spyLocked = false;
+      buildCatAnchors(); updateSpy();
+    }
+    function cancelCategoryJump() {
+      if (categoryJump) window.scrollTo({ top: window.scrollY, behavior: "instant" });
+      clearTimeout(spyIdleTimer); categoryJump = null; spyLocked = false;
+    }
+    // Un gesto del usuario siempre toma el control del desplazamiento.
+    window.addEventListener("wheel", cancelCategoryJump, { passive: true });
+    window.addEventListener("touchstart", cancelCategoryJump, { passive: true });
+    window.addEventListener("keydown", e => { if (["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "].includes(e.key)) cancelCategoryJump(); });
     // Desplaza horizontalmente la barra de categorías para que 'btn' quede visible.
     // Usa offsetLeft (coordenadas propias de la barra) en vez de getBoundingClientRect:
     // así el cálculo no depende del scroll ya aplicado y es estable de un tirón al siguiente.
@@ -3499,33 +3429,28 @@
     $("typeTabs").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-type]"); if (!b) return;
       if (b.dataset.type === activeType) return;
-      const forward = b.dataset.type === "recetas";
       activeType = b.dataset.type; activeCat = "todos";
       window.scrollTo(0, 0);                 // empieza arriba en la lista nueva
       syncSheetTabs(); renderFoodList();
-      const fl = $("foodList");
-      fl.classList.remove("slide-fwd", "slide-back"); void fl.offsetWidth;
-      fl.classList.add(forward ? "slide-fwd" : "slide-back");
+      cancelCategoryJump();
+      requestAnimationFrame(() => { buildCatAnchors(); updateSpy(); });
     });
     $("catTabs").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-cat]"); if (!b) return;
       activeCat = b.dataset.cat; syncSheetTabs(); renderFoodList();
     });
 
-    // Tocar una categoría: el subrayado va DIRECTO a ese botón (transición suave)
-    // y la barra se desliza para centrarlo, de inmediato. El contenido salta a
-    // la sección con scroll suave; da igual que llegue un pelín después. El spy
-    // queda bloqueado mientras dura el salto, así el subrayado no pasa por las
-    // categorías intermedias (era lo que se sentía como un tirón/parón).
-    // (Arrastrar la barra con el dedo sin tocar ningún botón no cambia nada.)
+    // Ir al inicio real de la categoría, también al cambiar de sentido o pulsar rápidamente.
     $("recipeCats").addEventListener("click", (e) => {
       const btn = e.target.closest(".rcat"); if (!btn) return;
+      cancelCategoryJump();
+      buildCatAnchors();
+      const target = categoryTarget(btn.dataset.rcat);
+      if (target === null) return;
       applyActiveCat(btn.dataset.rcat, true);
-      lockSpy();
-      const sel = '.addf[data-cat="' + btn.dataset.rcat + '"], .rcard[data-cat="' + btn.dataset.rcat + '"]';
-      const card = $("foodList").querySelector(sel);
-      if (!card) return;
-      window.scrollTo({ top: card.getBoundingClientRect().top + window.scrollY - headerLine - 8, behavior: "smooth" });
+      categoryJump = btn.dataset.rcat; spyLocked = true;
+      window.scrollTo({ top: target, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
+      spyIdleTimer = setTimeout(finishCategoryJump, 180);
     });
     // Scroll-spy: al desplazar la lista, marca la categoría visible. Mientras el
     // spy esté bloqueado (salto en curso), cada evento de scroll reinicia un
@@ -3534,11 +3459,10 @@
     window.addEventListener("scroll", () => {
       if (currentView !== "sheet") return;
       if (spyLocked) {
-        // Mientras dura el salto, mantén la categoría elegida. Al parar el scroll
-        // solo desbloquea (sin reevaluar): así un pequeño "undershoot" no cambia
-        // la categoría recién tocada; el siguiente scroll real ya la reajusta.
+        // Al terminar, verifica la alineación con el layout actual antes de
+        // devolver el control al indicador de categoría visible.
         clearTimeout(spyIdleTimer);
-        spyIdleTimer = setTimeout(() => { spyLocked = false; }, 140);
+        spyIdleTimer = setTimeout(finishCategoryJump, 140);
         return;
       }
       if (spyTick) return;
@@ -4876,7 +4800,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.3.1";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.3.2";   // súbelo en cada cambio para confirmar que tienes la última
     $("drawerVersion").textContent = APP_VERSION;   // la versión vive en el cajón lateral
     loadPeople();
     woLoadFromCache();          // personas + migración de datos a "José"
@@ -4885,7 +4809,15 @@
     updateMenuAvatar();    // inicial de la persona activa en el botón
     renderDayStrip();      // prepara la tira de días
     render();
-    showView("landing");   // al entrar se elige entre Menú y Entrenamiento
+    showView("landing");   // una sola portada; sin splash fijo ni espera artificial
+    const refreshCatalogGeometry = () => {
+      if (currentView !== "sheet") return;
+      buildCatAnchors(); positionRecipeCatUnderline();
+      if (categoryJump) finishCategoryJump(); else updateSpy();
+    };
+    if (document.fonts) document.fonts.ready.then(refreshCatalogGeometry);
+    new ResizeObserver(refreshCatalogGeometry).observe($("sheetHeadSticky"));
   </script>
+  <script src="data-backup.js"></script>
 </body>
 </html>
