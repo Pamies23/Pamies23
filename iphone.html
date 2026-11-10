@@ -2,12 +2,14 @@
 <html lang="es" class="splashing">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Real Food">
-  <meta name="theme-color" content="#FFFFFF">
+  <meta name="theme-color" content="#79908B">
+  <meta name="description" content="Tu alimentación y entrenamiento, día a día. Registra comidas, prepara recetas y organiza tu compra.">
+  <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icon.png">
   <title>Real Food</title>
 
@@ -1632,6 +1634,51 @@
       width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer;
       background: rgba(19,19,17,0.08); color: var(--ink); font-size: 20px; line-height: 1;
     }
+
+    /* Revisión iPhone V3.1: área segura, controles visibles y contraste. */
+    :root { --muted: #706c63; }
+    .landing.shown { display: flex; min-height: 100svh; min-height: 100dvh; }
+    .landing-photo { min-height: 48svh; padding-top: calc(env(safe-area-inset-top) + 36px); }
+    .landing-menu { padding-top: 12px; }
+    .landing-title { font-size: clamp(54px, 16vw, 72px); letter-spacing: -.045em; }
+    .landing-sub { max-width: 310px; line-height: 1.5; }
+    .landing-ico { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 15px; background: #f0f2e8; font-size: 23px; }
+    .landing-row { padding: 17px 0; }
+    .topbar { gap: 8px; margin-bottom: 18px; }
+    .topbar h1 { font-size: clamp(19px, 5.7vw, 26px); line-height: 1.15; cursor: pointer; }
+    .profile-trigger { flex-shrink: 0; width: 44px; height: 44px; border: 1px solid #ffffff80; border-radius: 50%; background: #131311; color: #c7f23e; font: 800 16px var(--sans); cursor: pointer; }
+    .sheet-back-link { display: block; padding: 10px 18px; min-height: 44px; width: 100%; border: 0; color: #c7f23e; background: #000; text-align: left; font: 600 14px var(--sans); cursor: pointer; }
+    .sheet-tabs { padding: 0 16px 10px; gap: 12px; align-items: center; }
+    .sheet-tab { min-height: 44px; font-size: clamp(17px, 5.2vw, 22px); color: #b5b5b1; }
+    .sheet-filter, .sheet-cart { flex: 0 0 44px; width: 44px; height: 44px; padding: 10px; margin-bottom: 0; }
+    .sheet-cart { margin-left: 0; }
+    .ring-track { stroke: rgba(255,255,255,.13); }
+    @media (max-width: 360px) { .sheet-tabs { gap: 6px; padding-left: 12px; padding-right: 12px; } }
+    .sheet-back-link { padding-top: calc(env(safe-area-inset-top) + 10px); }
+    .home-cats { gap: 22px; padding-top: 4px; padding-bottom: 4px; }
+    .home-cats button { min-height: 44px; font-size: 17px; color: #b5b5b1; }
+    .add-cta, .rv-cta { bottom: calc(env(safe-area-inset-bottom) + 12px); min-height: 56px; box-shadow: 0 8px 24px #13131125; }
+    .meal-empty { color: #706c63; padding: 26px 20px; }
+    .meal-empty strong { display: block; color: #131311; font: 700 19px var(--disp); margin-bottom: 8px; }
+    .meal-empty span { display: block; font-size: 13px; line-height: 1.6; }
+    .drawer-close { position: absolute; right: 18px; top: calc(env(safe-area-inset-top) + 16px); width: 44px; height: 44px; border: 0; border-radius: 50%; background: #ece8dd; font-size: 26px; cursor: pointer; }
+    .local-note { color: #706c63; font-size: 12px; line-height: 1.6; padding: 16px 0 4px; }
+    button, [role="button"] { touch-action: manipulation; }
+    button:focus-visible, [tabindex]:focus-visible, input:focus-visible { outline: 3px solid #4b731a; outline-offset: 3px; }
+    @media (max-width: 767px) { input, select, textarea { font-size: max(16px, 1em); } }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+    }
+    .wo-chips { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .wo-chip { white-space: normal; line-height: 1.4; }
+    .wo-add-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .wo-field { min-width: 0; }
+    .wo-field input, .wo-field select { min-width: 0; padding-left: 10px; padding-right: 10px; }
+    @media (min-width: 900px) and (orientation: landscape) {
+      #app .home-cats { margin-left: 0; margin-right: 0; }
+      #app .hero-actions { margin-left: 0; margin-right: 0; }
+      #app .home-head-sticky { min-width: 0; margin: 0; padding: 0; }
+    }
   </style>
 </head>
 <body>
@@ -1640,7 +1687,8 @@
 
   <div class="top-region">
     <header class="topbar">
-      <h1 id="greeting">Hola</h1>
+      <h1 id="greeting" role="button" tabindex="0" aria-label="Elegir día">Hola</h1>
+      <button class="profile-trigger" id="profileTrigger" aria-label="Abrir perfiles y ajustes">J</button>
     </header>
 
     <!-- Desplegable de días (se abre al tocar la fecha) -->
@@ -1707,12 +1755,15 @@
   <!-- ===================== Menú lateral (perfiles) ===================== -->
   <div class="drawer-backdrop" id="drawerBackdrop"></div>
   <aside class="drawer" id="drawer" aria-label="Perfiles">
+    <button class="drawer-close" id="drawerClose" aria-label="Cerrar perfiles">×</button>
     <div class="drawer-brand">Real Food</div>
     <div class="drawer-label">Perfiles</div>
     <ul class="people-list" id="peopleList"></ul>
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
     <button class="drawer-settings" id="drawerWorkout">🏋️ Entrenamiento</button>
+    <button class="drawer-settings" id="drawerHome">↖ Inicio</button>
+    <p class="local-note">Tus datos se guardan en este navegador.</p>
     <div class="drawer-foot"><span id="drawerVersion">V.5</span></div>
   </aside>
 
@@ -1728,6 +1779,7 @@
          solo bloque sticky, así no hay dos "top" independientes que se desincronicen
          cuando Safari colapsa/expande la barra de direcciones al desplazar. -->
     <div class="sheet-head-sticky" id="sheetHeadSticky">
+      <button class="sheet-back-link" id="sheetBack">← Mi día</button>
       <!-- Línea fija: Alimentos | Recetas + botón de Compra (carrito) a la derecha -->
       <div class="sheet-tabs" id="typeTabs">
         <button class="sheet-tab active" data-type="alimentos">Alimentos</button>
@@ -1829,7 +1881,7 @@
       <div class="grams-field" id="mGramsField">
         <button class="gminus" id="mMinus" aria-label="Menos">−</button>
         <div class="gwrap">
-          <input id="mGrams" type="number" inputmode="numeric" min="0" step="1" value="100">
+          <input id="mGrams" type="number" inputmode="decimal" min="0" step="0.1" value="100">
           <span class="gunit">gramos</span>
         </div>
         <button class="gplus" id="mPlus" aria-label="Más">+</button>
@@ -1889,7 +1941,7 @@
           <div class="grams-field">
             <button class="gminus" id="rvgMinus" aria-label="Menos">−</button>
             <div class="gwrap">
-              <input id="rvgInput" type="number" inputmode="numeric" min="0" step="1" value="100">
+              <input id="rvgInput" type="number" inputmode="decimal" min="0" step="0.1" value="100">
               <span class="gunit">gramos</span>
             </div>
             <button class="gplus" id="rvgPlus" aria-label="Más">+</button>
@@ -2173,6 +2225,9 @@
   </div>
 
   <script>
+    const escapeHTML = (value) => String(value ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const searchText = value => String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
     /* Detección modo app vs Safari */
     if (navigator.standalone === true ||
         matchMedia('(display-mode: standalone)').matches) {
@@ -2409,11 +2464,11 @@
       } catch (e) {}
       return days;
     }
-    // Solo se conservan los días dentro de la ventana (los más viejos se pierden)
+    // Conserva todos los días válidos; el selector usa su propia ventana.
     function pruneDays(days) {
-      const allowed = new Set(windowKeys());
+      // La ventana del selector no limita la conservación del historial.
       const out = {};
-      Object.keys(days).forEach(k => { if (allowed.has(k) && Array.isArray(days[k]) && days[k].length) out[k] = days[k]; });
+      Object.keys(days).forEach(k => { if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(k) && Array.isArray(days[k]) && days[k].length) out[k] = days[k]; });
       return out;
     }
     function persistDays(days) {
@@ -2421,7 +2476,7 @@
     }
     function loadLog() {
       const days = pruneDays(loadDays());
-      persistDays(days);                       // limpia de paso los días caducados
+      // Leer no elimina ni reescribe el historial.
       DATA.meals = Array.isArray(days[selectedDate]) ? days[selectedDate].slice() : [];
     }
     function saveLog() {
@@ -2625,7 +2680,7 @@
         }
         const realPct = goal > 0 ? Math.round(view.kcal / goal * 100) : 0;
         kSel = Math.min(100, realPct);
-        kRest = isDay ? 0 : Math.min(100 - kSel, Math.round(Math.max(0, dayKcal - view.kcal) / goal * 100));
+        kRest = isDay || goal <= 0 ? 0 : Math.min(100 - kSel, Math.round(Math.max(0, dayKcal - view.kcal) / goal * 100));
         $("kcalRingPct").textContent = realPct + "%";   // el anillo topa en 100, pero el % es real
       }
       requestAnimationFrame(() => {
@@ -2653,8 +2708,8 @@
         if (foodSel) restVal = normalize100 ? 0 : Math.max(0, viewVal - focusVal);
         else if (!isDay) restVal = Math.max(0, sum[m.prop] - viewVal);  // resto del día
         else restVal = 0;
-        const sPct = Math.min(100, Math.round(focusVal / goalV * 100));
-        const rPct = Math.min(100 - sPct, Math.round(restVal / goalV * 100));
+        const sPct = goalV > 0 ? Math.min(100, Math.round(focusVal / goalV * 100)) : 0;
+        const rPct = goalV > 0 ? Math.min(100 - sPct, Math.round(restVal / goalV * 100)) : 0;
         const over = focusVal > goalV;   // rojo si te pasas
         let valText;
         if (foodSel) {
@@ -2731,7 +2786,7 @@
         // Todos los alimentos del día, en una sola lista sin títulos por comida
         log.innerHTML = resolved.length
           ? `<ul class="log-list">${resolved.map(r => rowHTML(r)).join("")}</ul>`
-          : `<div class="meal-empty">Sin alimentos registrados</div>`;
+          : `<div class="meal-empty"><strong>Tu día empieza aquí</strong><span>Añade tu primera comida y sigue tus objetivos.</span></div>`;
       } else {
         const b = byMeal[activeView];
         log.innerHTML = b.items.length
@@ -2889,7 +2944,7 @@
       if (!cta) return;
       const atBottom = window.innerHeight + window.scrollY
         >= document.documentElement.scrollHeight - 60;
-      cta.classList.toggle("show", atBottom);
+      cta.classList.toggle("show", currentView === "app" || atBottom);
     }
     window.addEventListener("scroll", updateBottomCta, { passive: true });
     window.addEventListener("resize", updateBottomCta);
@@ -2917,6 +2972,7 @@
       if (!b) return;
       // Tocar el chip activo lo deselecciona → vuelve a "día completo" (sin filtro)
       activeView = (activeView === b.dataset.view) ? "dia" : b.dataset.view;
+      activeFood = null;
       render();
     });
 
@@ -2943,7 +2999,7 @@
     // Borrar todos los alimentos registrados hoy (pide confirmación)
     $("clearAll").addEventListener("click", () => {
       if (!DATA.meals.length) return;
-      if (!confirm("¿Borrar todos los alimentos de hoy?")) return;
+      if (!confirm("¿Borrar todos los alimentos del " + dateLabelOf(selectedDate) + "?")) return;
       DATA.meals = [];
       saveLog();
       activeView = "dia"; activeMacro = null; activeFood = null; normalize100 = false;
@@ -3034,6 +3090,8 @@
       if (id !== "sheet") $("glassSearch").classList.remove("open");
       window.scrollTo(0, 0);
       currentView = id;
+      const tint = ({app:"#569897",landing:"#79908B",sheet:"#000000",shopPage:"#000000",workout:"#000000",profile:"#89B6A4",recipeView:"#EAE7D8"})[id] || "#FFFFFF";
+      document.querySelector('meta[name="theme-color"]').content = tint;
     }
 
     // La última comida elegida se recuerda: al apuntar varios alimentos de la
@@ -3094,7 +3152,7 @@
 
     /* ---- La barra negra se esconde al bajar y reaparece al subir (HG) ---- */
     function measureTabsH() {
-      $("sheetHeadSticky").style.setProperty("--tabsH", $("typeTabs").offsetHeight + "px");
+      $("sheetHeadSticky").style.setProperty("--tabsH", ($("typeTabs").offsetHeight + $("sheetBack").offsetHeight) + "px");
     }
     let lastScrollY = 0, barHidden = false;
     function setBarHidden(h) {
@@ -3154,8 +3212,8 @@
         <li class="rcard" data-recipe="${key}" data-cat="${r.cat}">
           <div class="rcard-img">${media}</div>
           <div class="rcard-body">
-            <div class="rcard-name">${r.name}</div>
-            <div class="rcard-desc">${recipeDesc(r)}</div>
+            <div class="rcard-name">${escapeHTML(r.name)}</div>
+            <div class="rcard-desc">${escapeHTML(recipeDesc(r))}</div>
             <div class="rcard-foot">
               <span class="rcard-kcal">${Math.round(n.kcal)} <span>kcal</span></span>
               <span class="rcard-macros">P ${n.protein} · C ${n.carbs} · G ${n.fat}</span>
@@ -3279,12 +3337,12 @@
     }
 
     function renderFoodList() {
-      const q = $("search").value.trim().toLowerCase();
+      const q = searchText($("search").value.trim());
       const list = $("foodList");
 
       if (activeType === "recetas") {
         const all = Object.assign({}, RECIPES, userRecipes);
-        let entries = Object.entries(all).filter(([, r]) => !q || r.name.toLowerCase().includes(q));
+        let entries = Object.entries(all).filter(([, r]) => !q || searchText(r.name).includes(q));
         let html;
         if (sortBy) {
           // Orden activo: lista plana por aporte total de la receta (sin categorías)
@@ -3310,7 +3368,7 @@
 
       // Alimentos: cuadrícula de 2 columnas agrupada por categoría (scroll-spy)
       list.classList.remove("as-recipes");
-      let entries = Object.entries(FOODS).filter(([, f]) => !q || f.name.toLowerCase().includes(q));
+      let entries = Object.entries(FOODS).filter(([, f]) => !q || searchText(f.name).includes(q));
       const foodCard = ([k, f]) => cardHTML(k, "data-add", f, f.cat);
       if (sortBy) {
         // Orden activo: lista plana por aporte POR 100 g (comparable entre alimentos)
@@ -3666,7 +3724,7 @@
     // Con los gramos a 0 aparece la opción de eliminar el ingrediente de la receta
     function updateRvgDelete() {
       const atZero = recipeView && recipeView.editing != null
-        && (parseInt($("rvgInput").value, 10) || 0) === 0;
+        && (Number($("rvgInput").value) || 0) === 0;
       $("rvgDelete").hidden = !atZero;
     }
     $("rvgDelete").addEventListener("click", () => {
@@ -3701,13 +3759,13 @@
     }
     $("rvgInput").addEventListener("input", () => {
       if (recipeView == null || recipeView.editing == null) return;
-      const v = parseInt($("rvgInput").value, 10);
+      const v = Number($("rvgInput").value);
       recipeView.items[recipeView.editing].grams = isNaN(v) ? 0 : Math.max(0, v);
       updateRvgDelete();
       renderRecipeIngredients(); updateRecipePreview();
     });
-    bindHold($("rvgPlus"),  () => setRecipeGrams((parseInt($("rvgInput").value, 10) || 0) + 10));
-    bindHold($("rvgMinus"), () => setRecipeGrams((parseInt($("rvgInput").value, 10) || 0) - 10));
+    bindHold($("rvgPlus"),  () => setRecipeGrams((Number($("rvgInput").value) || 0) + 10));
+    bindHold($("rvgMinus"), () => setRecipeGrams((Number($("rvgInput").value) || 0) - 10));
 
     function backToSheet() { setDocTint("sheet-open"); showView("sheet"); }
     $("rvBack").addEventListener("click", backToSheet);
@@ -3753,8 +3811,8 @@
     }
 
     function currentGrams() {
-      const v = parseInt($("mGrams").value, 10);
-      return isNaN(v) ? 0 : Math.max(0, v);
+      const v = Number($("mGrams").value);
+      return Number.isFinite(v) ? Math.max(0, v) : 0;
     }
     function setGrams(v) {
       $("mGrams").value = Math.max(0, v);
@@ -3800,6 +3858,7 @@
         holdTimer = setTimeout(() => { repeatTimer = setInterval(step, 80); }, 400);
       });
       ["pointerup", "pointerleave", "pointercancel"].forEach(ev => btn.addEventListener(ev, clear));
+      btn.addEventListener("click", e => { if (e.detail === 0) step(); });
     }
 
     bindHold($("mPlus"),  () => setGrams(currentGrams() + 10));
@@ -3852,6 +3911,7 @@
       }
       if (modalState.mode === "edit") {
         DATA.meals.splice(modalState.idx, 1);
+        activeFood = null;
         saveLog();
         render();
       } else if (modalState.mode === "recipe" && userRecipes[modalState.recipeKey]) {
@@ -3917,9 +3977,9 @@
       $("simMacros").innerHTML = macros.map(m => {
         const total = sum[m.prop];
         const focus = foodSel ? round1(fn[m.prop]) : total;
-        const sp = Math.min(100, Math.round(focus / m.g * 100));
+        const sp = m.g > 0 ? Math.min(100, Math.round(focus / m.g * 100)) : 0;
         const restVal = foodSel ? Math.max(0, total - focus) : 0;
-        const rp = Math.min(100 - sp, Math.round(restVal / m.g * 100));
+        const rp = m.g > 0 ? Math.min(100 - sp, Math.round(restVal / m.g * 100)) : 0;
         const over = focus > m.g;
         let valText;
         if (foodSel) {
@@ -4017,9 +4077,9 @@
       showModal();
     }
     function renderSimPick() {
-      const q = $("simSearch").value.trim().toLowerCase();
+      const q = searchText($("simSearch").value.trim());
       const entries = Object.entries(FOODS).filter(([, f]) =>
-        (simPickCat === "todos" || f.cat === simPickCat) && (!q || f.name.toLowerCase().includes(q)));
+        (simPickCat === "todos" || f.cat === simPickCat) && (!q || searchText(f.name).includes(q)));
       $("simPickList").innerHTML = entries.length
         ? entries.map(([k, f]) => cardHTML(k, "data-pick", f)).join("")
         : `<li class="food-empty">Sin resultados</li>`;
@@ -4074,7 +4134,7 @@
                  <span class="unit">${r.unit}</span></div></div>`
             : `<div class="pr-val"><div class="pr-calc"><b id="calc_${which}_${r.prop}">0</b><span class="unit">${r.unit}</span></div></div>`;
           return `<div class="prof-row${r.type === "calc" ? " calc" : ""}">
-              <span class="pr-name">${r.name}</span>${gkg}${val}</div>`;
+              <span class="pr-name">${escapeHTML(r.name)}</span>${gkg}${val}</div>`;
         }).join("");
       });
     }
@@ -4173,12 +4233,12 @@
        ========================================================= */
     const personInitial = (name) => (name || "?").trim().charAt(0).toUpperCase();
     const activePerson = () => people.list.find(p => p.id === people.active) || people.list[0];
-    function updateMenuAvatar() { /* el botón de usuario se retiró; el cajón se abre deslizando */ }
+    function updateMenuAvatar() { $("profileTrigger").textContent = personInitial(activePerson().name); }
     function renderPeople() {
       $("peopleList").innerHTML = people.list.map(pn => `
         <li class="person${pn.id === people.active ? " active" : ""}" data-id="${pn.id}">
-          <span class="person-av">${personInitial(pn.name)}</span>
-          <span class="person-name">${pn.name}</span>
+          <span class="person-av">${escapeHTML(personInitial(pn.name))}</span>
+          <span class="person-name">${escapeHTML(pn.name)}</span>
           ${pn.id === people.active ? '<span class="person-check">✓</span>' : ''}
         </li>`).join("");
     }
@@ -4189,7 +4249,9 @@
       if (id === people.active) { closeDrawer(); return; }
       saveProfile(); saveLog();              // guarda la persona actual
       people.active = id; savePeople();
-      loadPersonData();                      // carga la nueva (sus ajustes y su registro)
+      loadPersonData();
+      activeFood = null; activeView = "dia"; activeMacro = null; normalize100 = false;
+      woLoadFromCache();                      // carga la nueva (sus ajustes y su registro)
       render(); renderPeople(); updateMenuAvatar();
       closeDrawer();
     }
@@ -4200,13 +4262,21 @@
       const id = "p" + Date.now();
       people.list.push({ id, name });
       people.active = id; savePeople();
-      loadPersonData();                      // nueva persona: valores por defecto, registro vacío
+      loadPersonData();
+      activeFood = null; activeView = "dia"; activeMacro = null; normalize100 = false;
+      woLoadFromCache();                      // nueva persona: valores por defecto, registro vacío
       saveProfile(); saveLog();              // crea ya sus registros
       render(); renderPeople(); updateMenuAvatar();
       closeDrawer();
       openProfile();                         // abre "Tus datos" para que rellene sus objetivos
     }
 
+    $("profileTrigger").addEventListener("click", openDrawer);
+    $("drawerClose").addEventListener("click", closeDrawer);
+    $("drawerHome").addEventListener("click", () => { closeDrawer(); setDocTint(null); showView("landing"); });
+    $("sheetBack").addEventListener("click", closeSheet);
+    $("greeting").addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleDayPanel(); } });
+    document.addEventListener("keydown", e => { if (e.key === "Escape") { closeDrawer(); if (modal.classList.contains("open")) closeModal(); } });
     $("drawerBackdrop").addEventListener("click", closeDrawer);
     $("addPersonBtn").addEventListener("click", addPerson);
     $("peopleList").addEventListener("click", (e) => {
@@ -4335,20 +4405,29 @@
 
     // ── Almacenamiento (mismo esquema que el original) ──
     const WO_LS_KEY = "ejercicios_v1";
+    const woStorageKey = () => WO_LS_KEY + "." + people.active;
     let woWorkouts       = {};     // { "2025-01-15": { exercises:[...], duracion } }
     let woTemplateA      = null;   // plantillas personalizadas (null = usar la de serie)
     let woTemplateB      = null;
     let woTemplateC      = null;
     function woCacheWrite() {
       try {
-        localStorage.setItem(WO_LS_KEY, JSON.stringify({
+        localStorage.setItem(woStorageKey(), JSON.stringify({
           workouts: woWorkouts, template: woTemplateA, templateB: woTemplateB, templateC: woTemplateC
         }));
       } catch (e) {}
     }
     function woLoadFromCache() {
       let c = null;
-      try { c = JSON.parse(localStorage.getItem(WO_LS_KEY)); } catch (e) {}
+      try {
+        let saved = localStorage.getItem(woStorageKey());
+        if (!saved && people.active === "jose") {
+          saved = localStorage.getItem(WO_LS_KEY);
+          if (saved) localStorage.setItem(woStorageKey(), saved);
+        }
+        c = JSON.parse(saved);
+      } catch (e) {}
+      woWorkouts = {}; woTemplateA = woTemplateB = woTemplateC = null;
       if (!c) return;
       woWorkouts  = (typeof c.workouts === "object" && c.workouts) ? c.workouts : {};
       woTemplateA = Array.isArray(c.template)  ? c.template  : null;
@@ -4476,7 +4555,8 @@
     // Autoguardado: cada cambio persiste al momento (sin botón de guardar).
     // Si el día queda sin ejercicios ni duración, se borra su entrada.
     function woPersist() {
-      const duracion = parseInt($("woDur").value) || null;
+      const rawDuration = parseInt($("woDur").value);
+      const duracion = Number.isFinite(rawDuration) ? Math.min(600, Math.max(1, rawDuration)) : null;
       if (woExercises.length > 0 || duracion) {
         woWorkouts[woDate] = { exercises: JSON.parse(JSON.stringify(woExercises)), duracion };
       } else {
@@ -4547,7 +4627,7 @@
 
     // ── Ajustar series / reps (respeta rangos "8-10" y sufijos "c/lado") ──
     function woAdjustSeries(idx, delta) {
-      woExercises[idx].series = Math.max(1, (woExercises[idx].series || 1) + delta);
+      woExercises[idx].series = Math.min(20, Math.max(1, (woExercises[idx].series || 1) + delta));
       woPersist();
       woRenderAll();
     }
@@ -4568,7 +4648,7 @@
     // ── Añadir / quitar ejercicio ──
     $("woAdd").addEventListener("click", () => {
       const nombre   = $("woNombre").value.trim();
-      const series   = parseInt($("woSeries").value) || 3;
+      const series   = Math.min(20, Math.max(1, parseInt($("woSeries").value) || 3));
       const reps     = $("woReps").value.trim() || "10";
       const descanso = $("woDescanso").value;
       if (!nombre) { showToast("❗ Escribe el nombre del ejercicio"); return; }
@@ -4601,13 +4681,13 @@
         list.innerHTML = woExercises.map((ex, i) => `
           <div class="wo-ex">
             <div class="wo-ex-top">
-              <span class="wo-ex-name">${ex.nombre}</span>
-              <span class="wo-rest">${ex.descanso}</span>
+              <span class="wo-ex-name">${escapeHTML(ex.nombre)}</span>
+              <span class="wo-rest">${escapeHTML(ex.descanso)}</span>
               <button class="wo-ex-del" data-act="del" data-i="${i}" aria-label="Eliminar">✕</button>
             </div>
             <div class="wo-ex-controls">
               <div class="wo-ctrl"><div class="wo-step"><button data-act="s-" data-i="${i}">−</button><b>${ex.series}</b><button data-act="s+" data-i="${i}">+</button></div><span class="wo-unit">series</span></div>
-              <div class="wo-ctrl"><div class="wo-step"><button data-act="r-" data-i="${i}">−</button><b>${ex.reps}</b><button data-act="r+" data-i="${i}">+</button></div><span class="wo-unit">reps</span></div>
+              <div class="wo-ctrl"><div class="wo-step"><button data-act="r-" data-i="${i}">−</button><b>${escapeHTML(ex.reps)}</b><button data-act="r+" data-i="${i}">+</button></div><span class="wo-unit">reps</span></div>
             </div>
           </div>`).join("");
         const totalSeries = woExercises.reduce((s2, e) => s2 + (e.series || 0), 0);
@@ -4652,7 +4732,6 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
 
-    woLoadFromCache();
 
     /* =========================================================
        VISOR DE FOTO A PANTALLA COMPLETA — gestos "de iPhone" de verdad
@@ -4797,9 +4876,10 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.3";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.3.1";   // súbelo en cada cambio para confirmar que tienes la última
     $("drawerVersion").textContent = APP_VERSION;   // la versión vive en el cajón lateral
-    loadPeople();          // personas + migración de datos a "José"
+    loadPeople();
+    woLoadFromCache();          // personas + migración de datos a "José"
     loadPersonData();      // carga la persona activa (día de hoy)
     renderPeople();        // pinta la lista del menú lateral
     updateMenuAvatar();    // inicial de la persona activa en el botón
