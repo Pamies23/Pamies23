@@ -125,3 +125,13 @@ El Excel se llama `Banco_alimentos_piloto.xlsx` e incluye las cinco imágenes in
 ## Primera tarea recomendada
 
 Auditar y corregir la franja blanca superior sin rediseñar todavía el resto de la aplicación. La tarea debe comprobar el comportamiento en navegador móvil y, si es posible, en modo añadido a pantalla de inicio/standalone.
+
+## Revisión 10 de noviembre de 2026 · V3.1
+
+Rama de trabajo `codex/real-food-iphone-quality`, basada en V3. Se preservan las ramas de integración e histórica, sin fusión.
+
+- Correcciones: el historial ya no se poda por la ventana de días; raciones decimales; denominadores cero; selección al cambiar comida/persona; textos de usuario escapados; búsquedas sin acentos; límites de series y duración.
+- Entrenamientos por persona en `ejercicios_v1.<id>`; el registro global anterior se copia a José sin borrar la clave anterior.
+- Portada flexible a altura dinámica, perfiles y regreso visibles, botón de añadir accesible durante el scroll, contraste y tamaños táctiles, ajustes para pantallas estrechas y tablet, movimiento reducido.
+- Se añaden manifiesto standalone, acceso raíz e instrucciones de hosting estático Vercel sin dependencias nuevas. El icono original es PNG 1024×1024.
+- Véase `QA.md` para pruebas y límites. Pendiente comprobar Safari y pantalla de inicio en un iPhone físico. Los datos son locales por origen; cambiar de dominio no migra registros.

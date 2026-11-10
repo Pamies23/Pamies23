@@ -1,0 +1,13 @@
+{
+  "id": "./iphone.html",
+  "name": "Real Food",
+  "short_name": "Real Food",
+  "description": "Tu menú y entrenamiento, día a día.",
+  "lang": "es",
+  "start_url": "./iphone.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#79908B",
+  "theme_color": "#79908B",
+  "icons": [{ "src": "icon.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" }]
+}
