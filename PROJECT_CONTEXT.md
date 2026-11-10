@@ -138,7 +138,9 @@ Rama de trabajo `codex/real-food-iphone-quality`, basada en V3. Se preservan las
 
 ## Corrección de bordes y categorías · V3.2
 
-Rama `codex/iphone-edge-category-fix`, continuación de V3.1 sin fusionar las ramas de integración o histórica. El usuario autorizó actualizar la app. Se mantiene `https://real-food-iphone.vercel.app/iphone.html` y la protección existente del proyecto Vercel.
+Rama `codex/iphone-edge-category-fix`, continuación de V3.1 sin fusionar las ramas de integración o histórica. El usuario autorizó actualizar la app. Se mantiene `https://real-food-iphone.vercel.app/iphone.html`.
+
+El 10/11/2026 el usuario pidió expresamente un enlace público sin iniciar sesión en Vercel. Se desactivó Vercel Authentication (`ssoProtection: null`) en el proyecto `real-food-iphone`. Mantener este acceso público; no volver a activar la protección sin petición del usuario. Los registros personales siguen en el almacenamiento local de cada navegador.
 
 - Las capturas del iPhone muestran un sombreado de sistema en la cabecera, saltos desalineados y una franja verde al pie de la pantalla de arranque. La comprobación anterior con Chromium no bastó para detectar estos problemas.
 - Se elimina el splash fijo duplicado. La portada con sus accesos aparece directamente; su fondo inferior y el manifiesto usan el mismo tono claro.
