@@ -65,7 +65,11 @@
     html.splashing, html.splashing body { background: #79908B; }
     /* Con un panel abierto (sheet/simulador/modal) se bloquea el scroll del fondo
        para que no aparezca la barra ni se mueva la Home por detrás. */
-    html.locked, html.locked body { overflow: hidden; height: 100%; }
+    /* El bloqueo NO usa overflow:hidden (eso devolvía la página arriba y se
+       perdía la posición al abrir una ficha): se anulan los gestos de arrastre
+       sobre el documento (ver el touchmove de updateScrollLock) y la página
+       se queda exactamente donde estaba. */
+    html.locked body { touch-action: none; }
 
     /* Scroll NATURAL del documento (sin contenedor de posición fija). Es lo que
        de verdad llega hasta los bordes en standalone iOS y evita que falte
@@ -136,6 +140,8 @@
       font-weight: 900; font-size: 30px; line-height: 0.95;
       letter-spacing: -0.015em; text-transform: uppercase; color: var(--ink);
     }
+    /* La fecha: una sola línea SIEMPRE (fitGreeting() ajusta el cuerpo si no cabe) */
+    #greeting { white-space: nowrap; }
     /* Círculo de acción de las cabeceras secundarias (✕ del creador de recetas) */
     .avatar {
       width: 44px; height: 44px; border-radius: 50%;
@@ -342,9 +348,16 @@
       transition: color 0.18s ease;
     }
     .sheet-filter:active { transform: scale(0.9); }
+    /* Volver a la Home: misma flecha que Compra/Entrenamiento */
+    .sheet-back {
+      border: none; background: none; cursor: pointer; color: #fff;
+      font-size: 27px; line-height: 1; padding: 4px; margin: 0 -12px -1px -4px;
+      align-self: center;
+    }
+    .sheet-back:active { transform: scale(0.9); }
     .sheet-filter.on { color: var(--lime); }
     .sheet-cart {
-      margin-left: 10px; align-self: center; margin-bottom: 3px;
+      margin-left: 0; align-self: center; margin-bottom: 3px;
       border: none; background: none; cursor: pointer; padding: 4px;
       color: rgba(255,255,255,0.85); display: flex; align-items: center; justify-content: center;
     }
@@ -768,19 +781,57 @@
       content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
       height: 100vh; background: #89B6A4;            /* borde real de la foto */
     }
-    /* Transiciones de vista: la entrante entra suave; la saliente se desvanece como
-       una capa por encima (overlay fijo) para que el cambio sea fluido en ambos sentidos. */
-    .v-in  { animation: viewIn 0.34s cubic-bezier(.22,.61,.36,1) both; }
-    .v-out {
-      position: fixed; inset: 0; z-index: 70; overflow: hidden;
-      animation: viewOut 0.26s cubic-bezier(.4,0,1,1) both;
-      will-change: opacity, transform;
+    /* ---------- Transiciones de vista (navegación tipo iOS) ----------
+       PUSH (avanzar/volver): la vista nueva entra desde la derecha por encima
+       y la anterior se retira un poco a la izquierda (paralaje); al volver, al
+       revés. MODAL (Tus datos, creador, selector): sube desde abajo y se
+       cierra bajando. Siempre a opacidad plena: nunca se ve el fondo del
+       documento ni parpadea la zona del notch.
+       La SALIENTE se congela como capa fija en su posición de scroll exacta
+       (top:-scrollY; el JS compensa sus elementos sticky) y la ENTRANTE va en
+       el flujo, ya con su scroll final. Solo se anima transform. */
+    .v-in, .v-out { will-change: transform; backface-visibility: hidden; }
+    .v-out { position: fixed !important; left: 0; right: 0; width: 100%; z-index: 60; pointer-events: none; }
+    .v-in  { position: relative; z-index: 61; pointer-events: none; }
+    #app.v-in, #app.v-out { background-color: var(--bg); }
+    .v-in.t-push-fwd  { animation: vPushIn   var(--vt) var(--ve) both; box-shadow: -14px 0 44px rgba(0,0,0,0.20); }
+    .v-out.t-push-fwd { animation: vPushUnder var(--vt) var(--ve) both; }
+    .v-in.t-push-back  { animation: vPushBackIn var(--vt) var(--ve) both; z-index: 60; }
+    .v-out.t-push-back { animation: vPushOut  var(--vt) var(--ve) both; z-index: 61; box-shadow: -14px 0 44px rgba(0,0,0,0.20); }
+    .v-in.t-modal-fwd  { animation: vModalIn  var(--vt) var(--ve) both; box-shadow: 0 -14px 44px rgba(0,0,0,0.20); }
+    .v-out.t-modal-fwd { animation: vHold     var(--vt) linear both; }
+    .v-in.t-modal-back  { animation: vHold    var(--vt) linear both; z-index: 60; }
+    .v-out.t-modal-back { animation: vModalOut var(--vt) var(--ve) both; z-index: 61; box-shadow: 0 -14px 44px rgba(0,0,0,0.20); }
+    :root { --vt: 0.44s; --ve: cubic-bezier(.32,.72,0,1); }
+    @keyframes vPushIn     { from { transform: translate3d(100%,0,0); } to { transform: translate3d(0,0,0); } }
+    @keyframes vPushUnder  { from { transform: translate3d(0,0,0); } to { transform: translate3d(-26%,0,0); } }
+    @keyframes vPushBackIn { from { transform: translate3d(-26%,0,0); } to { transform: translate3d(0,0,0); } }
+    @keyframes vPushOut    { from { transform: translate3d(0,0,0); } to { transform: translate3d(100%,0,0); } }
+    @keyframes vModalIn    { from { transform: translate3d(0,100vh,0); } to { transform: translate3d(0,0,0); } }
+    @keyframes vModalOut   { from { transform: translate3d(0,0,0); } to { transform: translate3d(0,100vh,0); } }
+    @keyframes vHold       { from { transform: translate3d(0,0,0); } to { transform: translate3d(0,0,0); } }
+    /* Los extensores de rebote (::before de 100vh por encima) taparían la vista
+       de debajo mientras una hoja modal sube o baja: fuera durante el cambio. */
+    .v-in.t-modal-fwd::before, .v-out.t-modal-back::before,
+    .v-in.t-modal-fwd .top-region::before, .v-out.t-modal-back .top-region::before { display: none; }
+    /* Durante el cambio no se puede desplazar ni rebotar el documento */
+    html.v-busy, html.v-busy body { overflow-x: clip; }
+    @media (prefers-reduced-motion: reduce) { :root { --vt: 0.01s; } }
+
+    /* ---------- Velo de la barra de estado ----------
+       En las vistas sin cabecera pegajosa (receta, Tus datos, creador,
+       selector) el contenido pasaba por detrás de la hora/batería. Este velo
+       fijo ocupa justo el área segura superior y toma el color de la vista
+       cuando su cabecera ya se ha ido. */
+    .status-veil {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 55;
+      height: env(safe-area-inset-top); pointer-events: none;
+      background: var(--veil, #fff);
+      -webkit-backdrop-filter: saturate(1.6) blur(18px); backdrop-filter: saturate(1.6) blur(18px);
+      opacity: 0; transition: opacity .22s ease;
     }
-    @keyframes viewIn  { from { opacity: 0; transform: translateY(12px) scale(0.992); } to { opacity: 1; transform: none; } }
-    @keyframes viewOut { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(8px) scale(0.99); } }
-    @media (prefers-reduced-motion: reduce) {
-      .v-in, .v-out { animation-duration: 0.01ms; }
-    }
+    .status-veil.on { opacity: 1; }
+    .status-veil.cut { transition: none; opacity: 0; }
 
     .sheet-head {
       display: flex; align-items: center; justify-content: space-between;
@@ -811,7 +862,7 @@
     }
     .sheet-tabs {
       position: relative;             /* para el ::before del notch */
-      display: flex; align-items: flex-end; gap: 26px;
+      display: flex; align-items: flex-end; gap: 16px;
       background: #000;
       padding: calc(env(safe-area-inset-top) + 16px) 18px 18px; margin: 0;
     }
@@ -822,7 +873,7 @@
     .sheet-head-sticky.bar-hidden .sheet-tabs { opacity: 0; pointer-events: none; }
     .sheet-tab {
       border: none; background: none; cursor: pointer; padding: 0;
-      font-family: var(--exp); font-weight: 800; font-size: 22px;
+      font-family: var(--exp); font-weight: 800; font-size: clamp(19px, 5.3vw, 22px);
       letter-spacing: -0.01em; text-transform: none; color: rgba(255,255,255,0.42);
       position: relative; transition: color 0.18s ease;
     }
@@ -1405,7 +1456,7 @@
       visibility: hidden; transition: background 0.3s ease, visibility 0.3s ease;
     }
     html.drawer-open .drawer-backdrop { visibility: visible; background: rgba(19,19,17,0.45); }
-    html.drawer-open { overflow: hidden; }
+    html.drawer-open body { touch-action: none; }   /* sin overflow:hidden: la página no pierde su posición */
     .drawer {
       position: fixed; top: 0; left: 0; bottom: 0; z-index: 91;
       width: min(82vw, 330px);
@@ -1713,6 +1764,7 @@
     <button class="drawer-add" id="addPersonBtn">＋ Añadir persona</button>
     <button class="drawer-settings" id="drawerSettings">⚙ Tus datos</button>
     <button class="drawer-settings" id="drawerWorkout">🏋️ Entrenamiento</button>
+    <button class="drawer-settings" id="drawerHome">← Portada</button>
     <div class="drawer-foot"><span id="drawerVersion">V.5</span></div>
   </aside>
 
@@ -1730,6 +1782,7 @@
     <div class="sheet-head-sticky" id="sheetHeadSticky">
       <!-- Línea fija: Alimentos | Recetas + botón de Compra (carrito) a la derecha -->
       <div class="sheet-tabs" id="typeTabs">
+        <button class="sheet-back" id="sheetBack" aria-label="Volver al menú">←</button>
         <button class="sheet-tab active" data-type="alimentos">Alimentos</button>
         <button class="sheet-tab" data-type="recetas">Recetas</button>
         <button class="sheet-filter" id="sheetFilter" aria-label="Ordenar">
@@ -2120,10 +2173,10 @@
       <div class="wo-card">
         <div class="wo-card-h">Plantillas<span>toca para cargar</span></div>
         <div class="wo-chips" id="woTemplates">
-          <button class="wo-chip" data-tpl="A">💪 Tracción</button>
-          <button class="wo-chip" data-tpl="B">🦵 Piernas</button>
-          <button class="wo-chip" data-tpl="C">🔄 Variante</button>
-          <button class="wo-chip lime" id="woSaveTpl">📌 Guardar estos ejercicios como plantilla</button>
+          <button class="wo-chip" data-tpl="A">Tracción</button>
+          <button class="wo-chip" data-tpl="B">Piernas</button>
+          <button class="wo-chip" data-tpl="C">Variante</button>
+          <button class="wo-chip lime" id="woSaveTpl">Guardar como plantilla</button>
         </div>
       </div>
 
@@ -2165,6 +2218,7 @@
 
   <!-- Aviso flotante (toast) -->
   <div class="toast" id="toast"></div>
+  <div class="status-veil" id="statusVeil" aria-hidden="true"></div>
 
   <!-- ===================== Visor de foto a pantalla completa ===================== -->
   <div class="photo-zoom" id="photoZoom" aria-hidden="true">
@@ -2485,6 +2539,15 @@
     function updateScrollLock() {
       document.documentElement.classList.toggle("locked", $("modal").classList.contains("open"));
     }
+    // Con una ficha/visor abierto el documento no se desplaza, pero conserva
+    // su posición. Solo se deja pasar el gesto dentro de un panel con scroll propio.
+    document.addEventListener("touchmove", (e) => {
+      const cl = document.documentElement.classList;
+      if (!cl.contains("locked") && !cl.contains("drawer-open")) return;
+      const sc = e.target.closest && e.target.closest(".modal-card, .drawer");
+      if (sc && sc.scrollHeight > sc.clientHeight + 1) return;
+      if (e.cancelable) e.preventDefault();
+    }, { passive: false });
 
     // Vista activa para el filtro de estadísticas: "dia" o un momento del día
     let activeView = "dia";
@@ -2532,9 +2595,24 @@
       g.style.fontSize = size + "px";
     }
 
+    // La fecha ocupa una sola línea: si no cabe al cuerpo base, se reduce lo
+    // justo para que quepa (nunca parte en dos ni se corta).
+    function fitGreeting() {
+      const h = $("greeting");
+      h.style.fontSize = "";
+      const avail = h.clientWidth;
+      if (!avail) return;
+      const base = parseFloat(getComputedStyle(h).fontSize);
+      const need = h.scrollWidth;
+      if (need > avail) h.style.fontSize = Math.max(18, Math.floor(base * avail / need * 10) / 10) + "px";
+    }
+    window.addEventListener("resize", fitGreeting);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitGreeting);
+
     function render() {
       // Cabecera — la fecha de hoy
       $("greeting").innerHTML = todayLabel();
+      fitGreeting();
 
       // Resolver cada comida (con su índice original) y totales del día
       const sum = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
@@ -2981,60 +3059,113 @@
     // "" (sin display inline) deja mandar al CSS → la Home puede ser grid en iPad.
     const VIEWS = ["app", "sheet", "shopPage", "recipeView", "sim", "simPick", "profile", "landing", "workout"];
     let currentView = "app";
+    // Profundidad de cada vista en la navegación: decide si el cambio es
+    // "avanzar" (entra desde la derecha) o "volver" (se va hacia la derecha).
+    const VIEW_DEPTH = { landing: 0, app: 1, workout: 1, sheet: 2, profile: 2, shopPage: 3, recipeView: 3, sim: 3, simPick: 4 };
+    // Vistas que se presentan como hoja modal (suben desde abajo, se cierran bajando)
+    const VIEW_MODAL = { profile: 1, sim: 1, simPick: 1 };
+    const STICKY_SEL = ".home-head-sticky, .sheet-head-sticky, .shop-head-sticky, .section-head";
+    const T_CLASSES = ["v-in", "v-out", "t-push-fwd", "t-push-back", "t-modal-fwd", "t-modal-back"];
+    const viewScroll = {};          // scroll recordado de cada vista, para restaurarlo al volver
+    let endTransition = null;       // remata la transición en curso (si la hay)
+
     function showView(id) {
       if (id === currentView) { window.scrollTo(0, 0); return; }
+      if (endTransition) endTransition();          // navegación rápida: cierra la anterior en seco
       const outId = currentView, inEl = $(id), outEl = $(outId);
+      const back = VIEW_DEPTH[id] < VIEW_DEPTH[outId];
+      const modal = back ? VIEW_MODAL[outId] : VIEW_MODAL[id];
+      const kind = "t-" + (modal ? "modal" : "push") + (back ? "-back" : "-fwd");
+      const y = window.scrollY;
+      const targetY = back ? (viewScroll[id] || 0) : 0;
+      if (back) delete viewScroll[outId]; else viewScroll[outId] = y;
 
-      // Deja limpias las vistas que no intervienen (por si hubo navegación rápida)
+      // Deja limpias las vistas que no intervienen
       VIEWS.forEach(v => {
         if (v === id || v === outId) return;
         const e = $(v);
-        e.classList.remove("v-in", "v-out");
+        e.classList.remove(...T_CLASSES);
         if (v !== "app") e.classList.remove("shown");
         e.style.display = "none";
         e.setAttribute("aria-hidden", "true");
       });
 
-      // Entrante: visible + animación de entrada
-      inEl.classList.remove("v-out");
+      const root = document.documentElement;
+      const veil = $("statusVeil");
+      veil.classList.add("cut"); veil.classList.remove("on");
+      root.classList.add("v-busy");
+
+      // SALIENTE: se congela como capa fija exactamente donde estaba. Sus
+      // elementos sticky dejan de pegarse al quedar fija, así que se
+      // recolocan con `translate` para que la imagen no cambie ni un píxel.
+      const stickies = [...outEl.querySelectorAll(STICKY_SEL)].map(el => [el, el.getBoundingClientRect().top]);
+      outEl.style.top = (-y) + "px";
+      outEl.classList.add("v-out", kind);
+      outEl.setAttribute("aria-hidden", "true");
+      stickies.forEach(([el, t]) => {
+        const d = t - el.getBoundingClientRect().top;
+        if (Math.abs(d) > 0.5) el.style.translate = "0 " + d + "px";
+      });
+
+      // ENTRANTE: en el flujo y ya con su scroll final
       inEl.style.display = "";
       if (id !== "app") inEl.classList.add("shown");
       inEl.setAttribute("aria-hidden", "false");
-      inEl.classList.remove("v-in"); void inEl.offsetWidth; inEl.classList.add("v-in");
-      // Al acabar, retira la clase: una animación de transform "rellena" (fill both)
-      // convierte la vista en containing block y descoloca los elementos fixed
-      // (las CTA inferiores). e.target === inEl ignora animaciones de hijos.
-      const clearIn = (e) => {
-        if (e.target !== inEl) return;
-        inEl.classList.remove("v-in");
-        inEl.removeEventListener("animationend", clearIn);
-      };
-      inEl.addEventListener("animationend", clearIn);
-
-      // Saliente: capa por encima que se desvanece y luego se oculta
-      outEl.classList.remove("v-in");
-      outEl.setAttribute("aria-hidden", "true");
-      outEl.classList.add("v-out");
-      const finalize = () => {
-        outEl.removeEventListener("animationend", finalize);
-        clearTimeout(outTimer);
-        if (currentView === outId) return;     // se volvió a esta vista: no ocultar
-        outEl.classList.remove("v-out");
-        if (outId !== "app") outEl.classList.remove("shown");
-        outEl.style.display = "none";
-      };
-      outEl.addEventListener("animationend", finalize);
-      const outTimer = setTimeout(finalize, 420);   // respaldo si no llega animationend
+      inEl.classList.add("v-in", kind);
+      currentView = id;
+      window.scrollTo(0, targetY);
+      lastScrollY = targetY;
 
       $("addBtn").classList.toggle("hidden", id !== "app");
-      // Reevalúa la CTA inferior con el layout de la vista nueva ya pintado
-      requestAnimationFrame(updateBottomCta);
-      // La lupa de búsqueda solo en la pantalla de Añadir comida
-      $("glassSearch").classList.toggle("active", id === "sheet");
-      if (id !== "sheet") $("glassSearch").classList.remove("open");
-      window.scrollTo(0, 0);
-      currentView = id;
+      // La lupa de búsqueda solo en Añadir comida: se va al instante y
+      // aparece cuando la hoja ya está colocada.
+      if (id !== "sheet") $("glassSearch").classList.remove("active", "open");
+
+      let done = false;
+      const finish = () => {
+        if (done) return; done = true;
+        clearTimeout(timer);
+        inEl.removeEventListener("animationend", onEnd);
+        endTransition = null;
+        outEl.classList.remove(...T_CLASSES);
+        outEl.style.top = "";
+        stickies.forEach(([el]) => { el.style.translate = ""; });
+        if (outId !== "app") outEl.classList.remove("shown");
+        outEl.style.display = "none";
+        // Sin clases de animación la vista deja de ser containing block y
+        // las CTA fijas vuelven a anclarse a la pantalla.
+        inEl.classList.remove(...T_CLASSES);
+        root.classList.remove("v-busy");
+        $("glassSearch").classList.toggle("active", id === "sheet");
+        veil.classList.remove("cut");
+        updateStatusVeil();
+        updateBottomCta();
+      };
+      const onEnd = (e) => { if (e.target === inEl) finish(); };
+      inEl.addEventListener("animationend", onEnd);
+      const timer = setTimeout(finish, 620);       // respaldo si no llega animationend
+      endTransition = finish;
     }
+
+    // Velo de la barra de estado: color por vista y punto a partir del cual
+    // hace falta (cuando la cabecera de la vista ya ha pasado bajo el notch).
+    const VEIL = {
+      // Home: velo de agua esmerilada mientras el panel baja bajo la hora; en
+      // cuanto la franja negra de comidas se fija arriba, ella toma el relevo.
+      app:        { color: "rgba(86,152,151,0.66)", from: () => 6 + $("statusVeil").offsetHeight,
+                    until: () => $("homeHeadSticky").classList.contains("pinned") },
+      recipeView: { color: "rgba(255,255,255,0.88)", from: () => document.querySelector("#recipeView .rv-photo").offsetHeight },
+      sim:        { color: "rgba(255,255,255,0.88)", from: () => document.querySelector("#sim .sim-top").offsetHeight },
+      simPick:    { color: "rgba(255,255,255,0.88)", from: () => 8 },
+      profile:    { color: "rgba(137,182,164,0.62)", from: () => 8 },
+    };
+    function updateStatusVeil() {
+      const veil = $("statusVeil"), cfg = VEIL[currentView];
+      if (!cfg || endTransition) { veil.classList.remove("on"); return; }
+      veil.style.setProperty("--veil", cfg.color);
+      veil.classList.toggle("on", window.scrollY > cfg.from() - veil.offsetHeight - 2 && !(cfg.until && cfg.until()));
+    }
+    window.addEventListener("scroll", updateStatusVeil, { passive: true });
 
     // La última comida elegida se recuerda: al apuntar varios alimentos de la
     // misma comida seguidos no hay que reelegirla cada vez. Sin elección
@@ -3121,6 +3252,7 @@
       if (cls) h.classList.add(cls);
     }
     function closeSheet() { setDocTint(null); showView("app"); }
+    $("sheetBack").addEventListener("click", closeSheet);
     function positionTypeUnderline() {
       const tab = $("typeTabs").querySelector('[data-type="' + activeType + '"]');
       const u = $("typeUnderline");
@@ -4220,8 +4352,11 @@
       let startX = null, startY = null, tracking = false;
       window.addEventListener("touchstart", (e) => {
         const t = e.touches[0];
-        tracking = currentView === "app"
-          && !document.documentElement.classList.contains("drawer-open")
+        // En la Home abre el cajón; en el resto de vistas es el gesto de
+        // "volver" de iOS (deslizar desde el borde izquierdo).
+        tracking = !document.documentElement.classList.contains("drawer-open")
+          && !document.documentElement.classList.contains("locked")
+          && !endTransition && currentView !== "landing"
           && t.clientX <= 24;
         startX = tracking ? t.clientX : null; startY = tracking ? t.clientY : null;
       }, { passive: true });
@@ -4229,7 +4364,14 @@
         if (!tracking || startX === null) return;
         const t = e.touches[0], dx = t.clientX - startX, dy = t.clientY - startY;
         if (Math.abs(dy) > 40 && Math.abs(dy) > Math.abs(dx)) { tracking = false; return; }  // gesto vertical
-        if (dx > 45) { tracking = false; startX = null; openDrawer(); }
+        if (currentView === "app") {
+          if (dx > 45) { tracking = false; startX = null; openDrawer(); }
+        } else if (dx > 64) {
+          tracking = false; startX = null;
+          const goBack = { sheet: closeSheet, recipeView: backToSheet, sim: closeSim, simPick: closeSimPick,
+                           profile: closeProfile, shopPage: () => $("shopBack").click(), workout: () => $("woBack").click() }[currentView];
+          if (goBack) goBack();
+        }
       }, { passive: true });
       window.addEventListener("touchend", () => { tracking = false; startX = null; });
     })();
@@ -4492,6 +4634,7 @@
     }
     $("woBack").addEventListener("click", () => { setDocTint(null); showView("landing"); });
     $("drawerWorkout").addEventListener("click", () => { closeDrawer(); openWorkout(); });
+    $("drawerHome").addEventListener("click", () => { closeDrawer(); setDocTint(null); showView("landing"); });
 
     // Cambiar de día carga lo guardado de ese día (descarta lo no guardado)
     function woLoadDate(date) {
@@ -4797,7 +4940,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.3";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.4";   // súbelo en cada cambio para confirmar que tienes la última
     $("drawerVersion").textContent = APP_VERSION;   // la versión vive en el cajón lateral
     loadPeople();          // personas + migración de datos a "José"
     loadPersonData();      // carga la persona activa (día de hoy)

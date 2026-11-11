@@ -308,3 +308,28 @@ image (not the raw file's edge row): water top #569897, profile
 
 Keep the HG *shape* of each element but never fake commerce: no prices,
 no stock states. Figures shown are always nutrition.
+
+## Navegación y barra de estado (V.4) — NO volver a lo anterior
+
+- **Transiciones entre vistas = iOS, no fundidos.** `showView` hace PUSH
+  (la nueva entra desde la derecha por encima, la anterior se retira −26 %;
+  al volver, al revés) y MODAL para `profile`, `sim`, `simPick` (suben desde
+  abajo, se cierran bajando). `0.44s cubic-bezier(.32,.72,0,1)`, solo
+  `transform`, siempre a opacidad plena (un fundido deja ver el fondo del
+  documento y parpadea el notch). `VIEW_DEPTH` decide avanzar/volver.
+- **Mecánica:** la SALIENTE se congela `position:fixed; top:-scrollY` y sus
+  sticky (`STICKY_SEL`) se compensan con la propiedad `translate`; la
+  ENTRANTE va en el flujo con su scroll final. Al volver se restaura el
+  scroll recordado (`viewScroll`). Al acabar se retiran TODAS las clases
+  (un transform relleno rompe los `position:fixed` hijos). Los extensores
+  `::before` de 100vh se ocultan en las transiciones modales.
+- **Velo de barra de estado (`#statusVeil`)**: franja fija del alto del área
+  segura, esmerilada con el color de la vista, para que el contenido nunca
+  pase "desnudo" bajo la hora. Config en `VEIL` (Home hasta que la franja
+  negra se fija; receta, creador, selector, Tus datos). Vista nueva sin
+  cabecera sticky ⇒ añadirla a `VEIL`.
+- **Bloqueo de scroll sin `overflow:hidden`** (ficha, visor, cajón): se
+  cancela `touchmove`; `overflow:hidden` devolvía la página arriba.
+- **Salidas siempre visibles:** flecha ← en Alimentos/Recetas, "Portada" en
+  el cajón, y deslizar desde el borde izquierdo = volver (en Home abre el cajón).
+- La fecha de Home va en una línea: `fitGreeting()` reduce el cuerpo si no cabe.

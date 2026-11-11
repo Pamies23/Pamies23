@@ -78,6 +78,35 @@ proxy at all, which is unrelated to whether the user's own browser can reach
 it. Give the link anyway; ask the user to flag it if something doesn't
 render (e.g. a broken relative asset path), and diagnose from there.
 
+## Emulating the iPhone notch (do this for any header/transition work)
+
+Headless Chromium reports `env(safe-area-inset-*)` as 0, which hides every
+notch bug. Intercept the page and substitute real values, and fake standalone:
+
+```js
+await page.route('**/iphone.html', r => {
+  let html = fs.readFileSync('iphone.html', 'utf8')
+    .replace(/env\(safe-area-inset-top\)/g, '59px')
+    .replace(/env\(safe-area-inset-bottom\)/g, '34px');
+  r.fulfill({ body: html, contentType: 'text/html' });
+});
+await page.addInitScript(() => Object.defineProperty(navigator, 'standalone', { get: () => true }));
+```
+Use viewport 393×852. To inspect a transition mid-flight, slow it with
+`page.addStyleTag({ content: ':root{--vt:1.6s !important}' })` and screenshot
+at ~250 ms. Most app functions (`openSheet()`, `openRecipe(key)`,
+`openProfile()`, `openWorkout()`, `showView(id)`) are global and callable
+from `page.evaluate`. PIL is broken in this sandbox; build contact sheets by
+rendering the PNGs in a Playwright page instead.
+
+## Installable link (home-screen web app)
+
+htmlpreview is fine for a quick look but not for installing. For "Add to
+Home Screen" give the directly-served branch URL:
+`https://raw.githack.com/<owner>/<repo>/<branch>/iphone.html`
+(or GitHub Pages if the user enables it). localStorage is per-origin, so the
+user must stick to one URL or their data will not follow.
+
 ## Navigation hints (verify against current markup — these drift)
 
 The DOM ids/classes below were current as of the recipe-detail redesign. The app
