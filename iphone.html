@@ -303,8 +303,11 @@
     }
     /* ---------- Ventana Compra (pantalla propia, abierta desde Alimentos) ---------- */
     .shop-page { min-height: 100%; background: #F8F9F4; }
+    /* Cabecera FIJA (no sticky): al tirar de la página hacia abajo el contenido
+       se separa pero la barra negra no se mueve, como en HG. El hueco que
+       ocupa lo reserva el padding-top de la página (ver fixedHeads en JS). */
     .shop-head-sticky {
-      position: sticky; top: 0; z-index: 5; background: #000;
+      position: fixed; top: 0; left: 0; right: 0; z-index: 5; background: #000;
       padding: calc(env(safe-area-inset-top) + 14px) 18px 16px;
     }
     .shop-head { display: flex; align-items: center; gap: 12px; }
@@ -771,7 +774,7 @@
     #sheet, .shop-page, .sim-pick, .profile-page { position: relative; }
     #sheet::before, .shop-page::before, .workout-page::before {
       content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
-      height: 100vh; background: #000;               /* cabeceras negras */
+      height: 100vh; background: #F8F9F4;            /* la cabecera negra es fija: el hueco del rebote es fondo de página */
     }
     .sim-pick::before {
       content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
@@ -826,9 +829,8 @@
     .status-veil {
       position: fixed; top: 0; left: 0; right: 0; z-index: 55;
       height: env(safe-area-inset-top); pointer-events: none;
-      background: var(--veil, #fff);
-      -webkit-backdrop-filter: saturate(1.6) blur(18px); backdrop-filter: saturate(1.6) blur(18px);
-      opacity: 0; transition: opacity .22s ease;
+      background: var(--veil, #fff);           /* color SÓLIDO de la vista, sin desenfoques */
+      opacity: 0; transition: opacity .18s ease;
     }
     .status-veil.on { opacity: 1; }
     .status-veil.cut { transition: none; opacity: 0; }
@@ -853,12 +855,14 @@
        esconderse: su caja cubre exactamente desde el notch hasta la barra de
        categorías, así el contenido nunca asoma por encima. */
     .sheet-head-sticky {
-      position: sticky; top: 0; z-index: 5; background: transparent;
-      transition: transform 0.34s cubic-bezier(.4,0,.2,1), background-color 0.28s ease;
+      position: fixed; top: 0; left: 0; right: 0; z-index: 5; background: transparent;
+      /* al reaparecer, el blanco de debajo aguanta hasta que la barra negra ha vuelto */
+      transition: transform 0.34s cubic-bezier(.4,0,.2,1), background-color 0s linear 0.34s;
     }
     .sheet-head-sticky.bar-hidden {
       transform: translateY(calc((var(--tabsH, 110px) - env(safe-area-inset-top)) * -1));
       background: #fff;
+      transition: transform 0.34s cubic-bezier(.4,0,.2,1), background-color 0s;
     }
     .sheet-tabs {
       position: relative;             /* para el ::before del notch */
@@ -869,8 +873,10 @@
     /* Al esconderse, la barra negra ADEMÁS se desvanece: en pantallas con notch
        su franja inferior seguía asomando por la zona de la barra de estado
        (esa franja nunca lleva contenido de la app; queda en blanco). */
-    .sheet-tabs { transition: opacity 0.28s ease; }
-    .sheet-head-sticky.bar-hidden .sheet-tabs { opacity: 0; pointer-events: none; }
+    /* Al esconderse la barra negra sale ENTERA por arriba, a pleno color (sin
+       fundido que la deje lechosa), y la franja de la hora queda en blanco. */
+    .sheet-tabs { transition: transform 0.34s cubic-bezier(.4,0,.2,1); }
+    .sheet-head-sticky.bar-hidden .sheet-tabs { transform: translateY(calc(env(safe-area-inset-top) * -1 - 2px)); pointer-events: none; }
     .sheet-tab {
       border: none; background: none; cursor: pointer; padding: 0;
       font-family: var(--exp); font-weight: 800; font-size: clamp(19px, 5.3vw, 22px);
@@ -3112,6 +3118,10 @@
       if (id !== "app") inEl.classList.add("shown");
       inEl.setAttribute("aria-hidden", "false");
       inEl.classList.add("v-in", kind);
+      // Mientras se anima, la vista es containing block de sus cabeceras
+      // fijas: se bajan lo que mide el scroll restaurado para que sigan arriba.
+      const inFixed = targetY ? [...inEl.querySelectorAll(".sheet-head-sticky, .shop-head-sticky")] : [];
+      inFixed.forEach(el => { el.style.translate = "0 " + targetY + "px"; });
       currentView = id;
       window.scrollTo(0, targetY);
       lastScrollY = targetY;
@@ -3130,6 +3140,7 @@
         outEl.classList.remove(...T_CLASSES);
         outEl.style.top = "";
         stickies.forEach(([el]) => { el.style.translate = ""; });
+        inFixed.forEach(el => { el.style.translate = ""; });
         if (outId !== "app") outEl.classList.remove("shown");
         outEl.style.display = "none";
         // Sin clases de animación la vista deja de ser containing block y
@@ -3147,17 +3158,27 @@
       endTransition = finish;
     }
 
+    // Cabeceras fijas: su página reserva arriba exactamente lo que miden
+    // (cambia al abrir el panel ORDENAR o al pasar de Alimentos a Recetas).
+    if (window.ResizeObserver) {
+      const ro = new ResizeObserver(es => es.forEach(en => {
+        const h = en.target.offsetHeight;
+        if (h) en.target.parentElement.style.paddingTop = h + "px";
+      }));
+      document.querySelectorAll(".sheet-head-sticky, .shop-head-sticky").forEach(el => ro.observe(el));
+    }
+
     // Velo de la barra de estado: color por vista y punto a partir del cual
     // hace falta (cuando la cabecera de la vista ya ha pasado bajo el notch).
     const VEIL = {
       // Home: velo de agua esmerilada mientras el panel baja bajo la hora; en
       // cuanto la franja negra de comidas se fija arriba, ella toma el relevo.
-      app:        { color: "rgba(86,152,151,0.66)", from: () => 6 + $("statusVeil").offsetHeight,
+      app:        { color: "#569897", from: () => 6 + $("statusVeil").offsetHeight,
                     until: () => $("homeHeadSticky").classList.contains("pinned") },
-      recipeView: { color: "rgba(255,255,255,0.88)", from: () => document.querySelector("#recipeView .rv-photo").offsetHeight },
-      sim:        { color: "rgba(255,255,255,0.88)", from: () => document.querySelector("#sim .sim-top").offsetHeight },
-      simPick:    { color: "rgba(255,255,255,0.88)", from: () => 8 },
-      profile:    { color: "rgba(137,182,164,0.62)", from: () => 8 },
+      recipeView: { color: "#fff", from: () => document.querySelector("#recipeView .rv-photo").offsetHeight },
+      sim:        { color: "#fff", from: () => document.querySelector("#sim .sim-top").offsetHeight },
+      simPick:    { color: "#fff", from: () => 8 },
+      profile:    { color: "#89B6A4", from: () => 8 },
     };
     function updateStatusVeil() {
       const veil = $("statusVeil"), cfg = VEIL[currentView];
@@ -4940,7 +4961,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.4";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.5";   // súbelo en cada cambio para confirmar que tienes la última
     $("drawerVersion").textContent = APP_VERSION;   // la versión vive en el cajón lateral
     loadPeople();          // personas + migración de datos a "José"
     loadPersonData();      // carga la persona activa (día de hoy)

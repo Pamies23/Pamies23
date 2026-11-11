@@ -333,3 +333,13 @@ no stock states. Figures shown are always nutrition.
 - **Salidas siempre visibles:** flecha ← en Alimentos/Recetas, "Portada" en
   el cajón, y deslizar desde el borde izquierdo = volver (en Home abre el cajón).
 - La fecha de Home va en una línea: `fitGreeting()` reduce el cuerpo si no cabe.
+
+### Cabeceras negras FIJAS (V.5)
+Las cabeceras negras de Alimentos/Recetas, Compra y Entrenamiento son
+`position: fixed` (no sticky): al tirar de la página el contenido se separa
+y la barra NO se mueve, como en HG. Su página reserva el hueco con
+`padding-top` (ResizeObserver) y el extensor `::before` de rebote va en el
+fondo de página `#F8F9F4`, no en negro. Al esconderse, la barra negra sale
+entera por arriba a pleno color (sin fundido de opacidad) y la franja de la
+hora queda en blanco sólido. El velo `#statusVeil` es de color SÓLIDO: nada
+de blur ni translúcidos sobre menús (el usuario los rechazó).
