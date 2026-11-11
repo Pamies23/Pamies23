@@ -855,7 +855,10 @@
        esconderse: su caja cubre exactamente desde el notch hasta la barra de
        categorías, así el contenido nunca asoma por encima. */
     .sheet-head-sticky {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 5; background: transparent;
+      /* Fondo NEGRO en la propia caja fija (no solo en su hija): iOS 26 tiñe
+         la zona de la hora con el color de fondo del elemento fijo pegado al
+         borde; si es transparente usa el del body y aparece un degradado gris. */
+      position: fixed; top: 0; left: 0; right: 0; z-index: 5; background: #000;
       /* al reaparecer, el blanco de debajo aguanta hasta que la barra negra ha vuelto */
       transition: transform 0.34s cubic-bezier(.4,0,.2,1), background-color 0s linear 0.34s;
     }
@@ -3075,6 +3078,13 @@
     const viewScroll = {};          // scroll recordado de cada vista, para restaurarlo al volver
     let endTransition = null;       // remata la transición en curso (si la hay)
 
+    // Color de la franja de la hora por vista (meta theme-color): es el de su cabecera
+    const THEME = { landing: "#79908B", app: "#569897", sheet: "#000000", shopPage: "#000000", workout: "#000000",
+                    recipeView: "#EAE7D8", sim: "#BCDFDB", simPick: "#FFFFFF", profile: "#89B6A4" };
+    function syncThemeColor() {
+      const hidden = currentView === "sheet" && $("sheetHeadSticky").classList.contains("bar-hidden");
+      document.querySelector('meta[name="theme-color"]').setAttribute("content", hidden ? "#FFFFFF" : (THEME[currentView] || "#FFFFFF"));
+    }
     function showView(id) {
       if (id === currentView) { window.scrollTo(0, 0); return; }
       if (endTransition) endTransition();          // navegación rápida: cierra la anterior en seco
@@ -3123,6 +3133,7 @@
       const inFixed = targetY ? [...inEl.querySelectorAll(".sheet-head-sticky, .shop-head-sticky")] : [];
       inFixed.forEach(el => { el.style.translate = "0 " + targetY + "px"; });
       currentView = id;
+      syncThemeColor();
       window.scrollTo(0, targetY);
       lastScrollY = targetY;
 
@@ -3253,6 +3264,7 @@
       if (h === barHidden) return;
       barHidden = h;
       $("sheetHeadSticky").classList.toggle("bar-hidden", h);
+      syncThemeColor();
     }
     window.addEventListener("scroll", () => {
       if (currentView !== "sheet" || filterOpen) { lastScrollY = window.scrollY; return; }
@@ -4961,7 +4973,7 @@
     })();
 
     /* ---------- Arranque ---------- */
-    const APP_VERSION = "V.5";   // súbelo en cada cambio para confirmar que tienes la última
+    const APP_VERSION = "V.6";   // súbelo en cada cambio para confirmar que tienes la última
     $("drawerVersion").textContent = APP_VERSION;   // la versión vive en el cajón lateral
     loadPeople();          // personas + migración de datos a "José"
     loadPersonData();      // carga la persona activa (día de hoy)

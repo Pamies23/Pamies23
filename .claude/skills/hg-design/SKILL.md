@@ -343,3 +343,10 @@ fondo de página `#F8F9F4`, no en negro. Al esconderse, la barra negra sale
 entera por arriba a pleno color (sin fundido de opacidad) y la franja de la
 hora queda en blanco sólido. El velo `#statusVeil` es de color SÓLIDO: nada
 de blur ni translúcidos sobre menús (el usuario los rechazó).
+
+### iOS 26: tinte de la zona de la hora (V.6)
+iOS 26 tiñe la franja de la hora con el `background-color` del elemento
+fijo pegado al borde superior; si esa caja es transparente (aunque su hija
+sea negra) usa el del body y aparece un degradado gris sobre la cabecera.
+Regla: toda cabecera fija lleva el color en SU PROPIA caja. Además
+`syncThemeColor()` actualiza `<meta name="theme-color">` por vista.
